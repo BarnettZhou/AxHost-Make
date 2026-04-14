@@ -1,0 +1,332 @@
+(function () {
+  const treeRoot = document.getElementById('tree-root');
+  let currentTab = 'pages';
+  let expandedPaths = new Set();
+  let selectedPath = null;
+  let treeData = [];
+  let hasAutoLoaded = false;
+
+  function findFirstPage(nodes) {
+    for (const n of nodes) {
+      if (n.type === 'page' || n.type === 'component') return n;
+      if (n.children) {
+        const f = findFirstPage(n.children);
+        if (f) return f;
+      }
+    }
+    return null;
+  }
+
+  async function initTreeNav() {
+    renderTabs();
+    await loadTree(currentTab);
+    treeRoot.addEventListener('contextmenu', (e) => {
+      const label = e.target.closest('.tree-label');
+      if (!label) {
+        e.preventDefault();
+        showRootContextMenu(e);
+      }
+    });
+  }
+
+  function renderTabs() {
+    const tabs = document.querySelectorAll('.nav-tabs button');
+    tabs.forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === currentTab);
+      btn.onclick = () => {
+        currentTab = btn.dataset.tab;
+        renderTabs();
+        loadTree(currentTab);
+      };
+    });
+  }
+
+  async function loadTree(type) {
+    try {
+      const res = await window.apiClient.getScan(type);
+      if (res.code !== 0) return;
+      treeData = res.data || [];
+      treeRoot.innerHTML = '';
+      const ul = document.createElement('ul');
+      ul.className = 'tree-list';
+      for (const node of treeData) {
+        ul.appendChild(buildNode(node, type));
+      }
+      treeRoot.appendChild(ul);
+      if (!hasAutoLoaded && !selectedPath) {
+        const first = findFirstPage(treeData);
+        if (first) {
+          hasAutoLoaded = true;
+          selectedPath = first.path;
+          if (window.shell && window.shell.loadPage) {
+            window.shell.loadPage(first.type === 'component' ? 'component' : 'page', first.path);
+          }
+        }
+      }
+    } catch (err) {
+      treeRoot.innerHTML = '<div style="padding:12px;color:#999">Failed to load tree</div>';
+    }
+  }
+
+  function buildNode(node, type, level = 0) {
+    const li = document.createElement('li');
+    li.className = 'tree-item';
+    li.dataset.path = node.path;
+    li.dataset.type = node.type;
+
+    const label = document.createElement('div');
+    label.className = 'tree-label';
+    if (selectedPath === node.path) {
+      label.classList.add('active');
+    }
+
+    const arrow = document.createElement('span');
+    arrow.className = 'tree-arrow';
+    if (node.type === 'dir') {
+      arrow.textContent = expandedPaths.has(node.path) ? '▼' : '▶';
+    } else {
+      arrow.textContent = '';
+    }
+
+    const icon = document.createElement('span');
+    icon.className = 'tree-icon';
+    icon.textContent = node.type === 'dir' ? '📁' : (type === 'components' ? '🔧' : '📄');
+
+    const text = document.createElement('span');
+    text.textContent = node.name;
+
+    label.appendChild(arrow);
+    label.appendChild(icon);
+    label.appendChild(text);
+    li.appendChild(label);
+
+    if (node.type === 'dir') {
+      if (expandedPaths.has(node.path)) {
+        const childrenUl = document.createElement('ul');
+        childrenUl.className = 'tree-list';
+        for (const child of (node.children || [])) {
+          childrenUl.appendChild(buildNode(child, type, level + 1));
+        }
+        li.appendChild(childrenUl);
+      }
+
+      label.addEventListener('click', () => {
+        if (expandedPaths.has(node.path)) {
+          expandedPaths.delete(node.path);
+        } else {
+          expandedPaths.add(node.path);
+        }
+        loadTree(currentTab);
+      });
+
+      label.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showDirContextMenu(e, node, type);
+      });
+    } else {
+      label.addEventListener('click', () => {
+        selectedPath = node.path;
+        loadTree(currentTab);
+        if (window.shell && window.shell.loadPage) {
+          window.shell.loadPage(type === 'components' ? 'component' : 'page', node.path);
+        }
+      });
+
+      label.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showPageContextMenu(e, node, type);
+      });
+    }
+
+    return li;
+  }
+
+  function getSiblings(parentPath) {
+    if (!parentPath) return treeData;
+    const parts = parentPath.split('/');
+    let nodes = treeData;
+    for (const part of parts) {
+      const dir = nodes.find(n => n.name === part && n.type === 'dir');
+      if (!dir) return [];
+      nodes = dir.children || [];
+    }
+    return nodes;
+  }
+
+  function hasSiblingName(parentPath, name) {
+    const siblings = getSiblings(parentPath);
+    return siblings.some(n => n.name === name);
+  }
+
+  function showRootContextMenu(e) {
+    const items = [
+      { label: currentTab === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
+      { label: '新建目录', action: 'create_folder' }
+    ];
+    renderMenu(e, items, (action) => {
+      if (action === 'create_page') {
+        const kind = currentTab === 'components' ? 'component' : 'page';
+        handleCreate('', kind);
+      } else if (action === 'create_folder') {
+        handleCreate('', 'folder');
+      }
+    });
+  }
+
+  function showDirContextMenu(e, node, type) {
+    const items = [
+      { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
+      { label: '新建目录', action: 'create_folder' },
+      { label: '复制路径', action: 'copy_path' },
+      { label: '重命名', action: 'rename' },
+      { label: '删除', action: 'delete' }
+    ];
+    renderMenu(e, items, (action) => {
+      if (action === 'create_page') {
+        const kind = type === 'components' ? 'component' : 'page';
+        handleCreate(node.path, kind);
+      } else if (action === 'create_folder') {
+        handleCreate(node.path, 'folder');
+      } else if (action === 'copy_path') {
+        navigator.clipboard.writeText(node.path);
+      } else if (action === 'rename') {
+        handleRename(node.path, type, true);
+      } else if (action === 'delete') {
+        handleDelete(node.path, type, true);
+      }
+    });
+  }
+
+  function showPageContextMenu(e, node, type) {
+    const items = [
+      { label: '复制路径', action: 'copy_path' },
+      { label: '新标签页打开', action: 'open_new' },
+      { label: '重命名', action: 'rename' },
+      { label: '删除', action: 'delete' }
+    ];
+    renderMenu(e, items, (action) => {
+      if (action === 'copy_path') {
+        navigator.clipboard.writeText(`/prototype/${type}/${node.path}/index.html`);
+      } else if (action === 'open_new') {
+        window.open(`/prototype/${type}/${node.path}/index.html`, '_blank');
+      } else if (action === 'rename') {
+        handleRename(node.path, type, false);
+      } else if (action === 'delete') {
+        handleDelete(node.path, type, false);
+      }
+    });
+  }
+
+  function renderMenu(event, items, onSelect) {
+    removeExistingMenu();
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.style.left = event.clientX + 'px';
+    menu.style.top = event.clientY + 'px';
+    items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'context-menu-item';
+      div.textContent = item.label;
+      div.onclick = () => {
+        onSelect(item.action);
+        removeExistingMenu();
+      };
+      menu.appendChild(div);
+    });
+    document.body.appendChild(menu);
+    setTimeout(() => {
+      document.addEventListener('click', removeExistingMenu, { once: true });
+    }, 0);
+  }
+
+  function removeExistingMenu() {
+    document.querySelectorAll('.context-menu').forEach(el => el.remove());
+  }
+
+  async function handleCreate(parentPath, kind) {
+    const labelMap = { page: '页面', component: '组件', folder: '目录' };
+    const name = window.prompt(`请输入${labelMap[kind]}名称:`);
+    if (!name) return;
+    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(name)) {
+      alert('名称包含非法字符');
+      return;
+    }
+    if (hasSiblingName(parentPath, name)) {
+      alert(`同级下已存在名为 "${name}" 的目录或页面`);
+      return;
+    }
+    try {
+      const parent = `prototype/${currentTab}${parentPath ? '/' + parentPath : ''}`;
+      await window.apiClient.postCreate({ parentPath: parent, name, kind });
+      await loadTree(currentTab);
+      if (kind !== 'folder') {
+        const pathStr = parentPath ? `${parentPath}/${name}` : name;
+        selectedPath = pathStr;
+        if (window.shell && window.shell.loadPage) {
+          window.shell.loadPage(kind === 'component' ? 'component' : 'page', pathStr);
+        }
+      } else {
+        expandedPaths.add(parentPath ? `${parentPath}/${name}` : name);
+        await loadTree(currentTab);
+      }
+    } catch (err) {
+      alert('创建失败: ' + err.message);
+    }
+  }
+
+  async function handleRename(nodePath, type, isDir) {
+    const oldName = nodePath.split('/').pop();
+    const newName = window.prompt('请输入新名称:', oldName);
+    if (!newName || newName === oldName) return;
+    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(newName)) {
+      alert('名称包含非法字符');
+      return;
+    }
+    const parentPath = nodePath.includes('/') ? nodePath.substring(0, nodePath.lastIndexOf('/')) : '';
+    if (hasSiblingName(parentPath, newName)) {
+      alert(`同级下已存在名为 "${newName}" 的目录或页面`);
+      return;
+    }
+    try {
+      const oldAbs = `prototype/${currentTab}/${nodePath}`;
+      await window.apiClient.postRename({ oldPath: oldAbs, newName });
+      await loadTree(currentTab);
+      if (!isDir && selectedPath === nodePath) {
+        const newPath = parentPath ? `${parentPath}/${newName}` : newName;
+        selectedPath = newPath;
+        if (window.shell && window.shell.loadPage) {
+          window.shell.loadPage(type === 'components' ? 'component' : 'page', newPath);
+        }
+      }
+    } catch (err) {
+      alert('重命名失败: ' + err.message);
+    }
+  }
+
+  async function handleDelete(nodePath, type, isDir) {
+    const name = nodePath.split('/').pop();
+    const msg = isDir
+      ? `是否删除目录 "${name}" 及其下的所有页面/组件？`
+      : `是否删除${type === 'components' ? '组件' : '页面'} "${name}"？`;
+    if (!confirm(msg)) return;
+    try {
+      const target = `prototype/${currentTab}/${nodePath}`;
+      await window.apiClient.postDelete({ path: target });
+      if (selectedPath === nodePath) {
+        selectedPath = null;
+        const previewFrame = document.getElementById('preview-frame');
+        if (previewFrame) previewFrame.src = 'about:blank';
+        if (window.docPanel && window.docPanel.load) {
+          window.docPanel.load(type, '');
+        }
+      }
+      await loadTree(currentTab);
+    } catch (err) {
+      alert('删除失败: ' + err.message);
+    }
+  }
+
+  window.treeNav = { init: initTreeNav, refresh: () => loadTree(currentTab) };
+})();

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axhost-Make Dev</title>
+  <link rel="stylesheet" href="/client/css/shell.css">
+</head>
+<body class="dev-mode">
+  <div id="app">
+    <header id="shell-header">
+      <button id="btn-toggle-nav" title="Toggle Nav">☰</button>
+      <span class="title">Axhost-Make Dev</span>
+      <button id="btn-settings" title="Settings">⚙</button>
+      <button id="btn-toggle-docs" title="Toggle Docs">Docs</button>
+      <button id="btn-theme" title="Toggle Theme">🌙</button>
+    </header>
+
+    <div id="shell-main">
+      <aside id="panel-nav">
+        <div class="nav-tabs">
+          <button data-tab="pages" class="active">Pages</button>
+          <button data-tab="components">Components</button>
+        </div>
+        <div class="tree-container" id="tree-root"></div>
+      </aside>
+      <div class="resizer resizer-v" data-target="panel-nav" data-dir="v"></div>
+
+      <section id="panel-center">
+        <div class="iframe-wrapper">
+          <iframe id="preview-frame" src="about:blank"></iframe>
+        </div>
+        <div class="resizer resizer-h" data-target="prompt-box" data-dir="h" data-invert="true"></div>
+        <div id="prompt-box">
+          <textarea id="prompt-input" placeholder="描述你想要的修改，例如：将表格背景改为深蓝色，增加一个导出按钮..."></textarea>
+          <div class="prompt-actions">
+            <span id="prompt-status">输入需求后点击 Copy，将自动生成完整提示词</span>
+            <button id="btn-prompt-copy">Copy Prompt</button>
+          </div>
+        </div>
+      </section>
+
+      <div class="resizer resizer-v" data-target="panel-docs" data-dir="v" data-invert="true"></div>
+      <aside id="panel-docs" class="hidden">
+        <div class="doc-tabs" id="doc-tabs"></div>
+        <div class="doc-content" id="doc-content"></div>
+        <div class="doc-actions">
+          <button id="btn-doc-edit">Edit</button>
+          <button id="btn-doc-save">Save</button>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="drawer-overlay" id="settings-overlay"></div>
+  <div class="drawer" id="settings-drawer">
+    <div class="drawer-header">
+      <div class="drawer-title">项目设置</div>
+      <button class="drawer-close" id="settings-close">&times;</button>
+    </div>
+    <div class="drawer-body">
+      <label for="project-name-input">项目名称</label>
+      <input type="text" id="project-name-input" placeholder="Prototype">
+      <button id="btn-save-settings">保存</button>
+    </div>
+  </div>
+
+  <script src="/prototype/resources/js/marked.min.js"></script>
+  <script src="/client/js/api-client.js"></script>
+  <script src="/client/js/md-renderer.js"></script>
+  <script src="/client/js/tree-nav.js"></script>
+  <script src="/client/js/doc-panel.js"></script>
+  <script src="/client/js/prompt-box.js"></script>
+  <script>
+    (function(){
+      const btnTheme = document.getElementById('btn-theme');
+      const isDark = localStorage.getItem('axhost-theme') === 'dark';
+      if (isDark) document.body.classList.add('dark');
+      btnTheme.textContent = document.body.classList.contains('dark') ? '☀' : '🌙';
+      btnTheme.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        const dark = document.body.classList.contains('dark');
+        localStorage.setItem('axhost-theme', dark ? 'dark' : 'light');
+        btnTheme.textContent = dark ? '☀' : '🌙';
+      });
+    })();
+  </script>
+  <script src="/client/js/shell.js"></script>
+</body>
+</html>
