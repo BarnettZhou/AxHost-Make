@@ -90,7 +90,7 @@
 
     let icon = null;
     if (node.type === 'dir') {
-      icon = document.createElement('iconpark-icon');
+      icon = document.createElement('axhost-icon');
       icon.setAttribute('size', '12');
       icon.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
     }
@@ -122,7 +122,7 @@
         loadTree(currentTab);
       });
 
-      const iconEl = label.querySelector('iconpark-icon');
+      const iconEl = label.querySelector('axhost-icon');
       if (iconEl) {
         iconEl.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
       }
