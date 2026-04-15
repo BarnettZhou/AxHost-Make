@@ -11,9 +11,9 @@
     <header id="shell-header">
       <button id="btn-toggle-nav" title="Toggle Nav">☰</button>
       <span class="title" id="project-name">Axhost-Make Preview</span>
-      <button id="btn-toggle-docs" title="Toggle Docs">Docs</button>
+      <button id="btn-toggle-docs" title="Toggle Docs"><axhost-icon icon="document-folder" size="14"></axhost-icon></button>
       <button id="btn-changelog" title="Changelog">Log</button>
-      <button id="btn-theme" title="Toggle Theme">🌙</button>
+      <button id="btn-theme" title="Toggle Theme"><axhost-icon icon="moon" size="14"></axhost-icon></button>
     </header>
 
     <div id="shell-main">
@@ -41,6 +41,7 @@
     </div>
   </div>
 
+  <script src="/client/js/icons.js"></script>
   <script src="/prototype/resources/js/marked.min.js"></script>
   <script src="/client/js/api-client.js"></script>
   <script src="/client/js/md-renderer.js"></script>
@@ -50,14 +51,15 @@
   <script>
     (function(){
       const btnTheme = document.getElementById('btn-theme');
+      const icon = btnTheme.querySelector('axhost-icon');
       const isDark = localStorage.getItem('axhost-theme') === 'dark';
       if (isDark) document.body.classList.add('dark');
-      btnTheme.textContent = document.body.classList.contains('dark') ? '☀' : '🌙';
+      if (icon) icon.setAttribute('icon', document.body.classList.contains('dark') ? 'sun-one' : 'moon');
       btnTheme.addEventListener('click', () => {
         document.body.classList.toggle('dark');
         const dark = document.body.classList.contains('dark');
         localStorage.setItem('axhost-theme', dark ? 'dark' : 'light');
-        btnTheme.textContent = dark ? '☀' : '🌙';
+        if (icon) icon.setAttribute('icon', dark ? 'sun-one' : 'moon');
       });
     })();
   </script>

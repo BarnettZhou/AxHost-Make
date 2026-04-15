@@ -37,6 +37,15 @@ async function update(projectRoot) {
     console.log('  - Updated prototype/resources/js/marked.min.js');
   }
 
+  // Copy icons.js
+  const iconsSrc = path.resolve(__dirname, '../client/js/icons.js');
+  const iconsDest = path.join(projectRoot, 'prototype/resources/js/icons.js');
+  if (await exists(iconsSrc)) {
+    await fs.mkdir(path.dirname(iconsDest), { recursive: true });
+    await fs.copyFile(iconsSrc, iconsDest);
+    console.log('  - Updated prototype/resources/js/icons.js');
+  }
+
   // Copy shell.css
   const cssSrc = path.resolve(__dirname, '../client/css/shell.css');
   const cssDest = path.join(projectRoot, 'prototype/resources/css/shell.css');
@@ -44,6 +53,22 @@ async function update(projectRoot) {
     await fs.mkdir(path.dirname(cssDest), { recursive: true });
     await fs.copyFile(cssSrc, cssDest);
     console.log('  - Updated prototype/resources/css/shell.css');
+  }
+
+  // Copy agents.md
+  const agentsSrc = path.join(templateRoot, 'agents.md');
+  const agentsDest = path.join(projectRoot, 'agents.md');
+  if (await exists(agentsSrc)) {
+    await fs.copyFile(agentsSrc, agentsDest);
+    console.log('  - Updated agents.md');
+  }
+
+  // Copy package.json
+  const pkgSrc = path.join(templateRoot, 'package.json');
+  const pkgDest = path.join(projectRoot, 'package.json');
+  if (await exists(pkgSrc)) {
+    await fs.copyFile(pkgSrc, pkgDest);
+    console.log('  - Updated package.json');
   }
 
   // Regenerate sitemap while preserving project name

@@ -3,6 +3,8 @@
   const btnCopy = document.getElementById('btn-prompt-copy');
   const promptStatus = document.getElementById('prompt-status');
 
+  if (!promptInput || !btnCopy || !promptStatus) return;
+
   function buildPrompt(userText, pageType, pagePath) {
     return [
       '# System Prompt',

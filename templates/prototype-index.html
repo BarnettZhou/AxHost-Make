@@ -11,8 +11,8 @@
     <header id="shell-header">
       <button id="btn-toggle-nav" title="Toggle Nav">☰</button>
       <span class="title" id="project-name">Prototype</span>
-      <button id="btn-toggle-docs" title="Toggle Docs">Docs</button>
-      <button id="btn-theme" title="Toggle Theme">🌙</button>
+      <button id="btn-toggle-docs" title="Toggle Docs"><axhost-icon icon="document-folder" size="14"></axhost-icon></button>
+      <button id="btn-theme" title="Toggle Theme"><axhost-icon icon="moon" size="14"></axhost-icon></button>
     </header>
 
     <div id="shell-main">
@@ -40,19 +40,21 @@
     </div>
   </div>
 
+  <script src="resources/js/icons.js"></script>
   <script src="sitemap.js"></script>
   <script src="resources/js/marked.min.js"></script>
   <script>
     (function(){
       const btnTheme = document.getElementById('btn-theme');
+      const icon = btnTheme.querySelector('axhost-icon');
       const isDark = localStorage.getItem('axhost-theme') === 'dark';
       if (isDark) document.body.classList.add('dark');
-      btnTheme.textContent = document.body.classList.contains('dark') ? '☀' : '🌙';
+      if (icon) icon.setAttribute('icon', document.body.classList.contains('dark') ? 'sun-one' : 'moon');
       btnTheme.addEventListener('click', () => {
         document.body.classList.toggle('dark');
         const dark = document.body.classList.contains('dark');
         localStorage.setItem('axhost-theme', dark ? 'dark' : 'light');
-        btnTheme.textContent = dark ? '☀' : '🌙';
+        if (icon) icon.setAttribute('icon', dark ? 'sun-one' : 'moon');
       });
     })();
   </script>
@@ -172,15 +174,18 @@
         arrow.className = 'tree-arrow';
         arrow.textContent = node.type === 'dir' ? (expandedPaths.has(node.path) ? '▼' : '▶') : '';
 
-        const icon = document.createElement('span');
-        icon.className = 'tree-icon';
-        icon.textContent = node.type === 'dir' ? '📁' : (type === 'components' ? '🔧' : '📄');
+        let icon = null;
+        if (node.type === 'dir') {
+          icon = document.createElement('axhost-icon');
+          icon.setAttribute('size', '12');
+          icon.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+        }
 
         const text = document.createElement('span');
         text.textContent = node.name;
 
         label.appendChild(arrow);
-        label.appendChild(icon);
+        if (icon) label.appendChild(icon);
         label.appendChild(text);
         li.appendChild(label);
 
@@ -201,6 +206,10 @@
             }
             renderTree();
           });
+          const iconEl = label.querySelector('axhost-icon');
+          if (iconEl) {
+            iconEl.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+          }
         } else {
           label.addEventListener('click', () => {
             activePath = node.path;

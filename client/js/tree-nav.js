@@ -88,15 +88,18 @@
       arrow.textContent = '';
     }
 
-    const icon = document.createElement('span');
-    icon.className = 'tree-icon';
-    icon.textContent = node.type === 'dir' ? '📁' : (type === 'components' ? '🔧' : '📄');
+    let icon = null;
+    if (node.type === 'dir') {
+      icon = document.createElement('axhost-icon');
+      icon.setAttribute('size', '12');
+      icon.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+    }
 
     const text = document.createElement('span');
     text.textContent = node.name;
 
     label.appendChild(arrow);
-    label.appendChild(icon);
+    if (icon) label.appendChild(icon);
     label.appendChild(text);
     li.appendChild(label);
 
@@ -118,6 +121,11 @@
         }
         loadTree(currentTab);
       });
+
+      const iconEl = label.querySelector('axhost-icon');
+      if (iconEl) {
+        iconEl.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+      }
 
       label.addEventListener('contextmenu', (e) => {
         e.preventDefault();

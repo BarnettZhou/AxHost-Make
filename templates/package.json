@@ -1,0 +1,19 @@
+{
+  "name": "axhost-make-project",
+  "version": "0.1.0",
+  "description": "Axhost-Make prototype project",
+  "private": true,
+  "type": "commonjs",
+  "bin": {
+    "axhost-make": "./axhost-make/bin/axhost-make.js"
+  },
+  "scripts": {
+    "serve": "node axhost-make/bin/axhost-make.js serve",
+    "preview": "node axhost-make/bin/axhost-make.js preview",
+    "init": "node axhost-make/bin/axhost-make.js init",
+    "update": "node axhost-make/bin/axhost-make.js update"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

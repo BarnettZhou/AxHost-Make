@@ -1,9 +1,9 @@
+# {{PAGE_NAME}}
+
 ---
 title: {{PAGE_NAME}}
 created: {{DATE}}
 ---
-
-# {{PAGE_NAME}}
 
 ## 需求描述
 
