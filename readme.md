@@ -39,6 +39,27 @@ https://raw.githubusercontent.com/BarnettZhou/AxHost-Make/refs/heads/master/inst
 
 发送 Prompt 后等待安装完成即可。
 
+### 通过你的 Agent 迁移已有 HTML 项目
+
+如果你已经有一个现成的 HTML 项目，需要先**将其放到一个全新的空目录中**，并将这个空目录作为项目目录。例如：
+
+```bash
+mkdir -p workspace/my-html-project
+cp -r /path/to/your/html-project workspace/my-html-project/
+cd workspace/my-html-project
+claude
+```
+
+确保当前目录下只有一个子目录（即你的 HTML 项目），然后输入如下 Prompt：
+
+```
+请遵循如下文件的内容将当前目录的 HTML 项目迁移为 AxHost Make 项目：
+
+https://raw.githubusercontent.com/BarnettZhou/AxHost-Make/refs/heads/master/install/install-with-html-project.md
+```
+
+发送 Prompt 后等待迁移完成即可。
+
 ### 通过源代码安装
 
 确保本地已安装 **Node.js >= 22** 以及 **Git**。
