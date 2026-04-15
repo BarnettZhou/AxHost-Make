@@ -233,6 +233,15 @@ project-root/
 
 > 拖拽实现采用全局遮罩层，鼠标经过 iframe 区域也不会丢失焦点。
 
+### 图标规范
+
+框架使用 IconPark 的 `<iconpark-icon>` Web Component 加载图标：
+
+- **引用方式**：开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。
+- **标签属性**：使用 `icon-id` 指定图标名称，例如 `<iconpark-icon icon-id="moon" size="14"></iconpark-icon>`。
+- **颜色控制**：支持 `color`、`stroke`、`fill` 属性。推荐设置 `color="currentColor"` 让图标跟随父级文字颜色。
+- **主题适配**：切换暗黑/明亮主题时，框架会自动刷新所有 `iconpark-icon` 的颜色属性。
+
 ---
 
 ## API 说明

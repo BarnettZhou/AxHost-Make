@@ -43,9 +43,9 @@ node axhost-make/bin/axhost-make.js update
 ### 4. 图标规范
 
 框架统一使用 `<iconpark-icon>` 图标组件：
-- `client/js/icons.js` 内嵌了 IconPark 的完整代码（由 Agent 从 CDN 下载并更新），开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。
+- `client/js/icons.js` 是 IconPark CDN 的 loader。开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。
 - HTML/JS 中全部使用 `<iconpark-icon icon-id="xxx" size="14"></iconpark-icon>`。
-- 未来 CDN 升级时，只需下载新 CDN 文件覆盖 `client/js/icons.js`，再执行 `update` 即可。
+- 升级 CDN 时，只需修改 `client/js/icons.js` 中的 URL，再执行 `update` 即可。
 
 ---
 
