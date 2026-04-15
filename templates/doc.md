@@ -1,7 +1,6 @@
 # {{PAGE_NAME}}
 
 ---
-title: {{PAGE_NAME}}
 created: {{DATE}}
 ---
 
