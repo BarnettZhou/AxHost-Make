@@ -84,6 +84,14 @@ async function init(projectRoot) {
     await fs.copyFile(markedSrc, markedDest);
   }
 
+  // Copy icons.js to prototype resources
+  const iconsSrc = path.resolve(__dirname, '../client/js/icons.js');
+  const iconsDest = path.join(projectRoot, 'prototype/resources/js/icons.js');
+  if (await exists(iconsSrc)) {
+    await fs.mkdir(path.dirname(iconsDest), { recursive: true });
+    await fs.copyFile(iconsSrc, iconsDest);
+  }
+
   // Copy shell.css to prototype resources
   const cssSrc = path.resolve(__dirname, '../client/css/shell.css');
   const cssDest = path.join(projectRoot, 'prototype/resources/css/shell.css');
@@ -98,6 +106,7 @@ async function init(projectRoot) {
   console.log('  - prototype/start.html');
   console.log('  - prototype/sitemap.js');
   console.log('  - prototype/resources/js/marked.min.js');
+  console.log('  - prototype/resources/js/icons.js');
   console.log('  - agents.md (if not exists)');
   console.log('  - readme.md (if not exists)');
 }
