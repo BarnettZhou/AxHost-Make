@@ -7,6 +7,49 @@ async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
 
+async function scanDirs(dir) {
+  const results = [];
+  const entries = await fs.readdir(dir, { withFileTypes: true }).catch(() => []);
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const childPath = path.join(dir, entry.name);
+    const hasIndex = await exists(path.join(childPath, 'index.html'));
+    if (hasIndex) {
+      results.push(childPath);
+    } else {
+      const nested = await scanDirs(childPath);
+      results.push(...nested);
+    }
+  }
+  return results;
+}
+
+async function ensurePageResources(projectRoot) {
+  let created = 0;
+  for (const type of ['pages', 'components']) {
+    const baseDir = path.join(projectRoot, 'prototype', type);
+    if (!await exists(baseDir)) continue;
+    const dirs = await scanDirs(baseDir);
+    for (const dir of dirs) {
+      const cssPath = path.join(dir, 'resources', 'css', 'style.css');
+      const jsPath = path.join(dir, 'resources', 'js', 'main.js');
+      if (!await exists(cssPath)) {
+        await fs.mkdir(path.dirname(cssPath), { recursive: true });
+        await fs.writeFile(cssPath, '', 'utf-8');
+        created++;
+      }
+      if (!await exists(jsPath)) {
+        await fs.mkdir(path.dirname(jsPath), { recursive: true });
+        await fs.writeFile(jsPath, '', 'utf-8');
+        created++;
+      }
+    }
+  }
+  if (created > 0) {
+    console.log(`  - Created ${created} missing resource file(s) (style.css / main.js)`);
+  }
+}
+
 async function update(projectRoot) {
   const templateRoot = path.resolve(__dirname, '../templates');
 
@@ -70,6 +113,9 @@ async function update(projectRoot) {
     await fs.copyFile(pkgSrc, pkgDest);
     console.log('  - Updated package.json');
   }
+
+  // Ensure missing page resources
+  await ensurePageResources(projectRoot);
 
   // Regenerate sitemap while preserving project name
   await regenerateSitemap(projectRoot);

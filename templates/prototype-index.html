@@ -11,8 +11,8 @@
     <header id="shell-header">
       <button id="btn-toggle-nav" title="Toggle Nav">☰</button>
       <span class="title" id="project-name">Prototype</span>
-      <button id="btn-toggle-docs" title="Toggle Docs"><axhost-icon icon="document-folder" size="14"></axhost-icon></button>
-      <button id="btn-theme" title="Toggle Theme"><axhost-icon icon="moon" size="14"></axhost-icon></button>
+      <button id="btn-toggle-docs" title="Toggle Docs"><iconpark-icon icon="document-folder" size="14"></iconpark-icon></button>
+      <button id="btn-theme" title="Toggle Theme"><iconpark-icon icon="moon" size="14"></iconpark-icon></button>
     </header>
 
     <div id="shell-main">
@@ -40,13 +40,14 @@
     </div>
   </div>
 
+  <script>window.__axhostIconParkES5 = true;</script>
   <script src="resources/js/icons.js"></script>
   <script src="sitemap.js"></script>
   <script src="resources/js/marked.min.js"></script>
   <script>
     (function(){
       const btnTheme = document.getElementById('btn-theme');
-      const icon = btnTheme.querySelector('axhost-icon');
+      const icon = btnTheme.querySelector('iconpark-icon');
       const isDark = localStorage.getItem('axhost-theme') === 'dark';
       if (isDark) document.body.classList.add('dark');
       if (icon) icon.setAttribute('icon', document.body.classList.contains('dark') ? 'sun-one' : 'moon');
@@ -176,7 +177,7 @@
 
         let icon = null;
         if (node.type === 'dir') {
-          icon = document.createElement('axhost-icon');
+          icon = document.createElement('iconpark-icon');
           icon.setAttribute('size', '12');
           icon.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
         }
@@ -206,7 +207,7 @@
             }
             renderTree();
           });
-          const iconEl = label.querySelector('axhost-icon');
+          const iconEl = label.querySelector('iconpark-icon');
           if (iconEl) {
             iconEl.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
           }
