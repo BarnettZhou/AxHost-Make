@@ -90,9 +90,10 @@
 
     let icon = null;
     if (node.type === 'dir') {
-      icon = document.createElement('axhost-icon');
+      icon = document.createElement('iconpark-icon');
       icon.setAttribute('size', '12');
-      icon.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+      icon.setAttribute('color', 'currentColor');
+      icon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
     }
 
     const text = document.createElement('span');
@@ -122,9 +123,9 @@
         loadTree(currentTab);
       });
 
-      const iconEl = label.querySelector('axhost-icon');
+      const iconEl = label.querySelector('iconpark-icon');
       if (iconEl) {
-        iconEl.setAttribute('icon', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+        iconEl.setAttribute('icon-id', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
       }
 
       label.addEventListener('contextmenu', (e) => {

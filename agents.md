@@ -42,10 +42,10 @@ node axhost-make/bin/axhost-make.js update
 
 ### 4. 图标规范
 
-框架内统一使用本地内联 SVG 组件 `<axhost-icon>`：
-- 图标定义在 `axhost-make/client/js/icons.js`
-- HTML/JS 中全部使用 `<axhost-icon icon="xxx" size="14"></axhost-icon>`
-- **禁止**引入 `<iconpark-icon>` 或其他外部图标 CDN
+框架统一使用 `<iconpark-icon>` 图标组件：
+- `client/js/icons.js` 内嵌了 IconPark 的完整代码（由 Agent 从 CDN 下载并更新），开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。
+- HTML/JS 中全部使用 `<iconpark-icon icon-id="xxx" size="14"></iconpark-icon>`。
+- 未来 CDN 升级时，只需下载新 CDN 文件覆盖 `client/js/icons.js`，再执行 `update` 即可。
 
 ---
 
