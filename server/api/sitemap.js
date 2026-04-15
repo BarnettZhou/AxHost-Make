@@ -39,7 +39,7 @@ async function regenerateSitemap(projectRoot) {
 
   const pages = await scanDir(projectRoot, 'prototype/pages', '');
   const components = await scanDir(projectRoot, 'prototype/components', '');
-  const sitemap = { name: existingName, pages, components };
+  const sitemap = { name: existingName, pages, components, generatedBy: 'axhost-make' };
   await fs.writeFile(
     sitemapPath,
     `window.__axhostSitemap = ${JSON.stringify(sitemap, null, 2)};\n`,
