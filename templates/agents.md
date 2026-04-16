@@ -106,7 +106,8 @@ project-root/
 │   └── sitemap.js       # 站点地图（含 pages、components、name）
 ├── rules/               # 项目规范文档
 │   ├── global.md        # 全局规则
-│   ├── ui-design.md     # UI 设计规范
+│   ├── design-spec.md   # UI 设计规范
+│   ├── dev-spec.md      # 原型页面开发规范
 │   └── glossary.md      # 术语表
 ├── wiki/                # 项目百科/知识库
 │   ├── raw/             # 原始需求文档

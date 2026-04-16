@@ -76,6 +76,17 @@ async function init(projectRoot) {
     }
   }
 
+  // Copy dev-spec.md to rules
+  const devSpecPath = path.join(projectRoot, 'rules', 'dev-spec.md');
+  if (!await exists(devSpecPath)) {
+    const devSpecTpl = path.join(templateRoot, 'dev-spec.md');
+    if (await exists(devSpecTpl)) {
+      await fs.mkdir(path.dirname(devSpecPath), { recursive: true });
+      await fs.copyFile(devSpecTpl, devSpecPath);
+      console.log('  - Created rules/dev-spec.md');
+    }
+  }
+
   // Copy marked.min.js to prototype resources
   const markedSrc = path.resolve(__dirname, '../client/assets/marked.min.js');
   const markedDest = path.join(projectRoot, 'prototype/resources/js/marked.min.js');

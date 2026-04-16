@@ -39,6 +39,7 @@
     postSettings: (data) => request('/api/settings', {
       method: 'POST',
       body: JSON.stringify(data)
-    })
+    }),
+    getDocs: (path) => request(`/api/docs?path=${encodeURIComponent(path)}`)
   };
 })();

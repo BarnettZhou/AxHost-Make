@@ -49,6 +49,13 @@ node axhost-make/bin/axhost-make.js update
 
 ---
 
+## 术语
+
+- **预览模式 / preview**：直接运行 `prototype/` 下的静态原型（通过 `axhost-make preview` 或打开 `prototype/index.html`）。无开发工具，是最终交付版本。
+- **开发模式 / 服务模式 / client**：通过 `axhost-make serve` 启动，由 `axhost-make/client/` 提供 Shell 界面（含目录树、文档面板、Prompt 框等）。即使在外层宿主项目中启动，加载的仍是框架 `client/` 的代码，仅通过 iframe 预览宿主项目的 `prototype/` 页面。
+
+---
+
 ## 目录结构说明
 
 ```
@@ -66,8 +73,7 @@ axhost-make/
 │   │   ├── doc-panel.js    # 文档面板
 │   │   └── shell.js        # Dev 模式总控
 │   ├── assets/             # 第三方静态资源（marked.min.js）
-│   ├── index.html          # Dev 模式入口
-│   └── preview.html        # Preview 模式入口
+│   └── index.html          # Dev 模式入口
 ├── server/                 # Node HTTP 服务器
 │   ├── index.js            # 主服务入口
 │   ├── router.js           # 路由分发

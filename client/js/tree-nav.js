@@ -80,20 +80,34 @@
       label.classList.add('active');
     }
 
+    const hasChildren = node.children && node.children.length > 0;
+    const isExpandable = node.type === 'dir' || hasChildren;
+
     const arrow = document.createElement('span');
     arrow.className = 'tree-arrow';
-    if (node.type === 'dir') {
+    if (isExpandable) {
       arrow.textContent = expandedPaths.has(node.path) ? '▼' : '▶';
     } else {
       arrow.textContent = '';
     }
 
+    function createTreeIcon(iconId) {
+      const el = document.createElement('iconpark-icon');
+      el.setAttribute('size', '12');
+      el.setAttribute('color', 'currentColor');
+      el.setAttribute('stroke', 'currentColor');
+      el.setAttribute('fill', 'currentColor');
+      el.setAttribute('icon-id', iconId);
+      return el;
+    }
+
     let icon = null;
     if (node.type === 'dir') {
-      icon = document.createElement('iconpark-icon');
-      icon.setAttribute('size', '12');
-      icon.setAttribute('color', 'currentColor');
-      icon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+      icon = createTreeIcon(expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+    } else if (node.type === 'page') {
+      icon = createTreeIcon('page');
+    } else if (node.type === 'component') {
+      icon = createTreeIcon('figma-component');
     }
 
     const text = document.createElement('span');
@@ -104,7 +118,7 @@
     label.appendChild(text);
     li.appendChild(label);
 
-    if (node.type === 'dir') {
+    if (isExpandable) {
       if (expandedPaths.has(node.path)) {
         const childrenUl = document.createElement('ul');
         childrenUl.className = 'tree-list';
@@ -114,6 +128,18 @@
         li.appendChild(childrenUl);
       }
 
+      arrow.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (expandedPaths.has(node.path)) {
+          expandedPaths.delete(node.path);
+        } else {
+          expandedPaths.add(node.path);
+        }
+        loadTree(currentTab);
+      });
+    }
+
+    if (node.type === 'dir') {
       label.addEventListener('click', () => {
         if (expandedPaths.has(node.path)) {
           expandedPaths.delete(node.path);
@@ -126,6 +152,9 @@
       const iconEl = label.querySelector('iconpark-icon');
       if (iconEl) {
         iconEl.setAttribute('icon-id', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+        iconEl.setAttribute('color', 'currentColor');
+        iconEl.setAttribute('stroke', 'currentColor');
+        iconEl.setAttribute('fill', 'currentColor');
       }
 
       label.addEventListener('contextmenu', (e) => {
@@ -157,7 +186,8 @@
     const parts = parentPath.split('/');
     let nodes = treeData;
     for (const part of parts) {
-      const dir = nodes.find(n => n.name === part && n.type === 'dir');
+      if (part === 'sub-pages') continue;
+      const dir = nodes.find(n => n.name === part && (n.type === 'dir' || n.type === 'page' || n.type === 'component'));
       if (!dir) return [];
       nodes = dir.children || [];
     }
@@ -210,20 +240,25 @@
 
   function showPageContextMenu(e, node, type) {
     const items = [
+      { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
       { label: '复制路径', action: 'copy_path' },
       { label: '新标签页打开', action: 'open_new' },
       { label: '重命名', action: 'rename' },
       { label: '删除', action: 'delete' }
     ];
     renderMenu(e, items, (action) => {
-      if (action === 'copy_path') {
+      if (action === 'create_page') {
+        const kind = type === 'components' ? 'component' : 'page';
+        handleCreate(node.path + '/sub-pages', kind);
+      } else if (action === 'copy_path') {
         navigator.clipboard.writeText(`/prototype/${type}/${node.path}/index.html`);
       } else if (action === 'open_new') {
         window.open(`/prototype/${type}/${node.path}/index.html`, '_blank');
       } else if (action === 'rename') {
         handleRename(node.path, type, false);
       } else if (action === 'delete') {
-        handleDelete(node.path, type, false);
+        const hasChildren = node.children && node.children.length > 0;
+        handleDelete(node.path, type, hasChildren);
       }
     });
   }
@@ -256,52 +291,55 @@
 
   async function handleCreate(parentPath, kind) {
     const labelMap = { page: '页面', component: '组件', folder: '目录' };
-    const name = window.prompt(`请输入${labelMap[kind]}名称:`);
+    const name = await window.showPrompt(`请输入${labelMap[kind]}名称`);
     if (!name) return;
     if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(name)) {
-      alert('名称包含非法字符');
+      window.showToast('名称包含非法字符', 'error');
       return;
     }
     if (hasSiblingName(parentPath, name)) {
-      alert(`同级下已存在名为 "${name}" 的目录或页面`);
+      window.showToast(`同级下已存在名为 "${name}" 的目录或页面`, 'error');
       return;
     }
     try {
       const parent = `prototype/${currentTab}${parentPath ? '/' + parentPath : ''}`;
       await window.apiClient.postCreate({ parentPath: parent, name, kind });
+      if (parentPath) {
+        const expandPath = parentPath.endsWith('/sub-pages') ? parentPath.replace(/\/sub-pages$/, '') : parentPath;
+        expandedPaths.add(expandPath);
+      }
       await loadTree(currentTab);
+      window.showToast(kind === 'folder' ? '目录创建成功' : (kind === 'component' ? '组件创建成功' : '页面创建成功'), 'success');
       if (kind !== 'folder') {
         const pathStr = parentPath ? `${parentPath}/${name}` : name;
         selectedPath = pathStr;
         if (window.shell && window.shell.loadPage) {
           window.shell.loadPage(kind === 'component' ? 'component' : 'page', pathStr);
         }
-      } else {
-        expandedPaths.add(parentPath ? `${parentPath}/${name}` : name);
-        await loadTree(currentTab);
       }
     } catch (err) {
-      alert('创建失败: ' + err.message);
+      window.showToast('创建失败: ' + err.message, 'error');
     }
   }
 
   async function handleRename(nodePath, type, isDir) {
     const oldName = nodePath.split('/').pop();
-    const newName = window.prompt('请输入新名称:', oldName);
+    const newName = await window.showPrompt('请输入新名称', '', oldName);
     if (!newName || newName === oldName) return;
     if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(newName)) {
-      alert('名称包含非法字符');
+      window.showToast('名称包含非法字符', 'error');
       return;
     }
     const parentPath = nodePath.includes('/') ? nodePath.substring(0, nodePath.lastIndexOf('/')) : '';
     if (hasSiblingName(parentPath, newName)) {
-      alert(`同级下已存在名为 "${newName}" 的目录或页面`);
+      window.showToast(`同级下已存在名为 "${newName}" 的目录或页面`, 'error');
       return;
     }
     try {
       const oldAbs = `prototype/${currentTab}/${nodePath}`;
       await window.apiClient.postRename({ oldPath: oldAbs, newName });
       await loadTree(currentTab);
+      window.showToast('重命名成功', 'success');
       if (!isDir && selectedPath === nodePath) {
         const newPath = parentPath ? `${parentPath}/${newName}` : newName;
         selectedPath = newPath;
@@ -310,16 +348,17 @@
         }
       }
     } catch (err) {
-      alert('重命名失败: ' + err.message);
+      window.showToast('重命名失败: ' + err.message, 'error');
     }
   }
 
-  async function handleDelete(nodePath, type, isDir) {
+  async function handleDelete(nodePath, type, hasChildren) {
     const name = nodePath.split('/').pop();
-    const msg = isDir
-      ? `是否删除目录 "${name}" 及其下的所有页面/组件？`
+    const msg = hasChildren
+      ? `是否删除 "${name}" 及其下的所有页面/组件？`
       : `是否删除${type === 'components' ? '组件' : '页面'} "${name}"？`;
-    if (!confirm(msg)) return;
+    const ok = await window.showConfirm('删除确认', msg);
+    if (!ok) return;
     try {
       const target = `prototype/${currentTab}/${nodePath}`;
       await window.apiClient.postDelete({ path: target });
@@ -332,8 +371,9 @@
         }
       }
       await loadTree(currentTab);
+      window.showToast('删除成功', 'success');
     } catch (err) {
-      alert('删除失败: ' + err.message);
+      window.showToast('删除失败: ' + err.message, 'error');
     }
   }
 

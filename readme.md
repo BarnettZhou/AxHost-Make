@@ -117,8 +117,7 @@ node axhost-make/bin/axhost-make.js serve [--port <number>]
 | 地址 | 说明 |
 |------|------|
 | `http://localhost:3820` | **开发模式**（完整功能：导航 + iframe + 文档 + Prompt） |
-| `http://localhost:3820/client/preview.html` | **预览模式**（仅导航 + iframe + 文档，无编辑和 Prompt） |
-| `http://localhost:3820/prototype/index.html` | **独立入口**（不依赖 axhost-make API 的静态页面，可用于任意静态服务器） |
+| `http://localhost:3820/prototype/index.html` | **独立入口 / 预览模式**（不依赖 axhost-make API 的静态页面，可用于任意静态服务器） |
 | `http://localhost:3820/prototype/start.html` | 自动跳转到 `prototype/index.html` |
 
 ### 纯静态预览
@@ -167,7 +166,6 @@ project-root/
 │   │       └── create.js     # POST /api/create 新建页面/组件/目录
 │   ├── client/
 │   │   ├── index.html        # 开发模式主页面
-│   │   ├── preview.html      # 预览模式主页面
 │   │   ├── css/shell.css     # 工作台样式
 │   │   ├── js/
 │   │   │   ├── shell.js      # 壳核心（初始化、iframe、拖拽条）

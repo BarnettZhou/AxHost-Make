@@ -9,10 +9,15 @@
 <body class="preview-mode">
   <div id="app">
     <header id="shell-header">
-      <button id="btn-toggle-nav" title="Toggle Nav">☰</button>
-      <span class="title" id="project-name">Prototype</span>
-      <button id="btn-toggle-docs" title="Toggle Docs"><iconpark-icon icon-id="document-folder" size="14" color="currentColor"></iconpark-icon></button>
-      <button id="btn-theme" title="Toggle Theme"><iconpark-icon icon-id="moon" size="14" color="currentColor"></iconpark-icon></button>
+      <div class="header-left">
+        <button id="btn-toggle-nav" title="Toggle Nav">☰</button>
+        <span class="title" id="project-name">Prototype</span>
+      </div>
+      <div class="header-center"></div>
+      <div class="header-right">
+        <button id="btn-toggle-docs" title="Toggle Docs"><iconpark-icon icon-id="document-folder" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-theme" title="Toggle Theme"><iconpark-icon icon-id="moon" size="14" color="currentColor"></iconpark-icon></button>
+      </div>
     </header>
 
     <div id="shell-main">
@@ -34,7 +39,9 @@
 
       <div class="resizer resizer-v" data-target="panel-docs" data-dir="v" data-invert="true"></div>
       <aside id="panel-docs" class="hidden">
-        <div class="doc-tabs" id="doc-tabs"></div>
+        <div class="doc-tabs" id="doc-tabs">
+          <div class="doc-tabs-scroll" id="doc-tabs-scroll"></div>
+        </div>
         <div class="doc-content" id="doc-content"></div>
       </aside>
     </div>
@@ -71,7 +78,7 @@
       const docsPanel = document.getElementById('panel-docs');
       const btnDocs = document.getElementById('btn-toggle-docs');
       const btnToggleNav = document.getElementById('btn-toggle-nav');
-      const docTabs = document.getElementById('doc-tabs');
+      const docTabs = document.getElementById('doc-tabs-scroll');
       const docContent = document.getElementById('doc-content');
       const treeRoot = document.getElementById('tree-root');
       const projectNameEl = document.getElementById('project-name');
@@ -102,14 +109,30 @@
         currentDocs = [];
         activeDocIndex = 0;
         const base = './' + type + '/' + pagePath + '/docs/';
-        const readmePath = base + 'readme.md';
-        try {
-          const res = await fetch(readmePath);
-          if (res.ok) {
-            const text = await res.text();
-            currentDocs.push({ name: 'readme.md', path: readmePath, content: text });
+
+        const list = (window.__axhostSitemap || {})[type === 'components' ? 'components' : 'pages'] || [];
+        function findNode(nodes, targetPath) {
+          for (const n of nodes) {
+            if ((n.type === 'page' || n.type === 'component') && n.path === targetPath) return n;
+            if (n.children) {
+              const found = findNode(n.children, targetPath);
+              if (found) return found;
+            }
           }
-        } catch (e) {}
+          return null;
+        }
+        const node = findNode(list, pagePath);
+        const docNames = (node && node.docs && node.docs.length > 0) ? node.docs : ['readme.md'];
+
+        for (const docName of docNames) {
+          try {
+            const res = await fetch(base + docName);
+            if (res.ok) {
+              const text = await res.text();
+              currentDocs.push({ name: docName, path: base + docName, content: text });
+            }
+          } catch (e) {}
+        }
         renderDocTabs();
         renderDocContent();
       }
@@ -176,9 +199,12 @@
         label.className = 'tree-label';
         if (activePath === node.path) label.classList.add('active');
 
+        const hasChildren = node.children && node.children.length > 0;
+        const isExpandable = node.type === 'dir' || hasChildren;
+
         const arrow = document.createElement('span');
         arrow.className = 'tree-arrow';
-        arrow.textContent = node.type === 'dir' ? (expandedPaths.has(node.path) ? '▼' : '▶') : '';
+        arrow.textContent = isExpandable ? (expandedPaths.has(node.path) ? '▼' : '▶') : '';
 
         let icon = null;
         if (node.type === 'dir') {
@@ -186,6 +212,16 @@
           icon.setAttribute('size', '12');
           icon.setAttribute('color', 'currentColor');
           icon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
+        } else if (node.type === 'page') {
+          icon = document.createElement('iconpark-icon');
+          icon.setAttribute('size', '12');
+          icon.setAttribute('color', 'currentColor');
+          icon.setAttribute('icon-id', 'page');
+        } else if (node.type === 'component') {
+          icon = document.createElement('iconpark-icon');
+          icon.setAttribute('size', '12');
+          icon.setAttribute('color', 'currentColor');
+          icon.setAttribute('icon-id', 'figma-component');
         }
 
         const text = document.createElement('span');
@@ -196,7 +232,7 @@
         label.appendChild(text);
         li.appendChild(label);
 
-        if (node.type === 'dir') {
+        if (isExpandable) {
           if (expandedPaths.has(node.path)) {
             const childrenUl = document.createElement('ul');
             childrenUl.className = 'tree-list';
@@ -205,6 +241,19 @@
             }
             li.appendChild(childrenUl);
           }
+
+          arrow.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (expandedPaths.has(node.path)) {
+              expandedPaths.delete(node.path);
+            } else {
+              expandedPaths.add(node.path);
+            }
+            renderTree();
+          });
+        }
+
+        if (node.type === 'dir') {
           label.addEventListener('click', () => {
             if (expandedPaths.has(node.path)) {
               expandedPaths.delete(node.path);

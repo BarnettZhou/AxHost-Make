@@ -51,6 +51,9 @@
     }
   }
 
+  const DEFAULT_STATUS = '输入需求后点击 Copy，将自动生成完整提示词';
+  let statusTimer = null;
+
   async function handleCopy() {
     const state = window.__axhostState;
     if (!state || !state.currentPage) {
@@ -64,11 +67,24 @@
     }
     const prompt = buildPrompt(userText, state.currentPage.type, state.currentPage.path);
     const ok = await copyToClipboard(prompt);
-    updateStatus(ok ? '✅ 已复制到剪贴板，可直接粘贴给 Agent' : '❌ 复制失败，请手动全选复制');
+    if (ok) {
+      updateStatus('✅ 已复制到剪贴板，可直接粘贴给 Agent', 3000);
+    } else {
+      updateStatus('❌ 复制失败，请手动全选复制');
+    }
   }
 
-  function updateStatus(text) {
+  function updateStatus(text, autoResetDelay = 0) {
     promptStatus.textContent = text;
+    if (statusTimer) {
+      clearTimeout(statusTimer);
+      statusTimer = null;
+    }
+    if (autoResetDelay > 0) {
+      statusTimer = setTimeout(() => {
+        promptStatus.textContent = DEFAULT_STATUS;
+      }, autoResetDelay);
+    }
   }
 
   btnCopy.addEventListener('click', handleCopy);
