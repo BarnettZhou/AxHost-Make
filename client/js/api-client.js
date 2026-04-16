@@ -7,7 +7,15 @@
       ...options
     });
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+      let errMsg = `HTTP ${res.status}`;
+      try {
+        const errData = await res.json();
+        if (errData && errData.message) {
+          errMsg = `${errMsg}: ${errData.message}`;
+        }
+      } catch (e) {}
+      console.error('[API Error]', url, errMsg);
+      throw new Error(errMsg);
     }
     const contentType = res.headers.get('content-type') || '';
     if (contentType.includes('application/json')) {

@@ -28,6 +28,33 @@
     return null;
   }
 
+  function findNodeById(nodes, id) {
+    for (const n of nodes) {
+      if (n.id === id) return n;
+      if (n.children) {
+        const f = findNodeById(n.children, id);
+        if (f) return f;
+      }
+    }
+    return null;
+  }
+
+  function expandAncestors(nodePath) {
+    const parts = nodePath.split('/');
+    let prefix = '';
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i] === 'sub-pages') continue;
+      prefix = prefix ? `${prefix}/${parts[i]}` : parts[i];
+      if (i < parts.length - 1) {
+        expandedPaths.add(prefix);
+      }
+    }
+  }
+
+  function getNodeTypeForTab(node) {
+    return node.type === 'component' ? 'component' : 'page';
+  }
+
   async function initTreeNav() {
     renderTabs();
     await loadTree(currentTab);
@@ -107,6 +134,7 @@
           window.showToast('排序已保存', 'success');
         }
       } catch (err) {
+        console.error('Tree drag/drop error:', err);
         window.showToast((err && err.message) || '操作失败', 'error');
       } finally {
         document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
@@ -139,16 +167,44 @@
       }
       treeRoot.appendChild(ul);
       if (!hasAutoLoaded && !selectedPath) {
-        const first = findFirstPage(treeData);
-        if (first) {
+        const hashId = location.hash ? location.hash.slice(1) : '';
+        let hashNode = hashId ? findNodeById(treeData, hashId) : null;
+        if (hashId && !hashNode && currentTab === 'pages') {
+          await loadTree('components');
+          hashNode = findNodeById(treeData, hashId);
+          if (hashNode) {
+            currentTab = 'components';
+            renderTabs();
+          }
+        } else if (hashId && !hashNode && currentTab === 'components') {
+          await loadTree('pages');
+          hashNode = findNodeById(treeData, hashId);
+          if (hashNode) {
+            currentTab = 'pages';
+            renderTabs();
+          }
+        }
+        const target = hashNode || findFirstPage(treeData);
+        if (target) {
           hasAutoLoaded = true;
-          selectedPath = first.path;
+          if (hashNode) {
+            expandAncestors(hashNode.path);
+            treeRoot.innerHTML = '';
+            const ul2 = document.createElement('ul');
+            ul2.className = 'tree-list';
+            for (const node of treeData) {
+              ul2.appendChild(buildNode(node, currentTab));
+            }
+            treeRoot.appendChild(ul2);
+          }
+          selectedPath = target.path;
           if (window.shell && window.shell.loadPage) {
-            window.shell.loadPage(first.type === 'component' ? 'component' : 'page', first.path);
+            window.shell.loadPage(getNodeTypeForTab(target), target.path);
           }
         }
       }
     } catch (err) {
+      console.error('Load tree error:', err);
       treeRoot.innerHTML = '<div style="padding:12px;color:#999">Failed to load tree</div>';
     }
   }
@@ -265,6 +321,7 @@
     } else {
       label.addEventListener('click', () => {
         selectedPath = node.path;
+        if (node.id) location.hash = '#' + node.id;
         loadTree(currentTab);
         if (window.shell && window.shell.loadPage) {
           window.shell.loadPage(type === 'components' ? 'component' : 'page', node.path);
@@ -418,6 +475,7 @@
         }
       }
     } catch (err) {
+      console.error('Create error:', err);
       window.showToast('创建失败: ' + err.message, 'error');
     }
   }
@@ -448,6 +506,7 @@
         }
       }
     } catch (err) {
+      console.error('Rename error:', err);
       window.showToast('重命名失败: ' + err.message, 'error');
     }
   }
@@ -473,9 +532,29 @@
       await loadTree(currentTab);
       window.showToast('删除成功', 'success');
     } catch (err) {
+      console.error('Delete error:', err);
       window.showToast('删除失败: ' + err.message, 'error');
     }
   }
+
+  window.addEventListener('hashchange', () => {
+    const hashId = location.hash ? location.hash.slice(1) : '';
+    if (!hashId) return;
+    const node = findNodeById(treeData, hashId);
+    if (!node) return;
+    const type = getNodeTypeForTab(node);
+    const tab = type === 'component' ? 'components' : 'pages';
+    if (currentTab !== tab) {
+      currentTab = tab;
+      renderTabs();
+    }
+    selectedPath = node.path;
+    expandAncestors(node.path);
+    loadTree(currentTab);
+    if (window.shell && window.shell.loadPage) {
+      window.shell.loadPage(type, node.path);
+    }
+  });
 
   window.treeNav = { init: initTreeNav, refresh: () => loadTree(currentTab) };
 })();

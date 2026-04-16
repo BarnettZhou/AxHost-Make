@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('./sitemap.js');
+const { assignId } = require('../lib/ids.js');
 
 const TEMPLATE_ROOT = path.resolve(__dirname, '../../templates');
 
@@ -73,6 +74,12 @@ async function handleCreate(req, res, projectRoot) {
         return;
       }
       const result = await createItem(projectRoot, parentPath, name, kind);
+      if (kind !== 'folder') {
+        const relativePath = parentPath.replace(/^prototype\/(pages|components)\/?/, '');
+        const itemPath = relativePath ? `${relativePath}/${name}` : name;
+        const tab = kind === 'component' ? 'components' : 'pages';
+        await assignId(projectRoot, tab, itemPath);
+      }
       await regenerateSitemap(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: result }));

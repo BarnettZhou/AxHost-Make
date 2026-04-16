@@ -269,6 +269,7 @@
         } else {
           label.addEventListener('click', () => {
             activePath = node.path;
+            if (node.id) location.hash = '#' + node.id;
             renderTree();
             const prefix = type === 'components' ? 'components' : 'pages';
             preview.src = './' + prefix + '/' + node.path + '/index.html';
@@ -287,6 +288,33 @@
           }
         }
         return null;
+      }
+
+      function findNodeById(nodes, id) {
+        for (const n of nodes) {
+          if (n.id === id) return n;
+          if (n.children) {
+            const f = findNodeById(n.children, id);
+            if (f) return f;
+          }
+        }
+        return null;
+      }
+
+      function expandAncestors(nodePath) {
+        const parts = nodePath.split('/');
+        let prefix = '';
+        for (let i = 0; i < parts.length; i++) {
+          if (parts[i] === 'sub-pages') continue;
+          prefix = prefix ? `${prefix}/${parts[i]}` : parts[i];
+          if (i < parts.length - 1) {
+            expandedPaths.add(prefix);
+          }
+        }
+      }
+
+      function getNodeTypeForTab(node) {
+        return node.type === 'component' ? 'component' : 'page';
       }
 
       function initResizers() {
@@ -324,12 +352,40 @@
       renderTree();
       initResizers();
 
-      const first = findFirst(map.pages);
-      if (first) {
-        activePath = first.path;
-        preview.src = './pages/' + first.path + '/index.html';
-        loadDocs('pages', first.path);
+      const hashId = location.hash ? location.hash.slice(1) : '';
+      const hashNode = hashId ? findNodeById(map[activeType] || [], hashId) : null;
+      const target = hashNode || findFirst(map.pages) || findFirst(map.components);
+      if (target) {
+        if (hashNode) {
+          activeType = getNodeTypeForTab(target) === 'component' ? 'components' : 'pages';
+          renderTabs();
+          expandAncestors(target.path);
+          renderTree();
+        }
+        activePath = target.path;
+        const prefix = activeType === 'components' ? 'components' : 'pages';
+        preview.src = './' + prefix + '/' + target.path + '/index.html';
+        loadDocs(activeType, target.path);
       }
+
+      window.addEventListener('hashchange', () => {
+        const id = location.hash ? location.hash.slice(1) : '';
+        if (!id) return;
+        const allNodes = [...(map.pages || []), ...(map.components || [])];
+        const node = findNodeById(allNodes, id);
+        if (!node) return;
+        const type = getNodeTypeForTab(node);
+        const tab = type === 'component' ? 'components' : 'pages';
+        if (activeType !== tab) {
+          activeType = tab;
+          renderTabs();
+        }
+        activePath = node.path;
+        expandAncestors(node.path);
+        renderTree();
+        preview.src = './' + tab + '/' + node.path + '/index.html';
+        loadDocs(tab, node.path);
+      });
     })();
   </script>
 </body>

@@ -2,6 +2,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('../server/api/sitemap.js');
+const { ensureIdsForTree } = require('../server/lib/ids.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
