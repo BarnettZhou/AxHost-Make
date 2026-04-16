@@ -53,10 +53,12 @@ async function ensurePageResources(projectRoot) {
 
 async function update(projectRoot) {
   const templateRoot = path.resolve(__dirname, '../templates');
+  const previewTplRoot = path.join(templateRoot, 'preview');
+  const projectTplRoot = path.join(templateRoot, 'project');
 
   // Update prototype/index.html
   const protoIndexPath = path.join(projectRoot, 'prototype', 'index.html');
-  const tplPath = path.join(templateRoot, 'prototype-index.html');
+  const tplPath = path.join(previewTplRoot, 'index.html');
   if (await exists(tplPath)) {
     await fs.copyFile(tplPath, protoIndexPath);
     console.log('  - Updated prototype/index.html');
@@ -65,7 +67,7 @@ async function update(projectRoot) {
   // Ensure start.html exists
   const protoStartPath = path.join(projectRoot, 'prototype', 'start.html');
   if (!await exists(protoStartPath)) {
-    const startTpl = path.join(templateRoot, 'prototype-start.html');
+    const startTpl = path.join(previewTplRoot, 'start.html');
     if (await exists(startTpl)) {
       await fs.copyFile(startTpl, protoStartPath);
       console.log('  - Created prototype/start.html');
@@ -99,8 +101,25 @@ async function update(projectRoot) {
     console.log('  - Updated prototype/resources/css/shell.css');
   }
 
+  // Copy preview-app.js
+  const previewAppSrc = path.resolve(__dirname, '../client/js/preview-app.js');
+  const previewAppDest = path.join(projectRoot, 'prototype/resources/js/preview-app.js');
+  if (await exists(previewAppSrc)) {
+    await fs.mkdir(path.dirname(previewAppDest), { recursive: true });
+    await fs.copyFile(previewAppSrc, previewAppDest);
+    console.log('  - Updated prototype/resources/js/preview-app.js');
+  }
+
+  // Copy icon.svg
+  const iconSrc = path.join(previewTplRoot, 'icon.svg');
+  const iconDest = path.join(projectRoot, 'prototype', 'icon.svg');
+  if (await exists(iconSrc)) {
+    await fs.copyFile(iconSrc, iconDest);
+    console.log('  - Updated prototype/icon.svg');
+  }
+
   // Copy agents.md
-  const agentsSrc = path.join(templateRoot, 'agents.md');
+  const agentsSrc = path.join(projectTplRoot, 'agents.md');
   const agentsDest = path.join(projectRoot, 'agents.md');
   if (await exists(agentsSrc)) {
     await fs.copyFile(agentsSrc, agentsDest);
@@ -108,7 +127,7 @@ async function update(projectRoot) {
   }
 
   // Copy package.json
-  const pkgSrc = path.join(templateRoot, 'package.json');
+  const pkgSrc = path.join(projectTplRoot, 'package.json');
   const pkgDest = path.join(projectRoot, 'package.json');
   if (await exists(pkgSrc)) {
     await fs.copyFile(pkgSrc, pkgDest);

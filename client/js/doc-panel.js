@@ -10,31 +10,35 @@
   let isEditMode = false;
   let currentType = null;
   let currentPath = null;
+  let loadToken = 0;
 
   async function load(type, pagePath) {
+    const token = ++loadToken;
     currentType = type;
     currentPath = pagePath;
     isEditMode = false;
     activeDocIndex = 0;
-    currentDocs = [];
 
     const base = `prototype/${type}s/${pagePath}`;
+    const docs = [];
     try {
       const res = await window.apiClient.getDocs(`${base}/docs`);
       const names = (res.code === 0 ? res.data : []).sort();
       for (const name of names) {
         try {
           const content = await window.apiClient.getFile(`${base}/docs/${name}`);
-          currentDocs.push({ name, path: `${base}/docs/${name}`, content });
+          docs.push({ name, path: `${base}/docs/${name}`, content });
         } catch (e) {}
       }
     } catch (e) {
       try {
         const readme = await window.apiClient.getFile(`${base}/docs/readme.md`);
-        currentDocs.push({ name: 'readme.md', path: `${base}/docs/readme.md`, content: readme });
+        docs.push({ name: 'readme.md', path: `${base}/docs/readme.md`, content: readme });
       } catch (e) {}
     }
 
+    if (token !== loadToken) return;
+    currentDocs = docs;
     renderTabs();
     renderContent();
   }

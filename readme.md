@@ -117,6 +117,7 @@ node axhost-make/bin/axhost-make.js serve [--port <number>]
 | 地址 | 说明 |
 |------|------|
 | `http://localhost:3820` | **开发模式**（完整功能：导航 + iframe + 文档 + Prompt） |
+| `http://localhost:3820/client/preview-index.html` | **Preview 模式实时预览**（开发时直接查看 preview 效果，无需 build） |
 | `http://localhost:3820/prototype/index.html` | **独立入口 / 预览模式**（不依赖 axhost-make API 的静态页面，可用于任意静态服务器） |
 | `http://localhost:3820/prototype/start.html` | 自动跳转到 `prototype/index.html` |
 
@@ -134,6 +135,24 @@ node axhost-make/bin/axhost-make.js preview [--port <number>]
 
 ### 更新项目入口和样式
 
+### 构建独立入口模板
+
+如果你在维护 `axhost-make` 框架本身，并修改了 `client/preview-index.html`、`shell.css`、`icons.js` 或 `preview-app.js`，需要先重新生成 `templates/preview/index.html`：
+
+```bash
+node axhost-make/bin/axhost-make.js build
+```
+
+`build` 命令会：
+- 读取 `client/preview-index.html`
+- 把路径从 `/client/...` 和 `/prototype/...` 转换为 `./resources/...` 和 `./...`
+- 将 `shell.css`、`icons.js`、`preview-app.js` 复制到 `templates/preview/resources/`
+- 生成引用外部资源的瘦版 `templates/preview/index.html`
+
+> **注意**：普通项目使用者通常无需直接运行 `build`。修改完框架源码后，运行 `build` 再运行 `update`，即可将最新模板同步到项目中。
+
+### 更新项目入口和样式
+
 当 `axhost-make` 框架自身升级后，如果你希望将最新的独立入口模板、CSS 和 JS 同步到当前项目中：
 
 ```bash
@@ -141,7 +160,7 @@ node axhost-make/bin/axhost-make.js update
 ```
 
 - 覆盖 `prototype/index.html` 为最新模板
-- 同步 `prototype/resources/css/shell.css` 和 `prototype/resources/js/marked.min.js`
+- 同步 `prototype/resources/css/shell.css` 和 `prototype/resources/js/marked.min.js` 等公共资源
 - 重新生成 `prototype/sitemap.js`（保留已设置的项目名称）
 
 ---
@@ -152,8 +171,10 @@ node axhost-make/bin/axhost-make.js update
 project-root/
 ├── axhost-make/              # 本框架核心代码
 │   ├── bin/
-│   │   ├── axhost-make.js    # CLI 入口（serve / init）
-│   │   └── axhost-init.js    # 初始化脚本
+│   │   ├── axhost-make.js    # CLI 入口（serve / init / build）
+│   │   ├── axhost-init.js    # 初始化脚本
+│   │   ├── axhost-update.js  # 更新脚本
+│   │   └── axhost-build.js   # 构建独立入口模板脚本
 │   ├── server/
 │   │   ├── index.js          # HTTP 服务启动器
 │   │   ├── router.js         # 路由分发
@@ -173,15 +194,30 @@ project-root/
 │   │   │   ├── doc-panel.js  # 右侧文档面板（渲染/编辑/保存）
 │   │   │   ├── prompt-box.js # 底部 Prompt 输入 + 上下文拼接
 │   │   │   ├── api-client.js # fetch 封装
-│   │   │   └── md-renderer.js# Markdown 渲染封装
-│   │   └── assets/
-│   │       └── marked.min.js # Markdown 渲染库
+│   │   │   ├── md-renderer.js# Markdown 渲染封装
+│   │   │   └── preview-app.js# Preview 模式逻辑（纯静态渲染）
+│   │   ├── assets/
+│   │   │   └── marked.min.js # Markdown 渲染库
+│   │   ├── index.html        # 开发模式入口
+│   │   ├── preview-index.html# Preview 模式源码入口
+│   │   └── icon.svg          # Dev 模式 favicon
 │   └── templates/
-│       ├── page.html         # 页面模板
-│       ├── component.html    # 组件模板
-│       ├── doc.md            # 文档模板
-│       ├── prototype-index.html  # 独立入口模板
-│       └── prototype-start.html  # 跳转页模板
+│       ├── preview/          # Preview 入口产物（build 生成）
+│       │   ├── index.html
+│       │   ├── start.html
+│       │   ├── icon.svg
+│       │   └── resources/
+│       │       ├── css/shell.css
+│       │       └── js/
+│       │           ├── icons.js
+│       │           └── preview-app.js
+│       └── project/          # 用户项目初始化模板
+│           ├── page.html     # 页面模板
+│           ├── component.html# 组件模板
+│           ├── doc.md        # 文档模板
+│           ├── agents.md     # Agent 规则模板
+│           ├── package.json  # package.json 模板
+│           └── dev-spec.md   # 开发规范模板
 │
 ├── prototype/                 # 原型文件目录
 │   ├── index.html

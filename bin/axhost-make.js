@@ -4,6 +4,7 @@ const { startServer } = require('../server/index.js');
 const { startPreviewServer } = require('../server/preview-server.js');
 const { init } = require('./axhost-init.js');
 const { update } = require('./axhost-update.js');
+const { build } = require('./axhost-build.js');
 
 function showHelp() {
   console.log(`
@@ -12,12 +13,14 @@ Axhost-Make CLI
 Usage:
   axhost-make init
   axhost-make update
+  axhost-make build
   axhost-make serve [--port <number>]
   axhost-make preview [--port <number>]
 
 Commands:
   init      Initialize project directories and entry files
   update    Update prototype entry files and styles from the latest axhost-make core
+  build     Build standalone prototype-index.html from client/preview-index.html
   serve     Start local dev server (with API and shell)
   preview   Start a simple static server for the prototype/ directory
 
@@ -45,6 +48,12 @@ async function main() {
   if (command === 'update') {
     const projectRoot = process.cwd();
     update(projectRoot);
+    return;
+  }
+
+  if (command === 'build') {
+    const projectRoot = process.cwd();
+    build(projectRoot);
     return;
   }
 

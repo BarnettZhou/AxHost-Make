@@ -22,15 +22,21 @@
 
 ### 2. 修改后的强制验证步骤
 
-**每次修改 `axhost-make/client/` 或 `axhost-make/templates/` 后，必须执行**：
+**每次修改以下文件后，必须执行**对应的同步命令：
 
-```bash
-node axhost-make/bin/axhost-make.js update
-```
+- 修改了 `axhost-make/client/preview-index.html`、`shell.css`、`icons.js`、`preview-app.js` 中的任意一个：
+  ```bash
+  node axhost-make/bin/axhost-make.js build
+  ```
+  该命令会自动把 `client/` 下的 preview 资源复制到 `templates/preview/resources/`，并生成一个引用外部资源的瘦版 `templates/preview/index.html`。
 
-该命令会将最新的模板、CSS、JS 同步到外层宿主项目的 `prototype/` 目录下，确保本地开发环境能立即看到变更效果。
+- 修改了 `axhost-make/client/` 或 `axhost-make/templates/` 中的其他文件：
+  ```bash
+  node axhost-make/bin/axhost-make.js update
+  ```
+  该命令会将最新的模板、CSS、JS 同步到外层宿主项目的 `prototype/` 目录下。
 
-> **特别提醒**：不要手动复制粘贴修改内容到外层 `prototype/`，统一通过 `update` 命令同步，避免两边不一致。
+> **特别提醒**：`build` 命令仅在维护 preview 入口时需要使用，最终用户通常无需直接调用。不要手动复制粘贴修改内容到外层 `prototype/`，统一通过 `update` 或 `build` 命令同步，避免两边不一致。
 
 ### 3. Server 代码修改后的重启
 
@@ -63,7 +69,8 @@ axhost-make/
 ├── bin/                    # CLI 入口
 │   ├── axhost-make.js      # 命令分发
 │   ├── axhost-init.js      # init 命令
-│   └── axhost-update.js    # update 命令
+│   ├── axhost-update.js    # update 命令
+│   └── axhost-build.js     # build 命令（生成 preview 入口模板）
 ├── client/                 # 前端壳层资源
 │   ├── css/shell.css       # 主题与布局样式
 │   ├── js/                 # 交互脚本
@@ -71,21 +78,33 @@ axhost-make/
 │   │   ├── tree-nav.js     # 左侧目录树
 │   │   ├── prompt-box.js   # Prompt 交互
 │   │   ├── doc-panel.js    # 文档面板
-│   │   └── shell.js        # Dev 模式总控
+│   │   ├── shell.js        # Dev 模式总控
+│   │   └── preview-app.js  # Preview 模式逻辑（纯静态渲染）
 │   ├── assets/             # 第三方静态资源（marked.min.js）
-│   └── index.html          # Dev 模式入口
+│   ├── index.html          # Dev 模式入口
+│   ├── preview-index.html  # Preview 模式源码入口
+│   └── icon.svg            # Dev 模式 favicon
 ├── server/                 # Node HTTP 服务器
 │   ├── index.js            # 主服务入口
 │   ├── router.js           # 路由分发
 │   └── api/                # API 实现
-├── templates/              # 项目模板
-│   ├── prototype-index.html
-│   ├── prototype-start.html
-│   ├── agents.md           # 给用户项目的 agents.md 模板
-│   ├── package.json        # 给用户项目的 package.json 模板
-│   ├── page.html
-│   ├── component.html
-│   └── doc.md
+├── templates/              # 模板目录
+│   ├── preview/            # Preview 入口产物（build 生成）
+│   │   ├── index.html
+│   │   ├── start.html
+│   │   ├── icon.svg
+│   │   └── resources/
+│   │       ├── css/shell.css
+│   │       └── js/
+│   │           ├── icons.js
+│   │           └── preview-app.js
+│   └── project/            # 用户项目初始化模板
+│       ├── page.html
+│       ├── component.html
+│       ├── doc.md
+│       ├── agents.md
+│       ├── package.json
+│       └── dev-spec.md
 ├── skills/                 # Kimi Skill 文档
 └── agents.md               # 本文件
 ```
@@ -97,8 +116,18 @@ axhost-make/
 ### 修改框架 Client / Templates
 
 1. 修改 `axhost-make/client/` 或 `axhost-make/templates/` 中的源文件。
-2. **立即执行**：`node axhost-make/bin/axhost-make.js update`
-3. 刷新浏览器 `http://127.0.0.1:3820` 验证效果。
+2. 如果修改了 `preview-index.html`、`shell.css`、`icons.js` 或 `preview-app.js`，**先执行 build**：
+   ```bash
+   node axhost-make/bin/axhost-make.js build
+   ```
+3. **然后执行 update** 同步到外层宿主项目：
+   ```bash
+   node axhost-make/bin/axhost-make.js update
+   ```
+4. 刷新浏览器 `http://127.0.0.1:3820` 验证效果；如需验证 preview 模式，直接访问：
+   ```
+   http://127.0.0.1:3820/client/preview-index.html
+   ```
 
 ### 修改框架 Server
 

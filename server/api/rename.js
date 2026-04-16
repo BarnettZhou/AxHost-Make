@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('./sitemap.js');
 const { renameIdKey } = require('../lib/ids.js');
+const { renameInOrder } = require('../lib/order.js');
 
 async function handleRename(req, res, projectRoot) {
   let body = '';
@@ -22,7 +23,10 @@ async function handleRename(req, res, projectRoot) {
       }
       const newAbs = path.join(path.dirname(oldAbs), newName);
       const newRel = path.posix.join(path.posix.dirname(oldPath), newName);
+
+      await renameInOrder(path.dirname(oldAbs), path.basename(oldAbs), newName);
       await fs.rename(oldAbs, newAbs);
+
       const tabMatch = oldPath.match(/^prototype\/(pages|components)\/?/);
       const tab = tabMatch ? tabMatch[1] : 'pages';
       const oldIdPath = oldPath.replace(/^prototype\/(pages|components)\/?/, '');

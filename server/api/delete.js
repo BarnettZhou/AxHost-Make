@@ -2,6 +2,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('./sitemap.js');
 const { removeIdKey } = require('../lib/ids.js');
+const { removeFromOrder } = require('../lib/order.js');
 
 async function handleDelete(req, res, projectRoot) {
   let body = '';
@@ -20,7 +21,10 @@ async function handleDelete(req, res, projectRoot) {
         res.end(JSON.stringify({ code: 403, message: 'Forbidden path' }));
         return;
       }
+
+      await removeFromOrder(path.dirname(absPath), path.basename(absPath));
       await fs.rm(absPath, { recursive: true, force: true });
+
       const tabMatch = targetPath.match(/^prototype\/(pages|components)\/?/);
       const tab = tabMatch ? tabMatch[1] : 'pages';
       const idPath = targetPath.replace(/^prototype\/(pages|components)\/?/, '');

@@ -75,9 +75,9 @@
 
       document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
 
-      const isDir = targetLi.dataset.type === 'dir';
-      const canMoveInto = isDir && !isAncestor(draggedItem, targetLi);
-      const sameLevel = targetLi.parentElement === draggedParentUl;
+      const targetType = targetLi.dataset.type;
+      const isContainer = targetType === 'dir' || targetType === 'page' || targetType === 'component';
+      const canMoveInto = isContainer && !isAncestor(draggedItem, targetLi);
 
       const rect = targetLi.getBoundingClientRect();
       const midTop = rect.top + rect.height * 0.3;
@@ -85,12 +85,8 @@
 
       if (canMoveInto && e.clientY > midTop && e.clientY < midBottom) {
         targetLi.classList.add('drop-into');
-      } else if (sameLevel) {
-        if (e.clientY > rect.top + rect.height / 2) {
-          targetLi.classList.add('drop-after');
-        } else {
-          targetLi.classList.add('drop-before');
-        }
+      } else {
+        targetLi.classList.add(e.clientY > rect.top + rect.height / 2 ? 'drop-after' : 'drop-before');
       }
     });
 
@@ -106,33 +102,18 @@
       if (!targetLi || targetLi === draggedItem) return;
 
       try {
+        const sourcePath = draggedItem.dataset.path;
+        const targetPath = targetLi.dataset.path;
         if (targetLi.classList.contains('drop-into')) {
-          const sourcePath = draggedItem.dataset.path;
-          const targetPath = targetLi.dataset.path;
           await window.apiClient.postMove({ type: currentTab, sourcePath, targetPath });
           expandedPaths.add(targetPath);
-          await loadTree(currentTab);
           window.showToast('移动成功', 'success');
-        } else if (targetLi.classList.contains('drop-before') || targetLi.classList.contains('drop-after')) {
-          if (targetLi.parentElement !== draggedParentUl) return;
-          const siblings = Array.from(draggedParentUl.children).filter(c => c.classList.contains('tree-item'));
-          const oldIndex = siblings.indexOf(draggedItem);
-          let newIndex = siblings.indexOf(targetLi);
-          if (oldIndex === -1 || newIndex === -1) return;
-
-          const rect = targetLi.getBoundingClientRect();
-          if (e.clientY > rect.top + rect.height / 2) {
-            if (newIndex < oldIndex) newIndex += 1;
-          } else {
-            if (newIndex > oldIndex) newIndex -= 1;
-          }
-
-          const parentLi = draggedParentUl.closest('.tree-item');
-          const parentPath = parentLi ? parentLi.dataset.path : '';
-          await window.apiClient.postReorder({ type: currentTab, parentPath, oldIndex, newIndex });
-          await loadTree(currentTab);
+        } else {
+          const position = targetLi.classList.contains('drop-after') ? 'after' : 'before';
+          await window.apiClient.postMove({ type: currentTab, sourcePath, targetPath, position });
           window.showToast('排序已保存', 'success');
         }
+        await loadTree(currentTab);
       } catch (err) {
         console.error('Tree drag/drop error:', err);
         window.showToast((err && err.message) || '操作失败', 'error');
@@ -217,6 +198,7 @@
 
     const label = document.createElement('div');
     label.className = 'tree-label';
+    label.style.paddingLeft = (level * 16 + 8) + 'px';
     if (selectedPath === node.path) {
       label.classList.add('active');
     }
@@ -398,6 +380,7 @@
   function showPageContextMenu(e, node, type) {
     const items = [
       { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
+      { label: '新建子目录', action: 'create_subfolder' },
       { label: '复制路径', action: 'copy_path' },
       { label: '新标签页打开', action: 'open_new' },
       { label: '重命名', action: 'rename' },
@@ -407,6 +390,8 @@
       if (action === 'create_page') {
         const kind = type === 'components' ? 'component' : 'page';
         handleCreate(node.path + '/sub-pages', kind);
+      } else if (action === 'create_subfolder') {
+        handleCreate(node.path + '/sub-pages', 'folder');
       } else if (action === 'copy_path') {
         navigator.clipboard.writeText(`/prototype/${type}/${node.path}/index.html`);
       } else if (action === 'open_new') {
@@ -467,13 +452,6 @@
       }
       await loadTree(currentTab);
       window.showToast(kind === 'folder' ? '目录创建成功' : (kind === 'component' ? '组件创建成功' : '页面创建成功'), 'success');
-      if (kind !== 'folder') {
-        const pathStr = parentPath ? `${parentPath}/${name}` : name;
-        selectedPath = pathStr;
-        if (window.shell && window.shell.loadPage) {
-          window.shell.loadPage(kind === 'component' ? 'component' : 'page', pathStr);
-        }
-      }
     } catch (err) {
       console.error('Create error:', err);
       window.showToast('创建失败: ' + err.message, 'error');

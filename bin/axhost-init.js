@@ -31,22 +31,24 @@ async function init(projectRoot) {
   await regenerateSitemap(projectRoot);
 
   const templateRoot = path.resolve(__dirname, '../templates');
+  const previewTplRoot = path.join(templateRoot, 'preview');
+  const projectTplRoot = path.join(templateRoot, 'project');
 
   const protoIndexPath = path.join(projectRoot, 'prototype', 'index.html');
   if (!await exists(protoIndexPath)) {
-    const tpl = await fs.readFile(path.join(templateRoot, 'prototype-index.html'), 'utf-8');
+    const tpl = await fs.readFile(path.join(previewTplRoot, 'index.html'), 'utf-8');
     await fs.writeFile(protoIndexPath, tpl, 'utf-8');
   }
 
   const protoStartPath = path.join(projectRoot, 'prototype', 'start.html');
   if (!await exists(protoStartPath)) {
-    const tpl = await fs.readFile(path.join(templateRoot, 'prototype-start.html'), 'utf-8');
+    const tpl = await fs.readFile(path.join(previewTplRoot, 'start.html'), 'utf-8');
     await fs.writeFile(protoStartPath, tpl, 'utf-8');
   }
 
   const agentsPath = path.join(projectRoot, 'agents.md');
   if (!await exists(agentsPath)) {
-    const agentsTpl = path.join(templateRoot, 'agents.md');
+    const agentsTpl = path.join(projectTplRoot, 'agents.md');
     if (await exists(agentsTpl)) {
       await fs.copyFile(agentsTpl, agentsPath);
     } else {
@@ -69,7 +71,7 @@ async function init(projectRoot) {
 
   const pkgPath = path.join(projectRoot, 'package.json');
   if (!await exists(pkgPath)) {
-    const pkgTpl = path.join(templateRoot, 'package.json');
+    const pkgTpl = path.join(projectTplRoot, 'package.json');
     if (await exists(pkgTpl)) {
       await fs.copyFile(pkgTpl, pkgPath);
       console.log('  - Created package.json');
@@ -79,7 +81,7 @@ async function init(projectRoot) {
   // Copy dev-spec.md to rules
   const devSpecPath = path.join(projectRoot, 'rules', 'dev-spec.md');
   if (!await exists(devSpecPath)) {
-    const devSpecTpl = path.join(templateRoot, 'dev-spec.md');
+    const devSpecTpl = path.join(projectTplRoot, 'dev-spec.md');
     if (await exists(devSpecTpl)) {
       await fs.mkdir(path.dirname(devSpecPath), { recursive: true });
       await fs.copyFile(devSpecTpl, devSpecPath);
@@ -103,6 +105,14 @@ async function init(projectRoot) {
     await fs.copyFile(iconsSrc, iconsDest);
   }
 
+  // Copy preview-app.js to prototype resources
+  const previewAppSrc = path.resolve(__dirname, '../client/js/preview-app.js');
+  const previewAppDest = path.join(projectRoot, 'prototype/resources/js/preview-app.js');
+  if (await exists(previewAppSrc)) {
+    await fs.mkdir(path.dirname(previewAppDest), { recursive: true });
+    await fs.copyFile(previewAppSrc, previewAppDest);
+  }
+
   // Copy shell.css to prototype resources
   const cssSrc = path.resolve(__dirname, '../client/css/shell.css');
   const cssDest = path.join(projectRoot, 'prototype/resources/css/shell.css');
@@ -111,13 +121,23 @@ async function init(projectRoot) {
     await fs.copyFile(cssSrc, cssDest);
   }
 
+  // Copy icon.svg to prototype
+  const iconSrc = path.join(previewTplRoot, 'icon.svg');
+  const iconDest = path.join(projectRoot, 'prototype', 'icon.svg');
+  if (await exists(iconSrc)) {
+    await fs.copyFile(iconSrc, iconDest);
+  }
+
   console.log('Axhost-Make project initialized successfully.');
   console.log('Generated files:');
   console.log('  - prototype/index.html');
   console.log('  - prototype/start.html');
+  console.log('  - prototype/icon.svg');
   console.log('  - prototype/sitemap.js');
   console.log('  - prototype/resources/js/marked.min.js');
   console.log('  - prototype/resources/js/icons.js');
+  console.log('  - prototype/resources/js/preview-app.js');
+  console.log('  - prototype/resources/css/shell.css');
   console.log('  - agents.md (if not exists)');
   console.log('  - readme.md (if not exists)');
 }

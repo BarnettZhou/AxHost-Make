@@ -1,0 +1,19 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024.000000" height="1023.999939" fill="none">
+	<defs>
+		<linearGradient id="paint_linear_0" x1="0.000183105469" x2="1024" y1="-9.15527344e-05" y2="1023.99988" gradientUnits="userSpaceOnUse">
+			<stop stop-color="rgb(246,110,20)" offset="0" stop-opacity="1" />
+			<stop stop-color="rgb(255,102,0)" offset="1" stop-opacity="1" />
+		</linearGradient>
+		<clipPath id="clipPath_0">
+			<rect width="658.000000" height="658.000000" x="183.000000" y="183.000000" fill="rgb(255,255,255)" />
+		</clipPath>
+	</defs>
+	<rect id="Axhost-Make" width="1024.000000" height="1023.999939" x="0.000000" y="0.000000" fill="rgb(255,255,255)" fill-opacity="0" />
+	<g id="组合 1">
+		<rect id="矩形 1" width="1023.999939" height="1023.999939" x="0.000000" y="0.000000" rx="278.000000" fill="url(#paint_linear_0)" />
+	</g>
+	<g id="svg 1" clip-path="url(#clipPath_0)" customFrame="url(#clipPath_0)">
+		<rect id="svg 1" width="658.000000" height="658.000000" x="183.000000" y="183.000000" />
+		<path id="矢量 2" d="M773.18 331.422C742.543 370.598 590.753 626.013 546.475 628.083C513.711 629.616 430.272 569.825 446.443 541.298C485.005 473.264 678.533 313.872 712.827 282.11C773.866 225.597 827.372 191.965 839.004 205.708C846.266 213.344 826.946 262.706 773.18 331.422L773.18 331.422ZM508.086 717.95C438.77 904.141 183 782.072 183 782.072C183 782.072 291.631 796.457 291.631 689.968C291.631 586.733 378.308 583.917 402.243 585.839C455.709 590.135 500.747 660.264 507.314 677.777C511.949 690.138 510.815 710.62 508.086 717.951L508.086 717.95Z" fill="rgb(255,255,255)" fill-rule="nonzero" />
+	</g>
+</svg>
