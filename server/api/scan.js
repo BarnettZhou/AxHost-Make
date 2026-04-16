@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const { sortTree } = require('../utils/sort-tree.js');
 
 async function scanSubPages(subPagesDir, relativePath, nodeType) {
   const children = [];
@@ -88,6 +89,16 @@ async function handleScan(req, res, projectRoot) {
   const nodeType = type === 'components' ? 'component' : 'page';
   try {
     const tree = await scanDir(targetDir, '', nodeType);
+
+    let orderMap = {};
+    try {
+      const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
+      const content = await fs.readFile(sitemapPath, 'utf-8');
+      const json = JSON.parse(content.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, ''));
+      orderMap = json.orderMap || {};
+    } catch (e) {}
+
+    sortTree(tree, type, '', orderMap);
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ code: 0, data: tree }));
   } catch (err) {

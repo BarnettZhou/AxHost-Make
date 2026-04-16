@@ -40,6 +40,14 @@
       method: 'POST',
       body: JSON.stringify(data)
     }),
-    getDocs: (path) => request(`/api/docs?path=${encodeURIComponent(path)}`)
+    getDocs: (path) => request(`/api/docs?path=${encodeURIComponent(path)}`),
+    postReorder: (data) => request('/api/sitemap/reorder', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    postMove: (data) => request('/api/move', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
   };
 })();

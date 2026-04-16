@@ -5,6 +5,17 @@
   let selectedPath = null;
   let treeData = [];
   let hasAutoLoaded = false;
+  let draggedItem = null;
+  let draggedParentUl = null;
+
+  function isAncestor(ancestorLi, descendantLi) {
+    let el = descendantLi.parentElement;
+    while (el) {
+      if (el === ancestorLi) return true;
+      el = el.parentElement;
+    }
+    return false;
+  }
 
   function findFirstPage(nodes) {
     for (const n of nodes) {
@@ -25,6 +36,80 @@
       if (!label) {
         e.preventDefault();
         showRootContextMenu(e);
+      }
+    });
+
+    // 拖拽排序 / 移动
+    treeRoot.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (!draggedItem) return;
+      const targetLi = e.target.closest('.tree-item');
+      if (!targetLi || targetLi === draggedItem) return;
+
+      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+
+      const isDir = targetLi.dataset.type === 'dir';
+      const canMoveInto = isDir && !isAncestor(draggedItem, targetLi);
+      const sameLevel = targetLi.parentElement === draggedParentUl;
+
+      const rect = targetLi.getBoundingClientRect();
+      const midTop = rect.top + rect.height * 0.3;
+      const midBottom = rect.bottom - rect.height * 0.3;
+
+      if (canMoveInto && e.clientY > midTop && e.clientY < midBottom) {
+        targetLi.classList.add('drop-into');
+      } else if (sameLevel) {
+        if (e.clientY > rect.top + rect.height / 2) {
+          targetLi.classList.add('drop-after');
+        } else {
+          targetLi.classList.add('drop-before');
+        }
+      }
+    });
+
+    treeRoot.addEventListener('dragleave', () => {
+      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+    });
+
+    treeRoot.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      if (!draggedItem || !draggedParentUl) return;
+
+      const targetLi = e.target.closest('.tree-item');
+      if (!targetLi || targetLi === draggedItem) return;
+
+      try {
+        if (targetLi.classList.contains('drop-into')) {
+          const sourcePath = draggedItem.dataset.path;
+          const targetPath = targetLi.dataset.path;
+          await window.apiClient.postMove({ type: currentTab, sourcePath, targetPath });
+          expandedPaths.add(targetPath);
+          await loadTree(currentTab);
+          window.showToast('移动成功', 'success');
+        } else if (targetLi.classList.contains('drop-before') || targetLi.classList.contains('drop-after')) {
+          if (targetLi.parentElement !== draggedParentUl) return;
+          const siblings = Array.from(draggedParentUl.children).filter(c => c.classList.contains('tree-item'));
+          const oldIndex = siblings.indexOf(draggedItem);
+          let newIndex = siblings.indexOf(targetLi);
+          if (oldIndex === -1 || newIndex === -1) return;
+
+          const rect = targetLi.getBoundingClientRect();
+          if (e.clientY > rect.top + rect.height / 2) {
+            if (newIndex < oldIndex) newIndex += 1;
+          } else {
+            if (newIndex > oldIndex) newIndex -= 1;
+          }
+
+          const parentLi = draggedParentUl.closest('.tree-item');
+          const parentPath = parentLi ? parentLi.dataset.path : '';
+          await window.apiClient.postReorder({ type: currentTab, parentPath, oldIndex, newIndex });
+          await loadTree(currentTab);
+          window.showToast('排序已保存', 'success');
+        }
+      } catch (err) {
+        window.showToast((err && err.message) || '操作失败', 'error');
+      } finally {
+        document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
       }
     });
   }
@@ -117,6 +202,21 @@
     if (icon) label.appendChild(icon);
     label.appendChild(text);
     li.appendChild(label);
+
+    li.draggable = true;
+    li.addEventListener('dragstart', (e) => {
+      e.stopPropagation();
+      draggedItem = li;
+      draggedParentUl = li.parentElement;
+      e.dataTransfer.effectAllowed = 'move';
+      li.classList.add('dragging');
+    });
+    li.addEventListener('dragend', () => {
+      li.classList.remove('dragging');
+      draggedItem = null;
+      draggedParentUl = null;
+      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+    });
 
     if (isExpandable) {
       if (expandedPaths.has(node.path)) {

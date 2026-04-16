@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const { sortTree } = require('../utils/sort-tree.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -67,17 +68,26 @@ async function scanDir(projectRoot, basePath, relPath, nodeType) {
 
 async function regenerateSitemap(projectRoot) {
   const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
-  let existingName = 'Prototype';
+  let existing = { name: 'Prototype', orderMap: {} };
   try {
     const oldContent = await fs.readFile(sitemapPath, 'utf-8');
     const jsonPart = oldContent.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
-    const oldData = JSON.parse(jsonPart);
-    existingName = oldData.name || existingName;
+    existing = JSON.parse(jsonPart);
   } catch (e) {}
 
   const pages = await scanDir(projectRoot, 'prototype/pages', '', 'page');
   const components = await scanDir(projectRoot, 'prototype/components', '', 'component');
-  const sitemap = { name: existingName, pages, components, generatedBy: 'axhost-make' };
+
+  sortTree(pages, 'pages', '', existing.orderMap);
+  sortTree(components, 'components', '', existing.orderMap);
+
+  const sitemap = {
+    name: existing.name || 'Prototype',
+    orderMap: existing.orderMap || {},
+    pages,
+    components,
+    generatedBy: 'axhost-make'
+  };
   await fs.writeFile(
     sitemapPath,
     `window.__axhostSitemap = ${JSON.stringify(sitemap, null, 2)};\n`,

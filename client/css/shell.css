@@ -152,6 +152,22 @@ html, body {
 .tree-icon {
   font-size: 12px;
 }
+.tree-item.dragging > .tree-label {
+  opacity: 0.4;
+}
+.tree-item.drop-before > .tree-label {
+  border-top: 2px solid var(--accent);
+}
+.tree-item.drop-after > .tree-label {
+  border-bottom: 2px solid var(--accent);
+}
+.tree-item.drop-into > .tree-label {
+  background: var(--accent);
+  color: #fff;
+}
+.tree-item.drop-into > .tree-label * {
+  color: #fff;
+}
 
 /* Center */
 #panel-center {

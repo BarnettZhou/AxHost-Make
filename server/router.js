@@ -8,6 +8,8 @@ const { handleRename } = require('./api/rename.js');
 const { handleDelete } = require('./api/delete.js');
 const { handleSettingsGet, handleSettingsPost } = require('./api/settings.js');
 const { handleDocsGet } = require('./api/docs.js');
+const { handleReorder } = require('./api/reorder.js');
+const { handleMove } = require('./api/move.js');
 
 function createRouter(projectRoot) {
   const CLIENT_ROOT = path.resolve(__dirname, '../client');
@@ -64,6 +66,12 @@ function createRouter(projectRoot) {
       }
       if (urlPath === '/api/docs' && req.method === 'GET') {
         return handleDocsGet(req, res, projectRoot);
+      }
+      if (urlPath === '/api/sitemap/reorder' && req.method === 'POST') {
+        return handleReorder(req, res, projectRoot);
+      }
+      if (urlPath === '/api/move' && req.method === 'POST') {
+        return handleMove(req, res, projectRoot);
       }
       res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 404, message: 'API not found' }));
