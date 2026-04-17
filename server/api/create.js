@@ -99,4 +99,4 @@ async function handleCreate(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleCreate };
+module.exports = { handleCreate, createItem };

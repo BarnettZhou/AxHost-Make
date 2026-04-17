@@ -16,9 +16,14 @@
       </div>
       <div class="header-center">
         <button id="btn-preview" title="预览"><iconpark-icon icon-id="preview-open" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-settings" title="Settings"><iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon></button>
       </div>
       <div class="header-right">
-        <button id="btn-settings" title="Settings"><iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon></button>
+        <div class="zoom-control" title="预览缩放">
+          <button id="btn-zoom-out"><iconpark-icon icon-id="minus" size="12" color="currentColor"></iconpark-icon></button>
+          <span id="zoom-value">100%</span>
+          <button id="btn-zoom-in"><iconpark-icon icon-id="plus" size="12" color="currentColor"></iconpark-icon></button>
+        </div>
         <button id="btn-toggle-docs" title="Toggle Docs"><iconpark-icon icon-id="document-folder" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-theme" title="Toggle Theme"><iconpark-icon icon-id="moon" size="14" color="currentColor"></iconpark-icon></button>
       </div>
@@ -43,8 +48,8 @@
           <textarea id="prompt-input" placeholder="描述你想要的修改，例如：将表格背景改为深蓝色，增加一个导出按钮..."></textarea>
           <div class="prompt-actions">
             <span id="prompt-context" class="prompt-context"></span>
-            <span id="prompt-status">输入需求后点击 Copy，将自动生成完整提示词</span>
-            <button id="btn-prompt-copy">Copy Prompt</button>
+            <span id="prompt-status">点击复制按钮后粘贴到Agent即可</span>
+            <button id="btn-prompt-copy">复制提示词</button>
           </div>
         </div>
       </section>

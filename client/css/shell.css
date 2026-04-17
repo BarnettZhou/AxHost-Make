@@ -51,13 +51,14 @@ html, body {
 #shell-header .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 #shell-header .header-center {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
 }
 #shell-header .title {
   margin-left: 4px;
@@ -73,6 +74,42 @@ html, body {
 }
 #shell-header button:hover {
   background: var(--bg-hover);
+}
+.zoom-control {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  height: 26px;
+}
+#shell-header .zoom-control button,
+#shell-header .zoom-control #zoom-value {
+  background: var(--bg-body);
+  border: none;
+  color: var(--text-main);
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#shell-header .zoom-control button {
+  padding: 0 6px;
+  cursor: pointer;
+}
+#shell-header .zoom-control button:hover {
+  background: var(--bg-hover);
+}
+#shell-header .zoom-control #zoom-value {
+  min-width: 38px;
+  text-align: center;
+  user-select: none;
+  cursor: default;
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+  padding: 0 4px;
 }
 
 /* Main */
@@ -199,6 +236,7 @@ body.dark .tree-item > .tree-label.active {
   height: 100%;
   border: none;
   background: #fff;
+  zoom: var(--preview-zoom, 1);
 }
 
 /* Prompt Box */

@@ -16,17 +16,27 @@ Usage:
   axhost-make build
   axhost-make serve [--port <number>]
   axhost-make preview [--port <number>]
+  axhost-make add-page <name> [--parent <path-or-hash>]
+  axhost-make add-component <name> [--parent <path-or-hash>]
+  axhost-make add-folder <name> [--parent <path-or-hash>] [-t pages|components]
+  axhost-make add-doc <name> --to <path-or-hash>
 
 Commands:
-  init      Initialize project directories and entry files
-  update    Update prototype entry files and styles from the latest axhost-make core
-  build     Build standalone prototype-index.html from client/preview-index.html
-  serve     Start local dev server (with API and shell)
-  preview   Start a simple static server for the prototype/ directory
+  init           Initialize project directories and entry files
+  update         Update prototype entry files and styles from the latest axhost-make core
+  build          Build standalone prototype-index.html from client/preview-index.html
+  serve          Start local dev server (with API and shell)
+  preview        Start a simple static server for the prototype/ directory
+  add-page       Create a new page under prototype/pages/
+  add-component  Create a new component under prototype/components/
+  add-folder     Create a new folder under prototype/pages/ or prototype/components/
+  add-doc        Create a new markdown doc for a page or component
 
 Options:
-  --port    Server port (default: 3820 for serve, 8080 for preview)
-  --help    Show this help message
+  --port         Server port (default: 3820 for serve, 8080 for preview)
+  --parent, -p   Parent path (full path like pages/xxx or hash like 6e3d21e9)
+  --to, -t       Target page/component for add-doc (full path or hash)
+  --help         Show this help message
 `);
 }
 
@@ -79,6 +89,24 @@ async function main() {
     const projectRoot = process.cwd();
     const root = path.join(projectRoot, 'prototype');
     startPreviewServer({ port, host: '127.0.0.1', root });
+    return;
+  }
+
+  const addCommands = ['add-page', 'add-component', 'add-folder', 'add-doc'];
+  if (addCommands.includes(command)) {
+    const scriptMap = {
+      'add-page': 'axhost-add-page.js',
+      'add-component': 'axhost-add-component.js',
+      'add-folder': 'axhost-add-folder.js',
+      'add-doc': 'axhost-add-doc.js'
+    };
+    const scriptPath = path.join(__dirname, scriptMap[command]);
+    const { spawn } = require('child_process');
+    const child = spawn(process.execPath, [scriptPath, ...args.slice(1)], {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+    child.on('exit', code => process.exit(code || 0));
     return;
   }
 

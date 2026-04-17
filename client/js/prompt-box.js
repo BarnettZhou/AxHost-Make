@@ -51,7 +51,7 @@
     }
   }
 
-  const DEFAULT_STATUS = '输入需求后点击 Copy，将自动生成完整提示词';
+  const DEFAULT_STATUS = '点击复制按钮后粘贴到Agent即可';
   let statusTimer = null;
 
   async function handleCopy() {

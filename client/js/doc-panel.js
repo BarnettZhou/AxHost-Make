@@ -185,7 +185,7 @@
       const content = buildDocContent(rawName);
       await window.apiClient.postFile(docPath, content);
       currentDocs.push({ name, path: docPath, content });
-      currentDocs.sort((a, b) => a.name.localeCompare(b.name));
+      currentDocs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
       activeDocIndex = currentDocs.findIndex(d => d.name === name);
       isEditMode = false;
       renderTabs();
@@ -229,7 +229,7 @@
       await window.apiClient.postRename({ oldPath, newName });
       doc.name = newName;
       doc.path = newPath;
-      currentDocs.sort((a, b) => a.name.localeCompare(b.name));
+      currentDocs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
       activeDocIndex = currentDocs.findIndex(d => d.name === newName);
       isEditMode = false;
       renderTabs();
