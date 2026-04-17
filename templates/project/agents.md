@@ -138,11 +138,13 @@ project-root/
 <!-- 页面内引用私有资源 -->
 <script src="resources/js/mock-data.js"></script>
 
-<!-- 页面内引用全局资源 -->
-<script src="/prototype/resources/js/marked.min.js"></script>
+<!-- 页面内引用全局资源（从 pages/xxx/yyy/index.html 向上回退到 prototype 根目录） -->
+<script src="../../../resources/js/marked.min.js"></script>
 ```
 
-> 注意：在 `prototype/index.html`（独立入口）中引用全局资源时，应使用相对路径 `./resources/...`。
+> **⚠️ 线上托管路径警告**：项目最终可能部署在子目录（如 `/projects/2026xxx/`）中。**禁止**在页面内部使用以 `/prototype/` 开头的绝对路径引用图片、脚本或样式表，否则浏览器会从域名根目录查找资源，导致 404。所有页面级引用全局共享资源时，必须使用相对于当前 HTML 文件的相对路径（如 `../../../resources/images/xxx.png`）。
+>
+> 在 `prototype/index.html`（独立入口）中引用全局资源时，应使用相对路径 `./resources/...`。
 
 ---
 

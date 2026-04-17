@@ -10,14 +10,11 @@
 在原型页面 HTML 的 `<body>` 底部（`main.js` 之前）引入：
 
 ```html
-<script src="/prototype/resources/js/icon-loader.js"></script>
+<!-- 页面/组件内使用相对路径引用全局资源 -->
+<script src="../../resources/js/icon-loader.js"></script>
 ```
 
-或相对路径（组件/页面内）：
-
-```html
-<script src="../resources/js/icon-loader.js"></script>
-```
+> **注意**：项目可能部署在子目录中，**禁止**使用 `/prototype/resources/...` 这种绝对路径，否则会导致 404。
 
 ### 3. 图标 CDN 说明
 原型项目的图标由独立的 CDN 服务提供。Agent 在实现 `icon-loader.js` 时，应遵循以下原则：
