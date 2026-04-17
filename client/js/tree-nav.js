@@ -301,7 +301,11 @@
         showDirContextMenu(e, node, type);
       });
     } else {
-      label.addEventListener('click', () => {
+      label.addEventListener('click', async () => {
+        if (window.docPanel && window.docPanel.isEditing && window.docPanel.isEditing()) {
+          const ok = await window.showConfirm('切换确认', '切换页面后将丢失已编辑的文档，确认继续？');
+          if (!ok) return;
+        }
         selectedPath = node.path;
         if (node.id) location.hash = '#' + node.id;
         loadTree(currentTab);

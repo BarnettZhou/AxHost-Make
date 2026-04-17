@@ -597,9 +597,9 @@ body.dark .doc-tab.active {
   font-size: 13px;
 }
 .add-doc-modal-actions button.primary {
-  background: var(--accent);
+  background: #1677ff;
   color: #fff;
-  border-color: var(--accent);
+  border-color: #1677ff;
 }
 
 /* Confirm Modal */
@@ -654,7 +654,7 @@ body.dark .doc-tab.active {
   font-size: 13px;
 }
 .axhost-confirm-modal-actions button.primary {
-  background: var(--accent);
+  background: #1677ff;
   color: #fff;
-  border-color: var(--accent);
+  border-color: #1677ff;
 }

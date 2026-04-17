@@ -312,5 +312,5 @@
     if (menu) menu.remove();
   }
 
-  window.docPanel = { load };
+  window.docPanel = { load, isEditing: () => isEditMode };
 })();
