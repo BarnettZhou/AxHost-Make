@@ -89,6 +89,70 @@ node axhost-make/bin/axhost-make.js update
 - 重新生成 `prototype/sitemap.js`，同时**保留已设置的项目名称**。
 - 适用于 `axhost-make` 框架升级后，修复或更新独立入口和样式。
 
+### migrate — 迁移旧数据到新格式
+
+```bash
+node axhost-make/bin/axhost-make.js migrate
+```
+
+- 将旧格式的中文目录名页面/组件迁移为 **hash 目录名 + `.axhost-meta.json`** 新格式。
+- 迁移后会删除旧的 `.axhost-ids.json`，生成新的 `.axhost-map.json`。
+- 如果项目已经是新格式，此命令会安全跳过。
+
+---
+
+## Agent 查询命令（推荐优先使用）
+
+由于页面目录名现在是 **8 位 hash**（如 `a1b2c3d4`），直接查看文件系统难以识别页面含义。**强烈建议 Agent 在操作前先通过 CLI 查询获取准确的 hash 和路径。**
+
+### list — 列出所有页面和组件
+
+```bash
+node axhost-make/bin/axhost-make.js list
+```
+
+输出所有页面/组件的 hash、名称和路径，例如：
+```
+Pages:
+  a1b2c3d4  订单列表  (pages/a1b2c3d4)
+  b2c3d4e5  子订单    (pages/a1b2c3d4/sub-pages/b2c3d4e5)
+```
+
+### find — 通过精确名称查找 hash
+
+```bash
+node axhost-make/bin/axhost-make.js find "订单列表"
+# → a1b2c3d4
+```
+
+### info — 通过 hash 获取详细信息
+
+```bash
+node axhost-make/bin/axhost-make.js info a1b2c3d4
+```
+
+### search — 模糊搜索
+
+```bash
+node axhost-make/bin/axhost-make.js search "订单"
+```
+
+### path — 获取文件绝对路径
+
+```bash
+# 获取页面的 index.html 绝对路径
+node axhost-make/bin/axhost-make.js path a1b2c3d4
+
+# 获取某个文档的绝对路径
+node axhost-make/bin/axhost-make.js path a1b2c3d4 readme.md
+```
+
+### copy — 复制页面/组件
+
+```bash
+node axhost-make/bin/axhost-make.js copy a1b2c3d4 "订单统计"
+```
+
 ---
 
 ## 目录结构规范
@@ -98,12 +162,13 @@ node axhost-make/bin/axhost-make.js update
 ```
 project-root/
 ├── prototype/           # 原型文件根目录
-│   ├── pages/           # 页面原型
-│   ├── components/      # 组件原型
+│   ├── pages/           # 页面原型（目录名为 8 位 hash）
+│   ├── components/      # 组件原型（目录名为 8 位 hash）
 │   ├── resources/       # 公共资源（js/css/图片等）
+│   ├── .axhost-map.json # 扁平映射表（hash → 名称/类型/路径）
+│   ├── sitemap.js       # 站点地图（含 pages、components、name、_map）
 │   ├── index.html       # 独立入口（左侧导航 + iframe 预览）
-│   ├── start.html       # 自动跳转到 index.html
-│   └── sitemap.js       # 站点地图（含 pages、components、name）
+│   └── start.html       # 自动跳转到 index.html
 ├── rules/               # 项目规范文档
 │   ├── global.md        # 全局规则
 │   ├── design-spec.md   # UI 设计规范
@@ -117,11 +182,63 @@ project-root/
 └── readme.md            # 项目说明
 ```
 
+### 页面目录内部结构
+
+每个页面/组件目录内部结构如下：
+
+```
+pages/a1b2c3d4/
+├── .axhost-meta.json    # { "name": "订单列表" }
+├── index.html           # 页面源码
+├── resources/
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── main.js
+└── docs/
+    └── readme.md
+```
+
 ### 关键原则
 
 - **所有源码修改必须在 `prototype/` 内进行**，不要修改 `axhost-make/` 框架源码，除非用户明确要求。
 - 页面级资源（仅该页面使用的 css/js）应放在对应页面的 `resources/` 子目录下。
 - 跨页面共享资源应放在 `prototype/resources/` 下。
+- **页面/组件的目录名是 8 位 hash**，不要在文件名或路径中使用显示名称。
+
+---
+
+## Agent 操作页面规范
+
+### 1. 获取映射信息
+
+**永远不要直接 `ls prototype/pages/` 来猜测页面结构**——目录名是 hash，人类不可读。
+
+操作前请先获取映射：
+
+```bash
+# 方式 A：读取轻量级映射文件
+node axhost-make/bin/axhost-make.js list
+
+# 方式 B：读取 .axhost-map.json
+cat prototype/.axhost-map.json
+```
+
+### 2. 使用 CLI 获取准确路径
+
+修改文件时，使用 `path` 命令获取绝对路径，避免手动拼接出错：
+
+```bash
+FILE_PATH=$(node axhost-make/bin/axhost-make.js path a1b2c3d4)
+# → /Users/xxx/project/prototype/pages/a1b2c3d4/index.html
+cat "$FILE_PATH"
+```
+
+### 3. 名称中可以包含任意字符
+
+由于显示名称只存储在 `.axhost-meta.json` 中，**页面/目录名称可以包含任意 Unicode 字符**（包括 `/ \ : * ? " < > |` 等），不受文件系统限制。
+
+但建议保持名称简洁，避免使用换行符等特殊控制字符。
 
 ---
 
@@ -129,7 +246,7 @@ project-root/
 
 若需要引入第三方库或共用资源，请遵循以下路径约定：
 
-- **页面私有资源**：`prototype/pages/{page_name}/resources/js/xxx.js`
+- **页面私有资源**：`prototype/pages/{hash}/resources/js/xxx.js`
 - **全局共享资源**：`prototype/resources/js/xxx.js`
 
 示例：
@@ -138,7 +255,7 @@ project-root/
 <!-- 页面内引用私有资源 -->
 <script src="resources/js/mock-data.js"></script>
 
-<!-- 页面内引用全局资源（从 pages/xxx/yyy/index.html 向上回退到 prototype 根目录） -->
+<!-- 页面内引用全局资源（从 pages/{hash}/yyy/index.html 向上回退到 prototype 根目录） -->
 <script src="../../../resources/js/marked.min.js"></script>
 ```
 
@@ -156,8 +273,8 @@ project-root/
 
 - `agents.md`（本文件）
 - `rules/*.md`（如存在）
-- 当前页面的 `prototype/{type}s/{path}/index.html`
-- 当前页面的 `prototype/{type}s/{path}/docs/readme.md`
+- 当前页面的 `prototype/{type}s/{hash}/index.html`
+- 当前页面的 `prototype/{type}s/{hash}/docs/readme.md`
 
 ### 2. 理解需求边界
 
@@ -170,7 +287,7 @@ project-root/
 - 在代码块前明确标注文件路径，例如：
 
   ```
-  文件：prototype/pages/dashboard/index.html
+  文件：prototype/pages/a1b2c3d4/index.html
   ```
 
 ### 4. 样式与脚本规范
