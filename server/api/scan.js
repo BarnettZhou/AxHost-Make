@@ -1,10 +1,19 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { ensureIdsForTree, injectIds } = require('../lib/ids.js');
 const { ensureOrder } = require('../lib/order.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
+}
+
+async function readMetaName(absPath, fallback) {
+  try {
+    const content = await fs.readFile(path.join(absPath, '.axhost-meta.json'), 'utf-8');
+    const meta = JSON.parse(content);
+    return meta.name || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 async function scanNode(absPath, relPath, nodeType) {
@@ -16,10 +25,13 @@ async function scanNode(absPath, relPath, nodeType) {
   const order = await ensureOrder(absPath, names);
 
   const results = [];
-  for (const name of order) {
-    if (!names.includes(name)) continue;
-    const childAbs = path.join(absPath, name);
-    const childRel = relPath ? path.posix.join(relPath, name) : name;
+  for (const dirName of order) {
+    if (!names.includes(dirName)) continue;
+
+    const childAbs = path.join(absPath, dirName);
+    const childRel = relPath ? path.posix.join(relPath, dirName) : dirName;
+
+    const displayName = await readMetaName(childAbs, dirName);
     const hasIndex = await exists(path.join(childAbs, 'index.html'));
 
     if (hasIndex) {
@@ -29,7 +41,7 @@ async function scanNode(absPath, relPath, nodeType) {
         const docsEntries = await fs.readdir(docsDir, { withFileTypes: true }).catch(() => []);
         docs = docsEntries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name).sort();
       }
-      const node = { name, path: childRel, type: nodeType, docs };
+      const node = { id: dirName, name: displayName, path: childRel, type: nodeType, docs };
       const subPagesAbs = path.join(childAbs, 'sub-pages');
       if (await exists(subPagesAbs)) {
         const children = await scanNode(subPagesAbs, path.posix.join(childRel, 'sub-pages'), nodeType);
@@ -38,7 +50,9 @@ async function scanNode(absPath, relPath, nodeType) {
       results.push(node);
     } else {
       const children = await scanNode(childAbs, childRel, nodeType);
-      results.push({ name, path: childRel, type: 'dir', children });
+      if (children.length > 0) {
+        results.push({ id: dirName, name: displayName, path: childRel, type: 'dir', children });
+      }
     }
   }
   return results;
@@ -50,12 +64,6 @@ async function handleScan(req, res, projectRoot) {
     const type = url.searchParams.get('type');
     const pages = await scanNode(path.join(projectRoot, 'prototype/pages'), '', 'page');
     const components = await scanNode(path.join(projectRoot, 'prototype/components'), '', 'component');
-
-    const pageIds = await ensureIdsForTree(projectRoot, pages, 'pages');
-    const compIds = await ensureIdsForTree(projectRoot, components, 'components');
-    const ids = { ...pageIds, ...compIds };
-    injectIds(pages, ids, 'pages');
-    injectIds(components, ids, 'components');
 
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     if (type === 'pages') {

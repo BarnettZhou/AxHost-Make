@@ -324,13 +324,14 @@
     return li;
   }
 
+  // 新架构下 path 由 hash 组成，需用 id 匹配而非 name
   function getSiblings(parentPath) {
     if (!parentPath) return treeData;
     const parts = parentPath.split('/');
     let nodes = treeData;
     for (const part of parts) {
       if (part === 'sub-pages') continue;
-      const dir = nodes.find(n => n.name === part && (n.type === 'dir' || n.type === 'page' || n.type === 'component'));
+      const dir = nodes.find(n => n.id === part && (n.type === 'dir' || n.type === 'page' || n.type === 'component'));
       if (!dir) return [];
       nodes = dir.children || [];
     }
@@ -439,8 +440,8 @@
     const labelMap = { page: '页面', component: '组件', folder: '目录' };
     const name = await window.showPrompt(`请输入${labelMap[kind]}名称`);
     if (!name) return;
-    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(name)) {
-      window.showToast('名称包含非法字符', 'error');
+    if (!name.trim()) {
+      window.showToast('名称不能为空', 'error');
       return;
     }
     if (hasSiblingName(parentPath, name)) {
@@ -463,11 +464,26 @@
   }
 
   async function handleRename(nodePath, type, isDir) {
-    const oldName = nodePath.split('/').pop();
-    const newName = await window.showPrompt('请输入新名称', '', oldName);
-    if (!newName || newName === oldName) return;
-    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(newName)) {
-      window.showToast('名称包含非法字符', 'error');
+    const nodeName = nodePath.split('/').pop();
+    // 需要通过 id 找到显示名称 —— 简单做法：从 treeData 中查找
+    let displayName = nodeName;
+    function findNodeByPath(nodes, targetPath) {
+      for (const n of nodes) {
+        if (n.path === targetPath) return n;
+        if (n.children) {
+          const f = findNodeByPath(n.children, targetPath);
+          if (f) return f;
+        }
+      }
+      return null;
+    }
+    const node = findNodeByPath(treeData, nodePath);
+    if (node) displayName = node.name;
+
+    const newName = await window.showPrompt('请输入新名称', '', displayName);
+    if (!newName || newName === displayName) return;
+    if (!newName.trim()) {
+      window.showToast('名称不能为空', 'error');
       return;
     }
     const parentPath = nodePath.includes('/') ? nodePath.substring(0, nodePath.lastIndexOf('/')) : '';
@@ -477,16 +493,10 @@
     }
     try {
       const oldAbs = `prototype/${currentTab}/${nodePath}`;
-      await window.apiClient.postRename({ oldPath: oldAbs, newName });
+      await window.apiClient.postRename({ path: oldAbs, newName });
       await loadTree(currentTab);
       window.showToast('重命名成功', 'success');
-      if (!isDir && selectedPath === nodePath) {
-        const newPath = parentPath ? `${parentPath}/${newName}` : newName;
-        selectedPath = newPath;
-        if (window.shell && window.shell.loadPage) {
-          window.shell.loadPage(type === 'components' ? 'component' : 'page', newPath);
-        }
-      }
+      // 新架构下目录名（hash）不变，path 也不变，无需更新 selectedPath
     } catch (err) {
       console.error('Rename error:', err);
       window.showToast('重命名失败: ' + err.message, 'error');
@@ -494,10 +504,24 @@
   }
 
   async function handleDelete(nodePath, type, hasChildren) {
-    const name = nodePath.split('/').pop();
+    // 通过 id 找到显示名称
+    let displayName = nodePath.split('/').pop();
+    function findNodeByPath(nodes, targetPath) {
+      for (const n of nodes) {
+        if (n.path === targetPath) return n;
+        if (n.children) {
+          const f = findNodeByPath(n.children, targetPath);
+          if (f) return f;
+        }
+      }
+      return null;
+    }
+    const node = findNodeByPath(treeData, nodePath);
+    if (node) displayName = node.name;
+
     const msg = hasChildren
-      ? `是否删除 "${name}" 及其下的所有页面/组件？`
-      : `是否删除${type === 'components' ? '组件' : '页面'} "${name}"？`;
+      ? `是否删除 "${displayName}" 及其下的所有页面/组件？`
+      : `是否删除${type === 'components' ? '组件' : '页面'} "${displayName}"？`;
     const ok = await window.showConfirm('删除确认', msg);
     if (!ok) return;
     try {

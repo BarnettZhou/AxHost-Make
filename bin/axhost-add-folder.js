@@ -29,7 +29,7 @@ async function main() {
     process.exit(1);
   }
   if (!isValidName(name)) {
-    console.error('Error: 名称包含非法字符');
+    console.error('Error: 名称不能为空或包含首尾空格');
     process.exit(1);
   }
 
@@ -39,7 +39,7 @@ async function main() {
   try {
     const result = await createItem(projectRoot, parentPath, name, 'folder');
     await regenerateSitemap(projectRoot);
-    console.log(`✅ 目录创建成功: ${result.path}`);
+    console.log(`✅ 目录创建成功: ${result.id} (${name})`);
   } catch (err) {
     console.error('Error:', err.message);
     process.exit(1);

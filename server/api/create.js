@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('./sitemap.js');
-const { assignId } = require('../lib/ids.js');
+const { generateId } = require('../lib/ids.js');
 const { addToOrder } = require('../lib/order.js');
 
 const TEMPLATE_ROOT = path.resolve(__dirname, '../../templates/project');
@@ -12,18 +12,33 @@ function isSafePath(projectRoot, inputPath) {
   return resolved.startsWith(path.resolve(projectRoot));
 }
 
-function isValidName(name) {
-  return /^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(name);
-}
-
 function applyTemplate(template, vars) {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key) => vars[key] ?? match);
 }
 
-async function createItem(projectRoot, parentPath, name, kind) {
-  if (!isValidName(name)) {
-    throw new Error('Invalid name');
+async function collectExistingIds(projectRoot) {
+  const ids = new Set();
+  async function scan(absPath) {
+    const entries = await fs.readdir(absPath, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue;
+      const name = entry.name;
+      // 识别已有的 hash 目录（8 位十六进制）
+      if (/^[a-f0-9]{8}$/i.test(name)) {
+        ids.add(name.toLowerCase());
+      }
+      // 递归扫描，排除已知资源目录
+      if (name !== 'resources' && name !== 'docs') {
+        await scan(path.join(absPath, name));
+      }
+    }
   }
+  await scan(path.join(projectRoot, 'prototype/pages'));
+  await scan(path.join(projectRoot, 'prototype/components'));
+  return ids;
+}
+
+async function createItem(projectRoot, parentPath, name, kind) {
   if (!isSafePath(projectRoot, parentPath)) {
     throw new Error('Forbidden parent path');
   }
@@ -36,7 +51,11 @@ async function createItem(projectRoot, parentPath, name, kind) {
     actualParentPath = path.posix.join(parentPath, 'sub-pages');
   }
 
-  const targetDir = path.resolve(projectRoot, actualParentPath, name);
+  // 生成唯一 hash 作为目录名
+  const existingIds = await collectExistingIds(projectRoot);
+  const hash = generateId(name, existingIds);
+  const targetDir = path.resolve(projectRoot, actualParentPath, hash);
+
   try {
     await fs.access(targetDir);
     throw new Error('Target already exists');
@@ -45,10 +64,17 @@ async function createItem(projectRoot, parentPath, name, kind) {
   }
 
   await fs.mkdir(targetDir, { recursive: true });
-  await addToOrder(path.resolve(projectRoot, actualParentPath), name);
+  await addToOrder(path.resolve(projectRoot, actualParentPath), hash);
+
+  // 写入 .axhost-meta.json
+  await fs.writeFile(
+    path.join(targetDir, '.axhost-meta.json'),
+    JSON.stringify({ name }, null, 2) + '\n',
+    'utf-8'
+  );
 
   if (kind === 'folder') {
-    return { path: path.posix.join(actualParentPath, name), kind };
+    return { id: hash, name, path: path.posix.join(actualParentPath.replace(/^prototype\//, ''), hash), kind };
   }
 
   const vars = { PAGE_NAME: name, DATE: new Date().toISOString().slice(0, 10) };
@@ -69,7 +95,7 @@ async function createItem(projectRoot, parentPath, name, kind) {
   await fs.mkdir(path.join(targetDir, 'docs'), { recursive: true });
   await fs.writeFile(path.join(targetDir, 'docs', 'readme.md'), applyTemplate(tplDoc, vars), 'utf-8');
 
-  return { path: path.posix.join(actualParentPath, name), kind };
+  return { id: hash, name, path: path.posix.join(actualParentPath.replace(/^prototype\//, ''), hash), kind };
 }
 
 async function handleCreate(req, res, projectRoot) {
@@ -84,11 +110,6 @@ async function handleCreate(req, res, projectRoot) {
         return;
       }
       const result = await createItem(projectRoot, parentPath, name, kind);
-      if (kind !== 'folder') {
-        const relativePath = result.path.replace(/^prototype\/(pages|components)\/?/, '');
-        const tab = kind === 'component' ? 'components' : 'pages';
-        await assignId(projectRoot, tab, relativePath);
-      }
       await regenerateSitemap(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: result }));

@@ -16,10 +16,21 @@ Usage:
   axhost-make build
   axhost-make serve [--port <number>]
   axhost-make preview [--port <number>]
+  axhost-make migrate
+
+  # 创建操作
   axhost-make add-page <name> [--parent <path-or-hash>]
   axhost-make add-component <name> [--parent <path-or-hash>]
   axhost-make add-folder <name> [--parent <path-or-hash>] [-t pages|components]
   axhost-make add-doc <name> --to <path-or-hash>
+
+  # 查询操作（Agent 友好）
+  axhost-make list
+  axhost-make find <name>
+  axhost-make info <hash>
+  axhost-make search <keyword>
+  axhost-make path <hash> [doc-name]
+  axhost-make copy <hash> <new-name> [--parent <path-or-hash>]
 
 Commands:
   init           Initialize project directories and entry files
@@ -27,10 +38,19 @@ Commands:
   build          Build standalone prototype-index.html from client/preview-index.html
   serve          Start local dev server (with API and shell)
   preview        Start a simple static server for the prototype/ directory
+  migrate        Migrate existing prototype data to hash-directory format
+
   add-page       Create a new page under prototype/pages/
   add-component  Create a new component under prototype/components/
   add-folder     Create a new folder under prototype/pages/ or prototype/components/
   add-doc        Create a new markdown doc for a page or component
+
+  list           List all pages and components with hash and name
+  find           Find hash by exact name
+  info           Show detailed info by hash
+  search         Fuzzy search by keyword
+  path           Get absolute file path by hash (optionally for a doc)
+  copy           Copy a page/component as a new one
 
 Options:
   --port         Server port (default: 3820 for serve, 8080 for preview)
@@ -64,6 +84,13 @@ async function main() {
   if (command === 'build') {
     const projectRoot = process.cwd();
     build(projectRoot);
+    return;
+  }
+
+  if (command === 'migrate') {
+    const { migrate } = require('./axhost-migrate.js');
+    const projectRoot = process.cwd();
+    await migrate(projectRoot);
     return;
   }
 
@@ -103,6 +130,18 @@ async function main() {
     const scriptPath = path.join(__dirname, scriptMap[command]);
     const { spawn } = require('child_process');
     const child = spawn(process.execPath, [scriptPath, ...args.slice(1)], {
+      stdio: 'inherit',
+      cwd: process.cwd()
+    });
+    child.on('exit', code => process.exit(code || 0));
+    return;
+  }
+
+  const queryCommands = ['list', 'find', 'info', 'search', 'path', 'copy'];
+  if (queryCommands.includes(command)) {
+    const scriptPath = path.join(__dirname, 'axhost-query.js');
+    const { spawn } = require('child_process');
+    const child = spawn(process.execPath, [scriptPath, ...args], {
       stdio: 'inherit',
       cwd: process.cwd()
     });

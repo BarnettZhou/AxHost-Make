@@ -30,14 +30,14 @@ async function main() {
     rawName = rawName.slice(0, -3);
   }
   if (!isValidName(rawName)) {
-    console.error('Error: 文档名称包含非法字符');
+    console.error('Error: 文档名称不能为空');
     process.exit(1);
   }
 
   const projectRoot = process.cwd();
   const resolved = await resolvePageOrComponent(projectRoot, to);
   const docName = rawName + '.md';
-  const docDir = path.join(projectRoot, 'prototype', resolved.tab + 's', resolved.relPath, 'docs');
+  const docDir = path.join(projectRoot, 'prototype', resolved.tab, resolved.relPath, 'docs');
   const docPath = path.join(docDir, docName);
 
   try {
@@ -53,7 +53,7 @@ async function main() {
 
   await fs.mkdir(docDir, { recursive: true });
   await fs.writeFile(docPath, content, 'utf-8');
-  console.log(`✅ 文档创建成功: prototype/${resolved.tab}s/${resolved.relPath}/docs/${docName}`);
+  console.log(`✅ 文档创建成功: prototype/${resolved.tab}/${resolved.relPath}/docs/${docName}`);
 }
 
 main().catch(err => {

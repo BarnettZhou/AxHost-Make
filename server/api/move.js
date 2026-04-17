@@ -1,7 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('./sitemap.js');
-const { renameIdKey } = require('../lib/ids.js');
 const { removeFromOrder, addToOrder, readOrder, writeOrder } = require('../lib/order.js');
 
 async function exists(p) {
@@ -80,13 +79,6 @@ async function handleMove(req, res, projectRoot) {
           }
           order.splice(insertIdx, 0, sourceName);
           await writeOrder(targetParentAbs, order);
-
-          const finalTargetRel = path.relative(projectRoot, finalTargetAbs).replace(/\\/g, '/');
-          const tabMatch = resolvedSource.match(/^prototype\/(pages|components)\/?/);
-          const tab = tabMatch ? tabMatch[1] : 'pages';
-          const sourceIdPath = resolvedSource.replace(/^prototype\/(pages|components)\/?/, '');
-          const targetIdPath = finalTargetRel.replace(/^prototype\/(pages|components)\/?/, '');
-          await renameIdKey(projectRoot, tab, sourceIdPath, targetIdPath);
         }
         await regenerateSitemap(projectRoot);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -111,16 +103,11 @@ async function handleMove(req, res, projectRoot) {
 
       const sourceParentAbs = path.dirname(sourceAbs);
       await removeFromOrder(sourceParentAbs, sourceName);
+      await fs.mkdir(path.dirname(finalTargetAbs), { recursive: true });
       await addToOrder(finalTargetDir, sourceName);
 
-      await fs.mkdir(path.dirname(finalTargetAbs), { recursive: true });
       await fs.rename(sourceAbs, finalTargetAbs);
 
-      const tabMatch = resolvedSource.match(/^prototype\/(pages|components)\/?/);
-      const tab = tabMatch ? tabMatch[1] : 'pages';
-      const sourceIdPath = resolvedSource.replace(/^prototype\/(pages|components)\/?/, '');
-      const targetIdPath = finalTargetRel.replace(/^prototype\/(pages|components)\/?/, '');
-      await renameIdKey(projectRoot, tab, sourceIdPath, targetIdPath);
       await regenerateSitemap(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { newPath: finalTargetRel } }));

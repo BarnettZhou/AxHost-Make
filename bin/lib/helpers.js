@@ -1,19 +1,28 @@
+const fs = require('fs/promises');
 const path = require('path');
-const { readIds } = require('../../server/lib/ids.js');
+
+const META_NAME_PATTERN = /^[\s\S]+$/; // 新架构下名称几乎无限制（除空字符串）
 
 function isValidName(name) {
-  return /^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(name);
+  return typeof name === 'string' && name.trim().length > 0 && name.trim() === name;
+}
+
+async function readMap(projectRoot) {
+  const mapPath = path.join(projectRoot, 'prototype', '.axhost-map.json');
+  try {
+    const content = await fs.readFile(mapPath, 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
 }
 
 async function resolveByHash(projectRoot, hash) {
-  const ids = await readIds(projectRoot);
-  for (const [key, id] of Object.entries(ids)) {
-    if (id === hash) {
-      const [tab, ...rest] = key.split('/');
-      return { tab, relPath: rest.join('/') };
-    }
-  }
-  return null;
+  const map = await readMap(projectRoot);
+  const entry = map[hash.toLowerCase()];
+  if (!entry) return null;
+  const [tab, ...rest] = entry.path.split('/');
+  return { tab, relPath: rest.join('/') };
 }
 
 async function resolveParent(projectRoot, parentInput, tab) {
@@ -54,6 +63,8 @@ async function resolvePageOrComponent(projectRoot, input) {
 
 module.exports = {
   isValidName,
+  readMap,
+  resolveByHash,
   resolveParent,
   resolvePageOrComponent,
 };
