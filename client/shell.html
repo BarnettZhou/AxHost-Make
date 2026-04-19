@@ -85,7 +85,13 @@
   </div>
 
   <script src="/client/js/icons.js"></script>
-  <script src="/prototype/resources/js/marked.min.js"></script>
+  <script>
+    (function(){
+      const params = new URLSearchParams(location.search);
+      window.__axhostProjectId = params.get('project') || '';
+    })();
+  </script>
+  <script src="/client/assets/marked.min.js"></script>
   <script src="/client/js/api-client.js"></script>
   <script src="/client/js/md-renderer.js"></script>
   <script src="/client/js/tree-nav.js"></script>

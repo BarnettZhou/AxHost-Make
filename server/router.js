@@ -10,22 +10,51 @@ const { handleSettingsGet, handleSettingsPost } = require('./api/settings.js');
 const { handleDocsGet } = require('./api/docs.js');
 const { handleReorder } = require('./api/reorder.js');
 const { handleMove } = require('./api/move.js');
+const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
 
-function createRouter(projectRoot) {
+function createRouter(workspaceRoot) {
   const CLIENT_ROOT = path.resolve(__dirname, '../client');
-  const PROTOTYPE_ROOT = path.join(projectRoot, 'prototype');
 
   function resolveStaticUrl(urlPath) {
     if (urlPath === '/' || urlPath === '/index.html') {
-      return path.join(CLIENT_ROOT, 'index.html');
+      return path.join(CLIENT_ROOT, 'home.html');
+    }
+    if (urlPath === '/shell' || urlPath === '/shell.html') {
+      return path.join(CLIENT_ROOT, 'shell.html');
     }
     if (urlPath.startsWith('/client/')) {
       return path.join(CLIENT_ROOT, urlPath.slice('/client/'.length));
     }
-    if (urlPath.startsWith('/prototype/')) {
-      return path.join(PROTOTYPE_ROOT, urlPath.slice('/prototype/'.length));
+    return null;
+  }
+
+  function resolveProjectStaticUrl(urlPath) {
+    // /project/{id}/prototype/... → workspaceRoot/projects/{id}/prototype/...
+    const match = urlPath.match(/^\/project\/([^/]+)(\/.*)$/);
+    if (match) {
+      const projectId = match[1];
+      const rest = match[2];
+      const resolved = path.join(workspaceRoot, 'projects', projectId, rest);
+      if (resolved.startsWith(path.resolve(workspaceRoot))) {
+        return resolved;
+      }
     }
     return null;
+  }
+
+  function getProjectRoot(req) {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const projectId = url.searchParams.get('project');
+    if (projectId) {
+      const projectRoot = path.join(workspaceRoot, 'projects', projectId);
+      const resolvedWorkspace = path.resolve(workspaceRoot);
+      if (path.resolve(projectRoot).startsWith(resolvedWorkspace + path.sep) ||
+          path.resolve(projectRoot) === resolvedWorkspace) {
+        return projectRoot;
+      }
+    }
+    // 兼容模式：如果没有 project 参数，使用 workspaceRoot 作为项目根目录
+    return workspaceRoot;
   }
 
   return async function router(req, res) {
@@ -40,6 +69,14 @@ function createRouter(projectRoot) {
     const urlPath = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
 
     if (urlPath.startsWith('/api/')) {
+      const projectRoot = getProjectRoot(req);
+
+      if (urlPath === '/api/projects' && req.method === 'GET') {
+        return handleProjectsGet(req, res, workspaceRoot);
+      }
+      if (urlPath === '/api/projects' && req.method === 'POST') {
+        return handleProjectsPost(req, res, workspaceRoot);
+      }
       if (urlPath === '/api/scan' && req.method === 'GET') {
         return handleScan(req, res, projectRoot);
       }
@@ -81,6 +118,16 @@ function createRouter(projectRoot) {
     const staticPath = resolveStaticUrl(urlPath);
     if (staticPath) {
       return staticHandler(req, res, staticPath);
+    }
+
+    const projectStaticPath = resolveProjectStaticUrl(urlPath);
+    if (projectStaticPath) {
+      return staticHandler(req, res, projectStaticPath);
+    }
+
+    // 兼容单项目模式：/prototype/* 直接指向 workspaceRoot/prototype/*
+    if (urlPath.startsWith('/prototype/')) {
+      return staticHandler(req, res, path.join(workspaceRoot, urlPath));
     }
 
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

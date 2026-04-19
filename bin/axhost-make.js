@@ -12,7 +12,7 @@ Axhost-Make CLI
 
 Usage:
   axhost-make init
-  axhost-make update
+  axhost-make update [--all]
   axhost-make build
   axhost-make serve [--port <number>]
   axhost-make preview [--port <number>]
@@ -34,7 +34,7 @@ Usage:
 
 Commands:
   init           Initialize project directories and entry files
-  update         Update prototype entry files and styles from the latest axhost-make core
+  update         Update prototype entry files and styles (use --all to update all projects in workspace)
   build          Build standalone prototype-index.html from client/preview-index.html
   serve          Start local dev server (with API and shell)
   preview        Start a simple static server for the prototype/ directory
@@ -77,7 +77,8 @@ async function main() {
 
   if (command === 'update') {
     const projectRoot = process.cwd();
-    update(projectRoot);
+    const isAll = args.includes('--all');
+    update(projectRoot, { all: isAll });
     return;
   }
 
@@ -101,8 +102,17 @@ async function main() {
       const parsed = parseInt(args[portIndex + 1], 10);
       if (!isNaN(parsed)) port = parsed;
     }
-    const projectRoot = process.cwd();
-    startServer({ port, host: '127.0.0.1', projectRoot });
+    let workspaceRoot = process.cwd();
+    // Auto-detect: walk upward to find directory containing axhost-make/
+    const fs = require('fs');
+    const path = require('path');
+    while (workspaceRoot !== path.dirname(workspaceRoot)) {
+      if (fs.existsSync(path.join(workspaceRoot, 'axhost-make'))) {
+        break;
+      }
+      workspaceRoot = path.dirname(workspaceRoot);
+    }
+    startServer({ port, host: '127.0.0.1', projectRoot: workspaceRoot });
     return;
   }
 

@@ -398,9 +398,13 @@
       } else if (action === 'create_subfolder') {
         handleCreate(node.path + '/sub-pages', 'folder');
       } else if (action === 'copy_path') {
-        navigator.clipboard.writeText(`/prototype/${type}/${node.path}/index.html`);
+        const projectId = window.__axhostProjectId || '';
+        const protoBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
+        navigator.clipboard.writeText(`${protoBase}/${type}/${node.path}/index.html`);
       } else if (action === 'open_new') {
-        window.open(`/prototype/${type}/${node.path}/index.html`, '_blank');
+        const projectId = window.__axhostProjectId || '';
+        const protoBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
+        window.open(`${protoBase}/${type}/${node.path}/index.html`, '_blank');
       } else if (action === 'rename') {
         handleRename(node.path, type, false);
       } else if (action === 'delete') {

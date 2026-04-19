@@ -51,7 +51,7 @@ async function ensurePageResources(projectRoot) {
   }
 }
 
-async function update(projectRoot) {
+async function updateSingleProject(projectRoot) {
   const templateRoot = path.resolve(__dirname, '../templates');
   const previewTplRoot = path.join(templateRoot, 'preview');
   const projectTplRoot = path.join(templateRoot, 'project');
@@ -144,11 +144,42 @@ async function update(projectRoot) {
   console.log('Axhost-Make project updated successfully.');
 }
 
+async function update(projectRoot, options = {}) {
+  if (options.all) {
+    let workspaceRoot = projectRoot;
+    const hasPrototype = await exists(path.join(workspaceRoot, 'prototype'));
+    if (hasPrototype) {
+      workspaceRoot = path.dirname(workspaceRoot);
+    }
+    const projectsDir = path.join(workspaceRoot, 'projects');
+    const entries = await fs.readdir(projectsDir, { withFileTypes: true }).catch(() => []);
+    let updated = 0;
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('.')) continue;
+      const childPath = path.join(projectsDir, entry.name);
+      if (await exists(path.join(childPath, 'prototype'))) {
+        console.log(`\n[${entry.name}]`);
+        try {
+          await updateSingleProject(childPath);
+          updated++;
+        } catch (err) {
+          console.error(`  - Update failed: ${err.message}`);
+        }
+      }
+    }
+    console.log(`\nTotal ${updated} project(s) updated.`);
+    return;
+  }
+  return updateSingleProject(projectRoot);
+}
+
 module.exports = { update };
 
 if (require.main === module) {
+  const args = process.argv.slice(2);
+  const isAll = args.includes('--all');
   const projectRoot = process.cwd();
-  update(projectRoot).catch(err => {
+  update(projectRoot, { all: isAll }).catch(err => {
     console.error('Update failed:', err);
     process.exit(1);
   });

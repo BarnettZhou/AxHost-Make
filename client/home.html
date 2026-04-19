@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axhost-Make</title>
+  <link rel="icon" type="image/svg+xml" href="/client/icon.svg">
+  <link rel="stylesheet" href="/client/css/home.css">
+</head>
+<body>
+  <div id="app">
+    <header id="home-header">
+      <button id="btn-home" title="项目管理首页">🏠</button>
+      <div id="tab-bar"></div>
+    </header>
+
+    <main id="home-main">
+      <!-- 项目列表视图 -->
+      <div id="project-list-view">
+        <div class="control-bar">
+          <div class="search-box">
+            <input type="text" id="search-input" placeholder="搜索项目..." autocomplete="off">
+          </div>
+          <div class="control-group">
+            <div class="dropdown" id="sort-dropdown">
+              <button class="btn-icon" id="btn-sort">
+                <span>⇅</span>
+                <span id="sort-label">最近修改</span>
+              </button>
+              <div class="dropdown-menu">
+                <div class="dropdown-group-label">排序字段</div>
+                <div class="dropdown-item active" data-sort-field="lastModified" data-sort-group="field">最近修改时间</div>
+                <div class="dropdown-item" data-sort-field="name" data-sort-group="field">名称</div>
+                <div class="dropdown-item" data-sort-field="createdAt" data-sort-group="field">创建时间</div>
+                <div class="dropdown-group-label">排序方式</div>
+                <div class="dropdown-item active" data-sort-dir="desc" data-sort-group="dir">降序</div>
+                <div class="dropdown-item" data-sort-dir="asc" data-sort-group="dir">升序</div>
+              </div>
+            </div>
+            <button class="btn-icon" id="btn-view-mode" title="切换视图">
+              <span id="view-icon">⊞</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn-primary" id="btn-new-project">+ 新建原型项目</button>
+          <button class="btn-secondary" id="btn-import-project">↓ 导入已有项目</button>
+        </div>
+
+        <div id="project-list-body">
+          <div class="project-grid" id="project-grid"></div>
+        </div>
+      </div>
+
+      <!-- Shell iframe 视图 -->
+      <div id="shell-container">
+        <iframe id="shell-frame" src="about:blank"></iframe>
+      </div>
+    </main>
+  </div>
+
+  <!-- 新建项目弹窗 -->
+  <div class="modal-overlay" id="new-project-modal">
+    <div class="modal-content">
+      <div class="modal-title">新建原型项目</div>
+      <div class="modal-body">
+        <label for="new-project-name">项目名称</label>
+        <input type="text" id="new-project-name" placeholder="请输入项目名称" autocomplete="off">
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-cancel-new">取消</button>
+        <button class="btn-primary" id="btn-confirm-new">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/client/js/home.js"></script>
+</body>
+</html>

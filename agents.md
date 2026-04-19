@@ -6,9 +6,9 @@
 
 **关键区分**：
 - **`axhost-make/`** — 框架源码仓库，包含 CLI、HTTP Server、Client Shell、模板等。
-- **项目根目录（`../`）** — 外层宿主项目，包含 `prototype/`、`pages/`、`rules/` 等实际业务原型文件，用于测试和验证框架功能。
+- **工作空间（`../`）** — 外层目录，与 `axhost-make/` 平级存放 `projects/` 目录（内含所有项目）。框架通过 `projects/.projects.json` 管理项目元数据，项目目录名使用 8 位 hash。
 
-**绝对禁止**：未经用户允许，不要修改 `axhost-make/` 之外的任何文件（除非明确是为了测试 `update` 效果而需要查看外层 `prototype/` 的变化）。
+**绝对禁止**：未经用户允许，不要修改 `axhost-make/` 之外的任何文件（除非明确是为了测试 `update` 效果而需要查看 `projects/` 下某个项目的 `prototype/` 变化）。
 
 ---
 
@@ -65,48 +65,49 @@
 ## 目录结构说明
 
 ```
-axhost-make/
-├── bin/                    # CLI 入口
-│   ├── axhost-make.js      # 命令分发
-│   ├── axhost-init.js      # init 命令
-│   ├── axhost-update.js    # update 命令
-│   └── axhost-build.js     # build 命令（生成 preview 入口模板）
-├── client/                 # 前端壳层资源
-│   ├── css/shell.css       # 主题与布局样式
-│   ├── js/                 # 交互脚本
-│   │   ├── icons.js        # <axhost-icon> 内联图标
-│   │   ├── tree-nav.js     # 左侧目录树
-│   │   ├── prompt-box.js   # Prompt 交互
-│   │   ├── doc-panel.js    # 文档面板
-│   │   ├── shell.js        # Dev 模式总控
-│   │   └── preview-app.js  # Preview 模式逻辑（纯静态渲染）
-│   ├── assets/             # 第三方静态资源（marked.min.js）
-│   ├── index.html          # Dev 模式入口
-│   ├── preview-index.html  # Preview 模式源码入口
-│   └── icon.svg            # Dev 模式 favicon
-├── server/                 # Node HTTP 服务器
-│   ├── index.js            # 主服务入口
-│   ├── router.js           # 路由分发
-│   └── api/                # API 实现
-├── templates/              # 模板目录
-│   ├── preview/            # Preview 入口产物（build 生成）
-│   │   ├── index.html
-│   │   ├── start.html
-│   │   ├── icon.svg
-│   │   └── resources/
-│   │       ├── css/shell.css
-│   │       └── js/
-│   │           ├── icons.js
-│   │           └── preview-app.js
-│   └── project/            # 用户项目初始化模板
-│       ├── page.html
-│       ├── component.html
-│       ├── doc.md
-│       ├── agents.md
-│       ├── package.json
-│       └── dev-spec.md
-├── skills/                 # Kimi Skill 文档
-└── agents.md               # 本文件
+workspace/
+├── axhost-make/              # 框架核心代码
+│   ├── bin/                  # CLI 入口
+│   │   ├── axhost-make.js    # 命令分发
+│   │   ├── axhost-init.js    # init 命令
+│   │   ├── axhost-update.js  # update 命令
+│   │   └── axhost-build.js   # build 命令（生成 preview 入口模板）
+│   ├── client/               # 前端壳层资源
+│   │   ├── css/              # 样式文件
+│   │   │   ├── shell.css     # 开发模式主题与布局
+│   │   │   └── home.css      # 项目管理首页样式
+│   │   ├── js/               # 交互脚本
+│   │   │   ├── icons.js      # <axhost-icon> 内联图标
+│   │   │   ├── tree-nav.js   # 左侧目录树
+│   │   │   ├── prompt-box.js # Prompt 交互
+│   │   │   ├── doc-panel.js  # 文档面板
+│   │   │   ├── shell.js      # 开发模式总控
+│   │   │   ├── home.js       # 项目管理首页逻辑
+│   │   │   └── preview-app.js# Preview 模式逻辑（纯静态渲染）
+│   │   ├── assets/           # 第三方静态资源（marked.min.js）
+│   │   ├── home.html         # 项目管理首页入口
+│   │   ├── shell.html        # 开发模式入口（单项目工作台）
+│   │   ├── preview-index.html# Preview 模式源码入口
+│   │   └── icon.svg          # Dev 模式 favicon
+│   ├── server/               # Node HTTP 服务器
+│   │   ├── index.js          # 主服务入口
+│   │   ├── router.js         # 路由分发（支持多项目）
+│   │   └── api/              # API 实现
+│   │       ├── projects.js   # GET/POST /api/projects 项目列表/新建
+│   ├── templates/            # 模板目录
+│   │   ├── preview/          # Preview 入口产物（build 生成）
+│   │   └── project/          # 用户项目初始化模板
+│   ├── skills/               # Kimi Skill 文档
+│   └── agents.md             # 本文件
+│
+└── projects/                 # 项目存放目录（与 axhost-make/ 平级）
+    ├── .projects.json        # 项目元数据表（id / name / createdAt / lastModified）
+    ├── 184bdd45/             # 项目 A（8 位 hash 目录名）
+    │   ├── prototype/
+    │   ├── rules/
+    │   └── ...
+    └── a1b2c3d4/             # 项目 B（8 位 hash 目录名）
+        └── ...
 ```
 
 ---
@@ -124,7 +125,7 @@ axhost-make/
    ```bash
    node axhost-make/bin/axhost-make.js update
    ```
-4. 刷新浏览器 `http://127.0.0.1:3820` 验证效果；如需验证 preview 模式，直接访问：
+4. 刷新浏览器 `http://127.0.0.1:3820` 验证效果（默认打开项目管理首页）；如需进入开发模式，点击项目卡片打开；如需验证 preview 模式，直接访问：
    ```
    http://127.0.0.1:3820/client/preview-index.html
    ```

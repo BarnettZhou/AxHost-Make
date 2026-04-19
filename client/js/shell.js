@@ -26,9 +26,12 @@
   const projectNameEl = document.querySelector('#shell-header .title');
 
   // Header controls
+  const projectId = window.__axhostProjectId || '';
+  const prototypeBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
+
   if (btnPreview) {
     btnPreview.addEventListener('click', () => {
-      window.open('/prototype/index.html', '_blank');
+      window.open(`${prototypeBase}/index.html`, '_blank');
     });
   }
 
@@ -94,7 +97,7 @@
   }
 
   function loadPage(type, pagePath) {
-    const url = `/prototype/${type}s/${pagePath}/index.html`;
+    const url = `${prototypeBase}/${type}s/${pagePath}/index.html`;
     previewFrame.src = url;
     window.__axhostState.currentPage = { type, path: pagePath };
     if (window.docPanel && window.docPanel.load) {

@@ -1,8 +1,15 @@
 (function () {
   const API_BASE = '';
+  const projectId = window.__axhostProjectId || '';
+
+  function buildUrl(path) {
+    if (!projectId) return path;
+    const sep = path.includes('?') ? '&' : '?';
+    return path + sep + 'project=' + encodeURIComponent(projectId);
+  }
 
   async function request(url, options = {}) {
-    const res = await fetch(API_BASE + url, {
+    const res = await fetch(API_BASE + buildUrl(url), {
       headers: { 'Content-Type': 'application/json' },
       ...options
     });

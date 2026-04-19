@@ -6,6 +6,10 @@
   if (!promptInput || !btnCopy || !promptStatus) return;
 
   function buildPrompt(userText, pageType, pagePath) {
+    const projectId = window.__axhostProjectId || '';
+    const baseUrl = projectId
+      ? `http://${location.host}/project/${projectId}/prototype`
+      : `http://${location.host}/prototype`;
     return [
       '# System Prompt',
       '',
@@ -18,7 +22,7 @@
       '',
       `- **页面类型**: ${pageType}`,
       `- **页面路径**: prototype/${pageType}s/${pagePath}`,
-      `- **访问 URL**: http://localhost:3820/prototype/${pageType}s/${pagePath}/index.html`,
+      `- **访问 URL**: ${baseUrl}/${pageType}s/${pagePath}/index.html`,
       '',
       '---',
       '',
