@@ -1,5 +1,10 @@
+const fs = require('fs/promises');
 const path = require('path');
 const { staticHandler } = require('./middleware/static.js');
+
+async function exists(p) {
+  try { await fs.access(p); return true; } catch { return false; }
+}
 const { cors } = require('./middleware/cors.js');
 const { handleScan } = require('./api/scan.js');
 const { handleFileGet, handleFilePost } = require('./api/file.js');
@@ -127,7 +132,25 @@ function createRouter(workspaceRoot) {
 
     // 兼容单项目模式：/prototype/* 直接指向 workspaceRoot/prototype/*
     if (urlPath.startsWith('/prototype/')) {
-      return staticHandler(req, res, path.join(workspaceRoot, urlPath));
+      const fallbackPath = path.join(workspaceRoot, urlPath);
+
+      // 先尝试单项目模式的 workspaceRoot/prototype/*
+      if (await exists(fallbackPath)) {
+        return staticHandler(req, res, fallbackPath);
+      }
+
+      // 多项目兼容：从 referer 中提取 project id
+      const referer = req.headers.referer || '';
+      const projectMatch = referer.match(/\/project\/([^/]+)\//);
+      if (projectMatch) {
+        const projectId = projectMatch[1];
+        const projectPath = path.join(workspaceRoot, 'projects', projectId, urlPath);
+        if (await exists(projectPath)) {
+          return staticHandler(req, res, projectPath);
+        }
+      }
+
+      return staticHandler(req, res, fallbackPath);
     }
 
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });

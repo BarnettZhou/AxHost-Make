@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('fs/promises');
 const path = require('path');
+const readline = require('readline');
 const { regenerateSitemap } = require('../server/api/sitemap.js');
 
 const DIRS = [
@@ -69,15 +70,6 @@ async function init(projectRoot) {
     );
   }
 
-  const pkgPath = path.join(projectRoot, 'package.json');
-  if (!await exists(pkgPath)) {
-    const pkgTpl = path.join(projectTplRoot, 'package.json');
-    if (await exists(pkgTpl)) {
-      await fs.copyFile(pkgTpl, pkgPath);
-      console.log('  - Created package.json');
-    }
-  }
-
   // Copy dev-spec.md to rules
   const devSpecPath = path.join(projectRoot, 'rules', 'dev-spec.md');
   if (!await exists(devSpecPath)) {
@@ -142,11 +134,93 @@ async function init(projectRoot) {
   console.log('  - readme.md (if not exists)');
 }
 
-module.exports = { init };
+async function initWorkspace(currentDir) {
+  const currentDirName = path.basename(currentDir);
+  let workspaceRoot;
+
+  if (currentDirName === 'axhost-make') {
+    workspaceRoot = path.dirname(currentDir);
+  } else if (await exists(path.join(currentDir, 'axhost-make'))) {
+    workspaceRoot = currentDir;
+  } else {
+    console.error('请在 axhost-make 目录内或其父级工作空间目录中运行 init 命令。');
+    process.exit(1);
+  }
+
+  const projectsDir = path.join(workspaceRoot, 'projects');
+  if (await exists(projectsDir)) {
+    console.log('工作空间已初始化，projects 目录已存在。');
+    return;
+  }
+
+  // 检查工作空间根目录下是否仅有 axhost-make 一个目录
+  const items = await fs.readdir(workspaceRoot, { withFileTypes: true });
+  const dirs = items.filter(d => d.isDirectory()).map(d => d.name);
+
+  if (dirs.length > 1 || (dirs.length === 1 && dirs[0] !== 'axhost-make')) {
+    console.error('工作空间目录下已有其他目录，初始化失败。');
+    console.error('请确保工作空间下仅有 axhost-make 目录。');
+    process.exit(1);
+  }
+
+  // 1. 创建空的 projects 目录和 .projects.json
+  await fs.mkdir(projectsDir, { recursive: true });
+  await fs.writeFile(
+    path.join(projectsDir, '.projects.json'),
+    JSON.stringify({ projects: [] }, null, 2) + '\n',
+    'utf-8'
+  );
+
+  // 2. 在父级目录生成 package.json
+  const pkgPath = path.join(workspaceRoot, 'package.json');
+  if (!await exists(pkgPath)) {
+    const pkg = {
+      name: 'axhost-workspace',
+      version: '1.0.0',
+      description: 'Axhost-Make workspace',
+      scripts: {
+        serve: 'node axhost-make/bin/axhost-make.js serve',
+        build: 'node axhost-make/bin/axhost-make.js build',
+        update: 'node axhost-make/bin/axhost-make.js update --all',
+        preview: 'node axhost-make/bin/axhost-make.js preview'
+      }
+    };
+    await fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
+    console.log('  - Created package.json');
+  }
+
+  console.log('\nAxhost-Make workspace initialized successfully.');
+  console.log('Generated files:');
+  console.log('  - projects/');
+  console.log('  - projects/.projects.json');
+  console.log('  - package.json');
+
+  // 3. 提示是否需要立即启动服务
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
+  const answer = await new Promise(resolve => {
+    rl.question('\n是否立即启动服务？(y/n): ', resolve);
+  });
+  rl.close();
+
+  const shouldStart = answer.trim().toLowerCase();
+  if (shouldStart === 'y' || shouldStart === 'yes' || shouldStart === '') {
+    console.log('正在启动服务...');
+    const { startServer } = require('../server/index.js');
+    startServer({ port: 3820, host: '127.0.0.1', projectRoot: workspaceRoot });
+  } else {
+    console.log('你可以稍后通过 npm run serve 启动服务。');
+  }
+}
+
+module.exports = { init, initWorkspace };
 
 if (require.main === module) {
-  const projectRoot = process.cwd();
-  init(projectRoot).catch(err => {
+  const currentDir = process.cwd();
+  initWorkspace(currentDir).catch(err => {
     console.error('Init failed:', err);
     process.exit(1);
   });

@@ -75,7 +75,8 @@ body.dark .tab-item.active { background: #303030; color: #eee; box-shadow: none;
 body.dark .tab-close:hover { background: rgba(255,255,255,0.1); }
 
 /* ===== Main ===== */
-#home-main { flex: 1; overflow: hidden; position: relative; }
+#home-main { flex: 1; overflow: hidden; position: relative; background: #fff; }
+body.dark #home-main { background: #1a1a1a; }
 
 /* ===== Project List View ===== */
 #project-list-view {
@@ -103,9 +104,10 @@ body.dark .search-box input {
   background: #2a2a2a; border-color: #444; color: #e0e0e0;
 }
 .search-box input:focus { border-color: #4a90d9; }
-.search-box::before {
-  content: '🔍'; position: absolute; left: 10px; top: 50%;
-  transform: translateY(-50%); font-size: 13px; opacity: 0.5;
+.search-box .search-icon {
+  position: absolute; left: 10px; top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.5; pointer-events: none;
 }
 
 .control-group {
@@ -190,12 +192,14 @@ body.dark .btn-secondary:hover { border-color: #555; background: #333; }
 /* ===== Gallery View ===== */
 .project-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 20px;
 }
-@media (max-width: 1200px) { .project-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 900px) { .project-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 600px) { .project-grid { grid-template-columns: 1fr; } }
+@media (max-width: 1400px) { .project-grid { grid-template-columns: repeat(5, 1fr); } }
+@media (max-width: 1200px) { .project-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 900px) { .project-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .project-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 400px) { .project-grid { grid-template-columns: 1fr; } }
 
 .project-card {
   background: #fff; border-radius: 12px;

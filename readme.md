@@ -80,37 +80,24 @@ https://raw.githubusercontent.com/BarnettZhou/AxHost-Make/refs/heads/master/inst
 
 发送 Prompt 后等待迁移完成即可。
 
-### 方式四：通过 CLI 初始化单个项目
+### 方式四：通过 CLI 初始化工作空间
 
-如果你未启动 serve，仍可通过命令行在**当前目录**初始化一个 axhost-make 项目：
+如果你未启动 serve，可通过命令行初始化整个工作空间：
 
 ```bash
-mkdir -p ~/workspace/my-project && cd ~/workspace/my-project
-node /path/to/axhost-make/bin/axhost-make.js init
+cd /path/to/axhost-make
+node bin/axhost-make.js init
 ```
 
-`init` 会自动创建以下目录和文件：
+`init` 会检查父级目录下是否仅有 `axhost-make` 目录，确认后自动在工作空间创建以下目录和文件：
 
 ```
-rules/
-changelog/
-changelog/raw/
-memory/
-wiki/
-wiki/raw/
-wiki/pages/
-prototype/
-prototype/resources/
-prototype/resources/js/
-prototype/resources/css/
-prototype/components/
-prototype/pages/
-prototype/index.html       # 独立入口（含左侧树导航 + 文档面板）
-prototype/start.html       # 自动跳转页
-prototype/sitemap.js       # 自动扫描生成的站点地图
-agents.md                  # Agent 全局规则（若不存在）
-readme.md                  # 项目说明（若不存在）
+projects/                  # 项目存放目录
+projects/.projects.json    # 项目元数据表（id / name / createdAt / lastModified）
+package.json               # 方便运行 npm 命令
 ```
+
+初始化完成后会提示是否立即启动服务，输入 `y` 并回车即可通过 `serve` 命令启动。
 
 ---
 
@@ -150,10 +137,10 @@ node axhost-make/bin/axhost-make.js preview [--port <number>]
 当 `axhost-make` 框架自身升级后，如果你希望将最新的独立入口模板、CSS 和 JS 同步到项目中：
 
 ```bash
-# 更新当前目录的项目
-node axhost-make/bin/axhost-make.js update
+# 更新指定项目
+node axhost-make/bin/axhost-make.js update --id <hash>
 
-# 批量更新工作空间下的所有项目
+# 批量更新所有项目
 node axhost-make/bin/axhost-make.js update --all
 ```
 

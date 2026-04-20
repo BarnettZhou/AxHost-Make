@@ -2,7 +2,7 @@
 const path = require('path');
 const { startServer } = require('../server/index.js');
 const { startPreviewServer } = require('../server/preview-server.js');
-const { init } = require('./axhost-init.js');
+const { init, initWorkspace } = require('./axhost-init.js');
 const { update } = require('./axhost-update.js');
 const { build } = require('./axhost-build.js');
 
@@ -71,14 +71,22 @@ async function main() {
 
   if (command === 'init') {
     const projectRoot = process.cwd();
-    init(projectRoot);
+    await initWorkspace(projectRoot);
     return;
   }
 
   if (command === 'update') {
     const projectRoot = process.cwd();
     const isAll = args.includes('--all');
-    update(projectRoot, { all: isAll });
+    const idIndex = args.indexOf('--id');
+    const id = idIndex !== -1 && args[idIndex + 1] ? args[idIndex + 1] : null;
+
+    if (!isAll && !id) {
+      console.error('Usage: axhost-make update --all | --id <hash>');
+      process.exit(1);
+    }
+
+    update(projectRoot, { all: isAll, id });
     return;
   }
 

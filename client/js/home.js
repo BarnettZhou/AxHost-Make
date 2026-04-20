@@ -161,7 +161,7 @@
     state.tabs.forEach(tab => {
       const div = document.createElement('div');
       div.className = 'tab-item' + (tab.projectId === state.activeTabId ? ' active' : '');
-      div.innerHTML = `<span class="tab-name">${escapeHtml(truncateName(tab.projectName))}</span><button class="tab-close" data-project="${escapeHtml(tab.projectId)}">×</button>`;
+      div.innerHTML = `<span class="tab-name">${escapeHtml(truncateName(tab.projectName))}</span><button class="tab-close" data-project="${escapeHtml(tab.projectId)}"><iconpark-icon icon-id="close-small" size="12"></iconpark-icon></button>`;
       div.addEventListener('click', (e) => {
         if (e.target.closest('.tab-close')) return;
         switchToTab(tab.projectId);
@@ -412,7 +412,7 @@
   }
 
   function updateViewUI() {
-    els.viewIcon.textContent = state.viewMode === 'gallery' ? '⊞' : '☰';
+    els.viewIcon.setAttribute('icon-id', state.viewMode === 'gallery' ? 'grid-four' : 'hamburger-button');
   }
 
   // ===== Init =====

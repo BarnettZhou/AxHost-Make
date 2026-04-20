@@ -10,7 +10,7 @@
 <body>
   <div id="app">
     <header id="home-header">
-      <button id="btn-home" title="项目管理首页">🏠</button>
+      <button id="btn-home" title="项目管理首页"><iconpark-icon icon-id="home" size="16"></iconpark-icon></button>
       <div id="tab-bar"></div>
     </header>
 
@@ -19,12 +19,13 @@
       <div id="project-list-view">
         <div class="control-bar">
           <div class="search-box">
+            <iconpark-icon icon-id="search" size="14" class="search-icon"></iconpark-icon>
             <input type="text" id="search-input" placeholder="搜索项目..." autocomplete="off">
           </div>
           <div class="control-group">
             <div class="dropdown" id="sort-dropdown">
               <button class="btn-icon" id="btn-sort">
-                <span>⇅</span>
+                <iconpark-icon icon-id="sort-three" size="14"></iconpark-icon>
                 <span id="sort-label">最近修改</span>
               </button>
               <div class="dropdown-menu">
@@ -38,14 +39,14 @@
               </div>
             </div>
             <button class="btn-icon" id="btn-view-mode" title="切换视图">
-              <span id="view-icon">⊞</span>
+              <iconpark-icon id="view-icon" icon-id="grid-four" size="14"></iconpark-icon>
             </button>
           </div>
         </div>
 
         <div class="action-bar">
-          <button class="btn-primary" id="btn-new-project">+ 新建原型项目</button>
-          <button class="btn-secondary" id="btn-import-project">↓ 导入已有项目</button>
+          <button class="btn-primary" id="btn-new-project"><iconpark-icon icon-id="plus" size="14"></iconpark-icon>新建原型项目</button>
+          <button class="btn-secondary" id="btn-import-project"><iconpark-icon icon-id="download" size="14"></iconpark-icon>导入已有项目</button>
         </div>
 
         <div id="project-list-body">
@@ -54,9 +55,7 @@
       </div>
 
       <!-- Shell iframe 视图 -->
-      <div id="shell-container">
-        <iframe id="shell-frame" src="about:blank"></iframe>
-      </div>
+      <div id="shell-container"></div>
     </main>
   </div>
 
@@ -75,6 +74,7 @@
     </div>
   </div>
 
+  <script src="/client/js/icons.js"></script>
   <script src="/client/js/home.js"></script>
 </body>
 </html>

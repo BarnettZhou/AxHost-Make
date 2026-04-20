@@ -126,14 +126,6 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated agents.md');
   }
 
-  // Copy package.json
-  const pkgSrc = path.join(projectTplRoot, 'package.json');
-  const pkgDest = path.join(projectRoot, 'package.json');
-  if (await exists(pkgSrc)) {
-    await fs.copyFile(pkgSrc, pkgDest);
-    console.log('  - Updated package.json');
-  }
-
   // Ensure missing page resources
   await ensurePageResources(projectRoot);
 
@@ -144,14 +136,22 @@ async function updateSingleProject(projectRoot) {
   console.log('Axhost-Make project updated successfully.');
 }
 
-async function update(projectRoot, options = {}) {
-  if (options.all) {
-    let workspaceRoot = projectRoot;
-    const hasPrototype = await exists(path.join(workspaceRoot, 'prototype'));
-    if (hasPrototype) {
-      workspaceRoot = path.dirname(workspaceRoot);
+async function resolveWorkspaceRoot(currentDir) {
+  let workspaceRoot = currentDir;
+  while (workspaceRoot !== path.dirname(workspaceRoot)) {
+    if (await exists(path.join(workspaceRoot, 'axhost-make'))) {
+      break;
     }
-    const projectsDir = path.join(workspaceRoot, 'projects');
+    workspaceRoot = path.dirname(workspaceRoot);
+  }
+  return workspaceRoot;
+}
+
+async function update(currentDir, options = {}) {
+  const workspaceRoot = await resolveWorkspaceRoot(currentDir);
+  const projectsDir = path.join(workspaceRoot, 'projects');
+
+  if (options.all) {
     const entries = await fs.readdir(projectsDir, { withFileTypes: true }).catch(() => []);
     let updated = 0;
     for (const entry of entries) {
@@ -170,7 +170,23 @@ async function update(projectRoot, options = {}) {
     console.log(`\nTotal ${updated} project(s) updated.`);
     return;
   }
-  return updateSingleProject(projectRoot);
+
+  if (options.id) {
+    const projectPath = path.join(projectsDir, options.id);
+    if (!await exists(projectPath)) {
+      console.error(`Project ${options.id} not found.`);
+      process.exit(1);
+    }
+    if (!await exists(path.join(projectPath, 'prototype'))) {
+      console.error(`Project ${options.id} does not have a prototype directory.`);
+      process.exit(1);
+    }
+    await updateSingleProject(projectPath);
+    return;
+  }
+
+  console.error('Usage: axhost-make update --all | --id <hash>');
+  process.exit(1);
 }
 
 module.exports = { update };
@@ -178,8 +194,16 @@ module.exports = { update };
 if (require.main === module) {
   const args = process.argv.slice(2);
   const isAll = args.includes('--all');
+  const idIndex = args.indexOf('--id');
+  const id = idIndex !== -1 && args[idIndex + 1] ? args[idIndex + 1] : null;
+
+  if (!isAll && !id) {
+    console.error('Usage: axhost-make update --all | --id <hash>');
+    process.exit(1);
+  }
+
   const projectRoot = process.cwd();
-  update(projectRoot, { all: isAll }).catch(err => {
+  update(projectRoot, { all: isAll, id }).catch(err => {
     console.error('Update failed:', err);
     process.exit(1);
   });
