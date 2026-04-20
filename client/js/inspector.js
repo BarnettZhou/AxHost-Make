@@ -8,6 +8,7 @@
   let highlightEl = null;
   let savedOutline = null;
   let savedOutlineOffset = null;
+  let injectedStyle = null;
 
   btnInspect.addEventListener('click', () => {
     active = !active;
@@ -25,6 +26,7 @@
   // Re-attach when iframe loads new page
   iframe.addEventListener('load', () => {
     if (active) {
+      injectedStyle = null; // will be re-injected by attachListeners
       attachListeners();
       setInspectCursor(true);
     }
@@ -34,9 +36,127 @@
     try { return iframe.contentDocument; } catch (e) { return null; }
   }
 
+  function getThemeColors() {
+    const s = getComputedStyle(document.body);
+    return {
+      bgPanel: s.getPropertyValue('--bg-panel').trim() || '#ffffff',
+      border: s.getPropertyValue('--border').trim() || '#e0e0e0',
+      textMain: s.getPropertyValue('--text-main').trim() || '#333333',
+      textMuted: s.getPropertyValue('--text-muted').trim() || '#666666',
+      accent: s.getPropertyValue('--accent').trim() || '#007acc'
+    };
+  }
+
+  function buildPopupCSS() {
+    const c = getThemeColors();
+    return `
+      .inspector-popup {
+        position: absolute;
+        z-index: 999999;
+        background: ${c.bgPanel};
+        border: 1px solid ${c.border};
+        border-radius: 6px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        min-width: 220px;
+        max-width: 320px;
+        font-size: 13px;
+        color: ${c.textMain};
+        user-select: text;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.4;
+      }
+      .inspector-popup-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        border-bottom: 1px solid ${c.border};
+      }
+      .inspector-tag {
+        font-family: Consolas, monospace;
+        font-size: 14px;
+        color: ${c.accent};
+        font-weight: 500;
+      }
+      .inspector-popup-close {
+        background: transparent;
+        border: none;
+        color: ${c.textMuted};
+        font-size: 18px;
+        cursor: pointer;
+        line-height: 1;
+        padding: 0 2px;
+      }
+      .inspector-popup-close:hover {
+        color: ${c.textMain};
+      }
+      .inspector-popup-body {
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .inspector-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .inspector-row label {
+        color: ${c.textMuted};
+        font-size: 12px;
+        width: 42px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .inspector-row span {
+        flex: 1;
+        word-break: break-all;
+        font-family: Consolas, monospace;
+        font-size: 12px;
+        color: ${c.textMain};
+        min-height: 16px;
+      }
+      .inspector-popup-footer {
+        padding: 8px 12px;
+        border-top: 1px solid ${c.border};
+        display: flex;
+        justify-content: flex-end;
+      }
+      .inspector-popup-footer button {
+        background: ${c.accent};
+        color: #fff;
+        border: none;
+        padding: 5px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .inspector-popup-footer button:hover {
+        opacity: 0.9;
+      }
+    `;
+  }
+
+  function injectStyles(doc) {
+    if (!doc || !doc.head) return;
+    if (injectedStyle && injectedStyle.ownerDocument === doc) return;
+    removeStyles();
+    injectedStyle = doc.createElement('style');
+    injectedStyle.textContent = buildPopupCSS();
+    doc.head.appendChild(injectedStyle);
+  }
+
+  function removeStyles() {
+    if (injectedStyle && injectedStyle.parentNode) {
+      injectedStyle.parentNode.removeChild(injectedStyle);
+    }
+    injectedStyle = null;
+  }
+
   function attachListeners() {
     const doc = getDoc();
     if (!doc) return;
+    injectStyles(doc);
     doc.addEventListener('mouseover', onMouseOver, true);
     doc.addEventListener('mouseout', onMouseOut, true);
     doc.addEventListener('click', onClick, true);
@@ -45,12 +165,14 @@
 
   function detachListeners() {
     const doc = getDoc();
-    if (!doc) return;
-    doc.removeEventListener('mouseover', onMouseOver, true);
-    doc.removeEventListener('mouseout', onMouseOut, true);
-    doc.removeEventListener('click', onClick, true);
-    doc.removeEventListener('mousedown', onMouseDown, true);
+    if (doc) {
+      doc.removeEventListener('mouseover', onMouseOver, true);
+      doc.removeEventListener('mouseout', onMouseOut, true);
+      doc.removeEventListener('click', onClick, true);
+      doc.removeEventListener('mousedown', onMouseDown, true);
+    }
     removeHighlight();
+    removeStyles();
   }
 
   function setInspectCursor(enable) {
@@ -59,26 +181,33 @@
     doc.documentElement.style.cursor = enable ? 'crosshair' : '';
   }
 
+  function isInspectorElement(el) {
+    return el.closest && el.closest('.inspector-popup');
+  }
+
   function onMouseOver(e) {
     if (!active) return;
+    if (isInspectorElement(e.target)) return;
     e.stopPropagation();
     highlightElement(e.target);
   }
 
   function onMouseOut(e) {
     if (!active) return;
+    if (isInspectorElement(e.target)) return;
     e.stopPropagation();
     removeHighlight();
   }
 
   function onMouseDown(e) {
     if (!active) return;
-    e.preventDefault();
+    if (isInspectorElement(e.target)) return;
     e.stopPropagation();
   }
 
   function onClick(e) {
     if (!active) return;
+    if (isInspectorElement(e.target)) return;
     e.preventDefault();
     e.stopPropagation();
     showPopup(e.target);
@@ -133,8 +262,15 @@
     const rect = targetEl.getBoundingClientRect();
     const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
     const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
+    const viewportHeight = doc.documentElement.clientHeight;
+
+    let top = rect.bottom + scrollTop + 4;
+    // 预估 popup 高度约 150px，下方空间不足时向上弹出
+    if (rect.bottom + 150 > viewportHeight) {
+      top = rect.top + scrollTop - 150 - 4;
+    }
     popup.style.left = (rect.left + scrollLeft) + 'px';
-    popup.style.top = (rect.bottom + scrollTop + 4) + 'px';
+    popup.style.top = top + 'px';
 
     doc.body.appendChild(popup);
 
