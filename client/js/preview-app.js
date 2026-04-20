@@ -202,11 +202,16 @@
     } else {
       label.addEventListener('click', () => {
         activePath = node.path;
-        if (node.id) location.hash = '#' + node.id;
+        const expectedHash = '#' + node.id;
+        if (location.hash !== expectedHash) {
+          location.hash = expectedHash;
+        } else {
+          // hash 未变化（如点击当前已选中页面），直接触发加载
+          const prefix = type === 'components' ? 'components' : 'pages';
+          preview.src = basePath + prefix + '/' + node.path + '/index.html';
+          loadDocs(type, node.path);
+        }
         renderTree();
-        const prefix = type === 'components' ? 'components' : 'pages';
-        preview.src = basePath + prefix + '/' + node.path + '/index.html';
-        loadDocs(type, node.path);
       });
     }
     return li;

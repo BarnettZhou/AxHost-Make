@@ -58,6 +58,18 @@
   }
   loadProjectName();
 
+  async function loadProjectInfo() {
+    if (!projectId) return;
+    try {
+      const res = await fetch(`/api/project-info?projectId=${projectId}`);
+      const data = await res.json();
+      if (data.code === 0) {
+        window.__axhostProjectInfo = data.data;
+      }
+    } catch (e) {}
+  }
+  loadProjectInfo();
+
   if (btnSettings && settingsDrawer) {
     btnSettings.addEventListener('click', () => {
       settingsDrawer.classList.add('open');
@@ -99,7 +111,12 @@
   function loadPage(type, pagePath) {
     const url = `${prototypeBase}/${type}s/${pagePath}/index.html`;
     previewFrame.src = url;
-    window.__axhostState.currentPage = { type, path: pagePath };
+    const info = window.__axhostProjectInfo || {};
+    const pageRelativePath = `prototype\\${type}s\\${pagePath}`;
+    const pageAbsolutePath = info.projectAbsolutePath
+      ? `${info.projectAbsolutePath}\\prototype\\${type}s\\${pagePath}`
+      : '';
+    window.__axhostState.currentPage = { type, path: pagePath, pageRelativePath, pageAbsolutePath };
     if (window.docPanel && window.docPanel.load) {
       window.docPanel.load(type, pagePath);
     }

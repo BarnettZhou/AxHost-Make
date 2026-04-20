@@ -16,6 +16,7 @@ const { handleDocsGet } = require('./api/docs.js');
 const { handleReorder } = require('./api/reorder.js');
 const { handleMove } = require('./api/move.js');
 const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
+const { handleProjectInfoGet } = require('./api/project-info.js');
 
 function createRouter(workspaceRoot) {
   const CLIENT_ROOT = path.resolve(__dirname, '../client');
@@ -81,6 +82,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/projects' && req.method === 'POST') {
         return handleProjectsPost(req, res, workspaceRoot);
+      }
+      if (urlPath === '/api/project-info' && req.method === 'GET') {
+        return handleProjectInfoGet(req, res, workspaceRoot);
       }
       if (urlPath === '/api/scan' && req.method === 'GET') {
         return handleScan(req, res, projectRoot);

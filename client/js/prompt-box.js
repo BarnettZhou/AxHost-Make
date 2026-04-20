@@ -5,8 +5,9 @@
 
   if (!promptInput || !btnCopy || !promptStatus) return;
 
-  function buildPrompt(userText, pageType, pagePath) {
+  function buildPrompt(userText, pageType, pagePath, pageRelativePath, pageAbsolutePath) {
     const projectId = window.__axhostProjectId || '';
+    const projectInfo = window.__axhostProjectInfo || {};
     const baseUrl = projectId
       ? `http://${location.host}/project/${projectId}/prototype`
       : `http://${location.host}/prototype`;
@@ -21,7 +22,11 @@
       '# Current Page',
       '',
       `- **页面类型**: ${pageType}`,
-      `- **页面路径**: prototype/${pageType}s/${pagePath}`,
+      `- **项目ID**: ${projectId}`,
+      `- **项目目录**: ${projectInfo.projectRelativeDir || ''}`,
+      `- **项目绝对路径**: ${projectInfo.projectAbsolutePath || ''}`,
+      `- **页面相对路径**: ${pageRelativePath || ''}`,
+      `- **页面绝对路径**: ${pageAbsolutePath || ''}`,
       `- **访问 URL**: ${baseUrl}/${pageType}s/${pagePath}/index.html`,
       '',
       '---',
@@ -69,7 +74,13 @@
       updateStatus('⚠️ 请输入修改需求');
       return;
     }
-    const prompt = buildPrompt(userText, state.currentPage.type, state.currentPage.path);
+    const prompt = buildPrompt(
+      userText,
+      state.currentPage.type,
+      state.currentPage.path,
+      state.currentPage.pageRelativePath,
+      state.currentPage.pageAbsolutePath
+    );
     const ok = await copyToClipboard(prompt);
     if (ok) {
       updateStatus('✅ 已复制到剪贴板，可直接粘贴给 Agent', 3000);
