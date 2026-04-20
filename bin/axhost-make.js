@@ -11,7 +11,7 @@ function showHelp() {
 Axhost-Make CLI
 
 Usage:
-  axhost-make init
+  axhost-make init [--non-interactive]
   axhost-make update [--all]
   axhost-make build
   axhost-make serve [--port <number>]
@@ -54,6 +54,7 @@ Commands:
 
 Options:
   --port         Server port (default: 3820 for serve, 8080 for preview)
+  --non-interactive  Skip interactive prompts (for init)
   --parent, -p   Parent path (full path like pages/xxx or hash like 6e3d21e9)
   --to, -t       Target page/component for add-doc (full path or hash)
   --help         Show this help message
@@ -71,7 +72,8 @@ async function main() {
 
   if (command === 'init') {
     const projectRoot = process.cwd();
-    await initWorkspace(projectRoot);
+    const nonInteractive = args.includes('--non-interactive');
+    await initWorkspace(projectRoot, { nonInteractive });
     return;
   }
 

@@ -152,7 +152,8 @@ async function syncStartScripts(workspaceRoot) {
   }
 }
 
-async function initWorkspace(currentDir) {
+async function initWorkspace(currentDir, options = {}) {
+  const { nonInteractive } = options;
   const currentDirName = path.basename(currentDir);
   let workspaceRoot;
 
@@ -217,23 +218,27 @@ async function initWorkspace(currentDir) {
   console.log('  - package.json');
 
   // 3. 提示是否需要立即启动服务
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  const answer = await new Promise(resolve => {
-    rl.question('\n是否立即启动服务？(y/n): ', resolve);
-  });
-  rl.close();
-
-  const shouldStart = answer.trim().toLowerCase();
-  if (shouldStart === 'y' || shouldStart === 'yes' || shouldStart === '') {
-    console.log('正在启动服务...');
-    const { startServer } = require('../server/index.js');
-    startServer({ port: 3820, host: '127.0.0.1', projectRoot: workspaceRoot });
-  } else {
+  if (nonInteractive) {
     console.log('你可以稍后通过 npm run serve 启动服务。');
+  } else {
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    const answer = await new Promise(resolve => {
+      rl.question('\n是否立即启动服务？(y/n): ', resolve);
+    });
+    rl.close();
+
+    const shouldStart = answer.trim().toLowerCase();
+    if (shouldStart === 'y' || shouldStart === 'yes' || shouldStart === '') {
+      console.log('正在启动服务...');
+      const { startServer } = require('../server/index.js');
+      startServer({ port: 3820, host: '127.0.0.1', projectRoot: workspaceRoot });
+    } else {
+      console.log('你可以稍后通过 npm run serve 启动服务。');
+    }
   }
 }
 
