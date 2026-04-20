@@ -1,7 +1,7 @@
 # Axhost-Make Serve Launcher (PowerShell)
 # Double-click start.cmd to run this script
 
-$workspaceRoot = Split-Path -Parent $PSScriptRoot
+$workspaceRoot = $PSScriptRoot
 Set-Location $workspaceRoot
 
 $node = Get-Command node -ErrorAction SilentlyContinue
