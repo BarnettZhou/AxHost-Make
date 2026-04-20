@@ -134,6 +134,24 @@ async function init(projectRoot) {
   console.log('  - readme.md (if not exists)');
 }
 
+async function syncStartScripts(workspaceRoot) {
+  const templateRoot = path.resolve(__dirname, '../templates');
+  const scriptDir = path.join(templateRoot, 'start-script');
+  const files = ['start.ps1', 'start.cmd', 'start.sh'];
+  let copied = 0;
+  for (const file of files) {
+    const src = path.join(scriptDir, file);
+    const dest = path.join(workspaceRoot, file);
+    if (await exists(src)) {
+      await fs.copyFile(src, dest);
+      copied++;
+    }
+  }
+  if (copied > 0) {
+    console.log(`  - Synced ${copied} start script(s)`);
+  }
+}
+
 async function initWorkspace(currentDir) {
   const currentDirName = path.basename(currentDir);
   let workspaceRoot;
@@ -146,6 +164,9 @@ async function initWorkspace(currentDir) {
     console.error('请在 axhost-make 目录内或其父级工作空间目录中运行 init 命令。');
     process.exit(1);
   }
+
+  // 同步启动脚本（幂等）
+  await syncStartScripts(workspaceRoot);
 
   const projectsDir = path.join(workspaceRoot, 'projects');
   if (await exists(projectsDir)) {
@@ -216,7 +237,7 @@ async function initWorkspace(currentDir) {
   }
 }
 
-module.exports = { init, initWorkspace };
+module.exports = { init, initWorkspace, syncStartScripts };
 
 if (require.main === module) {
   const currentDir = process.cwd();

@@ -94,12 +94,18 @@ workspace/
 │   │   ├── router.js         # 路由分发（支持多项目）
 │   │   └── api/              # API 实现
 │   │       ├── projects.js   # GET/POST /api/projects 项目列表/新建
+│   │       ├── export.js     # POST /api/export 导出功能
+│   │       ├── project-info.js # GET /api/project-info 项目元数据
 │   ├── templates/            # 模板目录
 │   │   ├── preview/          # Preview 入口产物（build 生成）
-│   │   └── project/          # 用户项目初始化模板
+│   │   ├── project/          # 用户项目初始化模板
+│   │   └── start-script/     # 启动脚本模板（start.cmd / start.ps1 / start.sh）
 │   ├── skills/               # Kimi Skill 文档
 │   └── agents.md             # 本文件
 │
+├── start.cmd                 # Windows 双击启动脚本（init/update 生成）
+├── start.ps1                 # PowerShell 启动脚本
+├── start.sh                  # Linux/mac 启动脚本
 └── projects/                 # 项目存放目录（与 axhost-make/ 平级）
     ├── .projects.json        # 项目元数据表（id / name / createdAt / lastModified）
     ├── 184bdd45/             # 项目 A（8 位 hash 目录名）
@@ -140,7 +146,8 @@ workspace/
 
 1. 修改 `axhost-make/bin/` 中的脚本。
 2. 如果是 `init.js` 或 `update.js`，修改后建议手动运行一次对应命令验证逻辑。
-3. 若 `update.js` 新增了对 `templates/` 中新文件的复制逻辑，记得同时把该文件放入 `templates/` 目录。
+3. `init.js` 和 `update.js` 都会调用 `syncStartScripts(workspaceRoot)`，将 `templates/start-script/` 下的脚本同步到工作空间根目录。
+4. 若 `update.js` 新增了对 `templates/` 中新文件的复制逻辑，记得同时把该文件放入 `templates/` 目录。
 
 ---
 
