@@ -86,6 +86,7 @@
   // Select all toggle
   selectAllCheckbox.addEventListener('change', () => {
     selectAll = selectAllCheckbox.checked;
+    treeContainer.classList.toggle('all-selected', selectAll);
     renderTree(currentTab);
   });
 

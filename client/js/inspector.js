@@ -67,10 +67,24 @@
       }
       .inspector-popup-header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         padding: 10px 12px;
         border-bottom: 1px solid ${c.border};
+        gap: 8px;
+      }
+      .inspector-header-left {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+      }
+      .inspector-text {
+        color: ${c.textMuted};
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
       .inspector-tag {
         font-family: Consolas, monospace;
@@ -243,10 +257,15 @@
     const tagName = targetEl.tagName.toLowerCase();
     const elId = targetEl.id || '';
     const elClass = targetEl.className || '';
+    const text = (targetEl.textContent || '').trim().replace(/\s+/g, ' ');
+    const displayText = text.length > 50 ? text.slice(0, 50) + '…' : text;
 
     popup.innerHTML = `
       <div class="inspector-popup-header">
-        <span class="inspector-tag">&lt;${tagName}&gt;</span>
+        <div class="inspector-header-left">
+          <span class="inspector-tag">&lt;${tagName}&gt;</span>
+          <span class="inspector-text">${escapeHtml(displayText) || '(无文本内容)'}</span>
+        </div>
         <button class="inspector-popup-close">&times;</button>
       </div>
       <div class="inspector-popup-body">

@@ -17,8 +17,7 @@ body.dark { background: #1a1a1a; color: #e0e0e0; }
   align-items: center;
   height: 44px;
   padding: 0 12px;
-  background: #f0f0f0;
-  border-bottom: 1px solid #ddd;
+  background: #edeef0;
   flex-shrink: 0;
   gap: 8px;
 }

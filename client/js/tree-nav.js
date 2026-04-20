@@ -312,6 +312,8 @@
         if (window.shell && window.shell.loadPage) {
           window.shell.loadPage(type === 'components' ? 'component' : 'page', node.path);
         }
+        // clear active rule item highlight
+        document.querySelectorAll('.rules-item.active').forEach(el => el.classList.remove('active'));
       });
 
       label.addEventListener('contextmenu', (e) => {

@@ -23,6 +23,13 @@
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const previewFrame = document.getElementById('preview-frame');
   const projectNameEl = document.querySelector('#shell-header .title');
+  const rulesRoot = document.getElementById('rules-root');
+  const ruleViewer = document.getElementById('rule-viewer');
+  const ruleViewerContent = document.getElementById('rule-viewer-content');
+  const iframeWrapper = document.getElementById('iframe-wrapper');
+  const promptBox = document.getElementById('prompt-box');
+  const promptResizer = document.getElementById('prompt-resizer');
+  const btnInspect = document.getElementById('btn-inspect');
 
   // Header controls
   const projectId = window.__axhostProjectId || '';
@@ -39,9 +46,14 @@
     panelNav.classList.toggle('hidden', !window.__axhostState.navVisible);
   });
 
+  const docsResizer = document.getElementById('docs-resizer');
+  if (docsResizer && !window.__axhostState.docsVisible) {
+    docsResizer.classList.add('hidden');
+  }
   btnToggleDocs.addEventListener('click', () => {
     window.__axhostState.docsVisible = !window.__axhostState.docsVisible;
     panelDocs.classList.toggle('hidden', !window.__axhostState.docsVisible);
+    if (docsResizer) docsResizer.classList.toggle('hidden', !window.__axhostState.docsVisible);
   });
 
   async function loadProjectName() {
@@ -106,6 +118,7 @@
   }
 
   function loadPage(type, pagePath) {
+    exitRuleMode();
     const url = `${prototypeBase}/${type}s/${pagePath}/index.html`;
     previewFrame.src = url;
     const info = window.__axhostProjectInfo || {};
@@ -123,6 +136,184 @@
     }
   }
 
+  // Rule mode UI toggle
+  function enterRuleMode() {
+    if (btnInspect) btnInspect.classList.add('disabled');
+    if (btnToggleDocs) {
+      btnToggleDocs.classList.add('disabled');
+      window.__axhostState.docsVisible = false;
+      panelDocs.classList.add('hidden');
+    }
+    if (iframeWrapper) iframeWrapper.classList.add('hidden');
+    if (promptBox) promptBox.classList.add('hidden');
+    if (promptResizer) promptResizer.classList.add('hidden');
+    if (ruleViewer) ruleViewer.classList.remove('hidden');
+    // hide inspector popup if any
+    const doc = previewFrame.contentDocument;
+    if (doc) {
+      const popup = doc.querySelector('.inspector-popup');
+      if (popup) popup.remove();
+    }
+  }
+
+  function exitRuleMode() {
+    if (btnInspect) btnInspect.classList.remove('disabled');
+    if (btnToggleDocs) btnToggleDocs.classList.remove('disabled');
+    if (iframeWrapper) iframeWrapper.classList.remove('hidden');
+    if (promptBox) promptBox.classList.remove('hidden');
+    if (promptResizer) promptResizer.classList.remove('hidden');
+    if (ruleViewer) ruleViewer.classList.add('hidden');
+  }
+
+  // Rules panel
+  let activeRuleItem = null;
+
+  async function loadRulesList() {
+    if (!rulesRoot) return;
+    try {
+      const res = await window.apiClient.getDocs('rules');
+      const files = res.code === 0 ? res.data : [];
+      rulesRoot.innerHTML = '';
+      if (files.length === 0) {
+        rulesRoot.innerHTML = '<div style="padding:8px 12px;color:#999;font-size:12px;">暂无规则文件</div>';
+        return;
+      }
+      files.forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'rules-item';
+        item.textContent = name;
+        item.dataset.name = name;
+        item.addEventListener('click', () => loadRuleFile(name, item));
+        rulesRoot.appendChild(item);
+      });
+    } catch (err) {
+      rulesRoot.innerHTML = '<div style="padding:8px 12px;color:#999;font-size:12px;">加载失败</div>';
+    }
+  }
+
+  async function loadRuleFile(name, itemEl) {
+    try {
+      const content = await window.apiClient.getFile(`rules/${name}`);
+      if (activeRuleItem) activeRuleItem.classList.remove('active');
+      activeRuleItem = itemEl;
+      if (activeRuleItem) activeRuleItem.classList.add('active');
+      // clear tree nav active state
+      document.querySelectorAll('#tree-root .tree-label.active').forEach(el => el.classList.remove('active'));
+      enterRuleMode();
+      const html = window.mdRenderer.renderMarkdown(content);
+      ruleViewerContent.innerHTML = html;
+      window.__axhostState.currentPage = { type: 'rule', path: name };
+    } catch (err) {
+      window.showToast('加载规则文件失败', 'error');
+    }
+  }
+
+  function initRulesPanel() {
+    if (isPreview || !rulesRoot) return;
+    loadRulesList();
+
+    // Collapse/expand rules panel
+    const rulesHeader = document.getElementById('rules-header');
+    const panelNavBottom = document.getElementById('panel-nav-bottom');
+    const rulesResizer = document.getElementById('rules-resizer');
+    const panelNav = document.getElementById('panel-nav');
+    const panelNavTop = document.getElementById('panel-nav-top');
+    let savedTreeHeight = null;
+    if (rulesHeader && panelNavBottom && panelNav && panelNavTop) {
+      const saved = localStorage.getItem('axhost-rules-collapsed');
+      if (saved === 'true') {
+        rulesHeader.classList.add('collapsed');
+        panelNavBottom.classList.add('collapsed');
+        panelNav.classList.add('collapsed-rules');
+        if (rulesResizer) rulesResizer.classList.add('hidden');
+        const rulesList = panelNavBottom.querySelector('.rules-list');
+        if (rulesList) rulesList.style.display = 'none';
+        savedTreeHeight = panelNavTop.style.height || '';
+        panelNavTop.style.flex = '1 1 auto';
+        panelNavTop.style.height = 'auto';
+      }
+      rulesHeader.addEventListener('click', () => {
+        const isCollapsed = rulesHeader.classList.toggle('collapsed');
+        panelNavBottom.classList.toggle('collapsed', isCollapsed);
+        panelNav.classList.toggle('collapsed-rules', isCollapsed);
+        if (rulesResizer) rulesResizer.classList.toggle('hidden', isCollapsed);
+        const rulesList = panelNavBottom.querySelector('.rules-list');
+        if (rulesList) {
+          rulesList.style.display = isCollapsed ? 'none' : '';
+        }
+        if (isCollapsed) {
+          savedTreeHeight = panelNavTop.style.height || '';
+          panelNavTop.style.flex = '1 1 auto';
+          panelNavTop.style.height = 'auto';
+        } else {
+          panelNavTop.style.flex = '0 0 auto';
+          panelNavTop.style.height = savedTreeHeight || '60%';
+        }
+        localStorage.setItem('axhost-rules-collapsed', isCollapsed);
+      });
+    }
+
+    // context menu on empty area
+    rulesRoot.addEventListener('contextmenu', (e) => {
+      const item = e.target.closest('.rules-item');
+      if (item) return; // let default behavior or ignore
+      e.preventDefault();
+      showRulesContextMenu(e);
+    });
+  }
+
+  function showRulesContextMenu(e) {
+    removeRulesContextMenu();
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.id = 'rules-context-menu';
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+    const div = document.createElement('div');
+    div.className = 'context-menu-item';
+    div.textContent = '新建文件';
+    div.onclick = () => {
+      removeRulesContextMenu();
+      handleCreateRuleFile();
+    };
+    menu.appendChild(div);
+    document.body.appendChild(menu);
+    setTimeout(() => {
+      document.addEventListener('click', removeRulesContextMenu, { once: true });
+    }, 0);
+  }
+
+  function removeRulesContextMenu() {
+    const menu = document.getElementById('rules-context-menu');
+    if (menu) menu.remove();
+  }
+
+  async function handleCreateRuleFile() {
+    const name = await window.showPrompt('请输入规则文件名', '例如：design-spec');
+    if (!name) return;
+    const raw = name.trim();
+    if (!raw) {
+      window.showToast('文件名不能为空', 'error');
+      return;
+    }
+    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(raw)) {
+      window.showToast('文件名包含非法字符', 'error');
+      return;
+    }
+    const fileName = raw.endsWith('.md') ? raw : raw + '.md';
+    const filePath = `rules/${fileName}`;
+    try {
+      await window.apiClient.postFile(filePath, `# ${raw}\n\n`);
+      window.showToast('规则文件创建成功', 'success');
+      await loadRulesList();
+      // auto select the new file
+      const newItem = rulesRoot.querySelector(`[data-name="${fileName}"]`);
+      if (newItem) loadRuleFile(fileName, newItem);
+    } catch (err) {
+      window.showToast('创建失败: ' + err.message, 'error');
+    }
+  }
+
   // Resizer logic
   function initResizers() {
     let overlay = null;
@@ -136,13 +327,18 @@
       resizer.addEventListener('mousedown', (e) => {
         e.preventDefault();
         document.body.style.userSelect = 'none';
+        target.classList.add('resizing');
         overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;cursor:' + (isVertical ? 'col-resize' : 'row-resize') + ';';
         document.body.appendChild(overlay);
         const startPos = isVertical ? e.clientX : e.clientY;
         const startSize = isVertical ? target.offsetWidth : target.offsetHeight;
         const minSize = isVertical ? 180 : 80;
-        const maxSize = isVertical ? (targetId === 'panel-docs' ? window.innerWidth * 0.5 : 400) : (targetId === 'prompt-box' ? 600 : 300);
+        let maxSize = isVertical ? (targetId === 'panel-docs' ? window.innerWidth * 0.5 : 400) : (targetId === 'prompt-box' ? 600 : 300);
+        if (targetId === 'panel-nav-top') {
+          const panelNav = document.getElementById('panel-nav');
+          maxSize = panelNav ? panelNav.offsetHeight - 80 - 5 : 300;
+        }
         function onMove(ev) {
           const currentPos = isVertical ? ev.clientX : ev.clientY;
           let delta = invert ? startPos - currentPos : currentPos - startPos;
@@ -151,6 +347,7 @@
         }
         function onUp() {
           document.body.style.userSelect = '';
+          target.classList.remove('resizing');
           if (overlay) { overlay.remove(); overlay = null; }
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
@@ -280,7 +477,7 @@
     });
   };
 
-  window.shell = { loadPage };
+  window.shell = { loadPage, exitRuleMode };
 
   // Zoom control
   const zoomLevels = [0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5];
@@ -313,5 +510,6 @@
       window.treeNav.init();
     }
     initResizers();
+    initRulesPanel();
   });
 })();

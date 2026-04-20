@@ -33,19 +33,32 @@
 
     <div id="shell-main">
       <aside id="panel-nav">
-        <div class="nav-tabs">
-          <button data-tab="pages" class="active">Pages</button>
-          <button data-tab="components">Components</button>
+        <div id="panel-nav-top">
+          <div class="nav-tabs">
+            <button data-tab="pages" class="active">Pages</button>
+            <button data-tab="components">Components</button>
+          </div>
+          <div class="tree-container" id="tree-root"></div>
         </div>
-        <div class="tree-container" id="tree-root"></div>
+        <div class="resizer resizer-h" data-target="panel-nav-top" data-dir="h" id="rules-resizer"></div>
+        <div id="panel-nav-bottom">
+          <div class="rules-header" id="rules-header" title="点击收起/展开">
+            <span class="rules-header-arrow">▼</span>
+            <span>Rules</span>
+          </div>
+          <div class="rules-list" id="rules-root"></div>
+        </div>
       </aside>
       <div class="resizer resizer-v" data-target="panel-nav" data-dir="v"></div>
 
       <section id="panel-center">
-        <div class="iframe-wrapper">
+        <div class="iframe-wrapper" id="iframe-wrapper">
           <iframe id="preview-frame" src="about:blank"></iframe>
         </div>
-        <div class="resizer resizer-h" data-target="prompt-box" data-dir="h" data-invert="true"></div>
+        <div id="rule-viewer" class="hidden">
+          <div class="rule-viewer-content" id="rule-viewer-content"></div>
+        </div>
+        <div class="resizer resizer-h" data-target="prompt-box" data-dir="h" data-invert="true" id="prompt-resizer"></div>
         <div id="prompt-box">
           <textarea id="prompt-input" placeholder="描述你想要的修改，例如：将表格背景改为深蓝色，增加一个导出按钮..."></textarea>
           <div class="prompt-actions">
@@ -56,7 +69,7 @@
         </div>
       </section>
 
-      <div class="resizer resizer-v" data-target="panel-docs" data-dir="v" data-invert="true"></div>
+      <div class="resizer resizer-v" data-target="panel-docs" data-dir="v" data-invert="true" id="docs-resizer"></div>
       <aside id="panel-docs" class="hidden">
         <div class="doc-tabs" id="doc-tabs">
           <div class="doc-tabs-scroll" id="doc-tabs-scroll"></div>
