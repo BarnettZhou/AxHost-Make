@@ -16,6 +16,7 @@
       </div>
       <div class="header-center">
         <button id="btn-preview" title="预览"><iconpark-icon icon-id="preview-open" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-export" title="导出"><iconpark-icon icon-id="download" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-settings" title="Settings"><iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon></button>
       </div>
       <div class="header-right">
@@ -71,16 +72,18 @@
     </div>
   </div>
 
-  <div class="drawer-overlay" id="settings-overlay"></div>
-  <div class="drawer" id="settings-drawer">
-    <div class="drawer-header">
-      <div class="drawer-title">项目设置</div>
-      <button class="drawer-close" id="settings-close">&times;</button>
-    </div>
-    <div class="drawer-body">
-      <label for="project-name-input">项目名称</label>
-      <input type="text" id="project-name-input" placeholder="Prototype">
-      <button id="btn-save-settings">保存</button>
+  <div id="settings-modal" class="settings-modal">
+    <div class="settings-modal-overlay"></div>
+    <div class="settings-modal-content">
+      <div class="settings-modal-header">
+        <h4>项目设置</h4>
+        <button class="settings-modal-close" id="settings-close">&times;</button>
+      </div>
+      <div class="settings-modal-body">
+        <label for="project-name-input">项目名称</label>
+        <input type="text" id="project-name-input" placeholder="Prototype">
+        <button id="btn-save-settings">保存</button>
+      </div>
     </div>
   </div>
 
@@ -94,8 +97,46 @@
   <script src="/client/assets/marked.min.js"></script>
   <script src="/client/js/api-client.js"></script>
   <script src="/client/js/md-renderer.js"></script>
+  <!-- Export Modal -->
+  <div id="export-modal" class="export-modal">
+    <div class="export-modal-overlay"></div>
+    <div class="export-modal-content">
+      <div class="export-modal-header">
+        <h4>导出项目</h4>
+        <button class="export-modal-close" id="export-modal-close">&times;</button>
+      </div>
+      <div class="export-modal-body">
+        <div class="export-field">
+          <label>项目名称</label>
+          <input type="text" id="export-project-name" placeholder="项目名称">
+        </div>
+        <div class="export-field">
+          <label>保存目录</label>
+          <div class="export-dir-row">
+            <input type="text" id="export-target-dir" placeholder="保存目录">
+            <button id="export-select-dir">选择</button>
+            <input type="file" id="export-dir-input" webkitdirectory directory style="display:none">
+          </div>
+        </div>
+        <div class="export-tabs">
+          <button data-tab="pages" class="active">pages</button>
+          <button data-tab="components">components</button>
+        </div>
+        <div class="export-tree" id="export-tree"></div>
+        <div class="export-select-all">
+          <label><input type="checkbox" id="export-select-all" checked> 全选</label>
+        </div>
+      </div>
+      <div class="export-modal-footer">
+        <button id="export-cancel">取消</button>
+        <button id="export-confirm" class="primary">导出</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/client/js/tree-nav.js"></script>
   <script src="/client/js/doc-panel.js"></script>
+  <script src="/client/js/export-modal.js"></script>
   <script src="/client/js/prompt-box.js"></script>
   <script>
     (function(){

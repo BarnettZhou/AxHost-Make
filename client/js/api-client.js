@@ -63,6 +63,10 @@
     postMove: (data) => request('/api/move', {
       method: 'POST',
       body: JSON.stringify(data)
+    }),
+    postExport: (data) => request('/api/export', {
+      method: 'POST',
+      body: JSON.stringify(data)
     })
   };
 })();

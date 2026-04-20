@@ -17,8 +17,7 @@
   const btnToggleDocs = document.getElementById('btn-toggle-docs');
   const btnPreview = document.getElementById('btn-preview');
   const btnSettings = document.getElementById('btn-settings');
-  const settingsOverlay = document.getElementById('settings-overlay');
-  const settingsDrawer = document.getElementById('settings-drawer');
+  const settingsModal = document.getElementById('settings-modal');
   const settingsClose = document.getElementById('settings-close');
   const projectNameInput = document.getElementById('project-name-input');
   const btnSaveSettings = document.getElementById('btn-save-settings');
@@ -70,18 +69,16 @@
   }
   loadProjectInfo();
 
-  if (btnSettings && settingsDrawer) {
+  if (btnSettings && settingsModal) {
     btnSettings.addEventListener('click', () => {
-      settingsDrawer.classList.add('open');
-      settingsOverlay.classList.add('open');
+      settingsModal.classList.add('open');
     });
     settingsClose.addEventListener('click', closeSettings);
-    settingsOverlay.addEventListener('click', closeSettings);
+    settingsModal.querySelector('.settings-modal-overlay').addEventListener('click', closeSettings);
   }
 
   function closeSettings() {
-    settingsDrawer.classList.remove('open');
-    settingsOverlay.classList.remove('open');
+    settingsModal.classList.remove('open');
   }
 
   if (btnSaveSettings) {
