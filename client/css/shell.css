@@ -1101,7 +1101,7 @@ body.dark .doc-tab.active {
   border-radius: 6px;
   width: 780px;
   max-width: 95vw;
-  max-height: 85vh;
+  height: 600px;
   display: flex;
   flex-direction: column;
   z-index: 1;
