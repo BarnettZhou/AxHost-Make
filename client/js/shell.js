@@ -41,6 +41,40 @@
     });
   }
 
+  // Editor dropdown
+  const btnOpenEditor = document.getElementById('btn-open-editor');
+  const editorDropdown = document.getElementById('editor-dropdown');
+  if (btnOpenEditor && editorDropdown) {
+    btnOpenEditor.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const rect = btnOpenEditor.getBoundingClientRect();
+      editorDropdown.style.left = rect.left + 'px';
+      editorDropdown.style.top = (rect.bottom + 4) + 'px';
+      editorDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!editorDropdown.contains(e.target) && e.target !== btnOpenEditor) {
+        editorDropdown.classList.remove('open');
+      }
+    });
+    editorDropdown.querySelectorAll('.editor-dropdown-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        editorDropdown.classList.remove('open');
+        const editor = item.dataset.editor;
+        try {
+          const res = await window.apiClient.postOpenEditor({ editor });
+          if (res.code === 0) {
+            window.showToast(`已在 ${editor === 'vscode' ? 'VS Code' : 'Cursor'} 中打开`, 'success');
+          } else {
+            window.showToast(res.message || '打开失败', 'error');
+          }
+        } catch (err) {
+          window.showToast('打开失败: ' + err.message, 'error');
+        }
+      });
+    });
+  }
+
   btnToggleNav.addEventListener('click', () => {
     window.__axhostState.navVisible = !window.__axhostState.navVisible;
     panelNav.classList.toggle('hidden', !window.__axhostState.navVisible);

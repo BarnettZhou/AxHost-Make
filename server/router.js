@@ -18,6 +18,7 @@ const { handleMove } = require('./api/move.js');
 const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
 const { handleProjectInfoGet } = require('./api/project-info.js');
 const { handleExportDefaultDir, handleExportPost } = require('./api/export.js');
+const { handleOpenEditor } = require('./api/open-editor.js');
 
 function createRouter(workspaceRoot) {
   const CLIENT_ROOT = path.resolve(__dirname, '../client');
@@ -92,6 +93,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/export' && req.method === 'POST') {
         return handleExportPost(req, res, workspaceRoot);
+      }
+      if (urlPath === '/api/open-editor' && req.method === 'POST') {
+        return handleOpenEditor(req, res, workspaceRoot);
       }
       if (urlPath === '/api/scan' && req.method === 'GET') {
         return handleScan(req, res, projectRoot);

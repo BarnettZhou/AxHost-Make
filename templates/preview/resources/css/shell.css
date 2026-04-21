@@ -1211,3 +1211,31 @@ body.dark .doc-tab.active {
 .inspector-popup-footer button:hover {
   opacity: 0.9;
 }
+
+/* Editor Dropdown */
+.editor-dropdown {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 160px;
+  z-index: 100;
+  display: none;
+  padding: 4px 0;
+}
+.editor-dropdown.open {
+  display: block;
+}
+.editor-dropdown-item {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--text-main);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.editor-dropdown-item:hover {
+  background: var(--bg-hover);
+}

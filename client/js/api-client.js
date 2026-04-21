@@ -67,6 +67,10 @@
     postExport: (data) => request('/api/export', {
       method: 'POST',
       body: JSON.stringify(data)
+    }),
+    postOpenEditor: (data) => request('/api/open-editor', {
+      method: 'POST',
+      body: JSON.stringify(data)
     })
   };
 })();

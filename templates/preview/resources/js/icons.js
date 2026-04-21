@@ -1,7 +1,7 @@
 (function () {
-  var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_34.835049b2e3a5e33f583f4270ad21a5a4.js';
+  var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_36.63bcbc2a87e42b76856d91366e668060.js';
   if (window.__axhostIconParkES5) {
-    url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_34.835049b2e3a5e33f583f4270ad21a5a4.es5.js';
+    url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_36.63bcbc2a87e42b76856d91366e668060.es5.js';
   }
   if (!document.querySelector('script[data-iconpark]')) {
     var script = document.createElement('script');
