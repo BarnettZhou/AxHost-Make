@@ -391,9 +391,9 @@ body.dark .form-error { color: #ff7875; }
 }
 #settings-modal .modal-body,
 #login-modal .modal-body {
-  min-height: 60px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 0;
 }
 
 /* Empty state */
