@@ -857,6 +857,7 @@ body.dark .doc-tab.active {
 
 #create-remote-project-modal.modal-overlay {
   display: none;
+  z-index: 1002;
 }
 #create-remote-project-modal.modal-overlay.active {
   display: flex;
