@@ -1099,8 +1099,8 @@ body.dark .doc-tab.active {
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 6px;
-  width: 520px;
-  max-width: 90vw;
+  width: 780px;
+  max-width: 95vw;
   max-height: 85vh;
   display: flex;
   flex-direction: column;
@@ -1125,12 +1125,48 @@ body.dark .doc-tab.active {
   cursor: pointer;
 }
 .export-modal-body {
-  padding: 16px;
+  padding: 0;
   flex: 1;
   overflow: hidden;
   display: flex;
+  flex-direction: row;
+}
+.export-left-panel {
+  width: 280px;
+  padding: 16px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.export-right-panel {
+  flex: 1;
+  padding: 16px;
+  display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
+}
+.export-mode-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+.export-mode-tabs button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 13px;
+}
+.export-mode-tabs button.active {
+  color: var(--text-main);
+  border-bottom: 2px solid var(--accent);
+}
+.export-mode-content.hidden {
+  display: none;
 }
 .export-field label {
   display: block;

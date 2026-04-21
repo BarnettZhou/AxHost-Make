@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { execSync } = require('child_process');
+const { createReadStream } = require('fs');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -143,6 +144,38 @@ async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selecte
   );
 }
 
+async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents) {
+  await fs.mkdir(exportDir, { recursive: true });
+
+  const srcResources = path.join(srcPrototypeDir, 'resources');
+  const destResources = path.join(exportDir, 'resources');
+  if (await exists(srcResources)) {
+    await copyDir(srcResources, destResources);
+  }
+
+  const filesToCopy = ['index.html', 'start.html', 'icon.svg'];
+  for (const file of filesToCopy) {
+    const srcFile = path.join(srcPrototypeDir, file);
+    if (await exists(srcFile)) {
+      await fs.copyFile(srcFile, path.join(exportDir, file));
+    }
+  }
+
+  await rewriteSitemap(srcPrototypeDir, exportDir, selectedPages || [], selectedComponents || []);
+
+  const pagesDir = path.join(srcPrototypeDir, 'pages');
+  const destPagesDir = path.join(exportDir, 'pages');
+  for (const pagePath of (selectedPages || [])) {
+    await copyPageOrComponent(pagesDir, destPagesDir, pagePath);
+  }
+
+  const componentsDir = path.join(srcPrototypeDir, 'components');
+  const destComponentsDir = path.join(exportDir, 'components');
+  for (const compPath of (selectedComponents || [])) {
+    await copyPageOrComponent(componentsDir, destComponentsDir, compPath);
+  }
+}
+
 async function handleExportPost(req, res, workspaceRoot) {
   let body = '';
   req.on('data', chunk => body += chunk);
@@ -168,41 +201,7 @@ async function handleExportPost(req, res, workspaceRoot) {
       const srcPrototypeDir = path.join(srcProjectDir, 'prototype');
       const exportDir = path.join(targetDir, projectName);
 
-      // Ensure target dir exists
-      await fs.mkdir(exportDir, { recursive: true });
-
-      // 1. Copy shared resources
-      const srcResources = path.join(srcPrototypeDir, 'resources');
-      const destResources = path.join(exportDir, 'resources');
-      if (await exists(srcResources)) {
-        await copyDir(srcResources, destResources);
-      }
-
-      // 2. Copy root-level prototype files (excluding sitemap files, rewritten later)
-      const filesToCopy = ['index.html', 'start.html', 'icon.svg'];
-      for (const file of filesToCopy) {
-        const srcFile = path.join(srcPrototypeDir, file);
-        if (await exists(srcFile)) {
-          await fs.copyFile(srcFile, path.join(exportDir, file));
-        }
-      }
-
-      // 3. Rewrite sitemap.js and .axhost-map.json based on selection
-      await rewriteSitemap(srcPrototypeDir, exportDir, selectedPages || [], selectedComponents || []);
-
-      // 4. Copy selected pages
-      const pagesDir = path.join(srcPrototypeDir, 'pages');
-      const destPagesDir = path.join(exportDir, 'pages');
-      for (const pagePath of (selectedPages || [])) {
-        await copyPageOrComponent(pagesDir, destPagesDir, pagePath);
-      }
-
-      // 5. Copy selected components
-      const componentsDir = path.join(srcPrototypeDir, 'components');
-      const destComponentsDir = path.join(exportDir, 'components');
-      for (const compPath of (selectedComponents || [])) {
-        await copyPageOrComponent(componentsDir, destComponentsDir, compPath);
-      }
+      await prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents);
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { exportPath: exportDir } }));
@@ -213,4 +212,77 @@ async function handleExportPost(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleExportDefaultDir, handleExportPost };
+async function handleExportPublish(req, res, workspaceRoot) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const { serverUrl, token, remoteProjectId, selectedPages, selectedComponents } = JSON.parse(body || '{}');
+
+      if (!serverUrl || !token || !remoteProjectId) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'serverUrl, token and remoteProjectId are required' }));
+        return;
+      }
+
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const projectId = url.searchParams.get('project');
+      if (!projectId) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'project is required' }));
+        return;
+      }
+
+      const srcProjectDir = path.join(workspaceRoot, 'projects', projectId);
+      const srcPrototypeDir = path.join(srcProjectDir, 'prototype');
+      const cacheDir = path.join(workspaceRoot, 'cache', projectId);
+      const zipPath = cacheDir + '.zip';
+
+      // 1. Clean and create temp dir
+      try { await fs.rm(cacheDir, { recursive: true, force: true }); } catch (e) {}
+      await fs.mkdir(cacheDir, { recursive: true });
+
+      // 2. Copy files
+      await prepareExportDir(srcPrototypeDir, cacheDir, selectedPages, selectedComponents);
+
+      // 3. Pack to zip using tar (bsdtar supports zip on Windows 10+)
+      try { await fs.rm(zipPath, { force: true }); } catch (e) {}
+      execSync(`tar -acf "${zipPath}" -C "${cacheDir}" .`, { timeout: 30000 });
+
+      // 4. Upload to AxHost
+      const uploadUrl = serverUrl.replace(/\/+$/, '') + `/api/projects/${remoteProjectId}/update-file`;
+      const fileBuffer = await fs.readFile(zipPath);
+      const blob = new Blob([fileBuffer]);
+      const formData = new FormData();
+      formData.append('file', blob, 'project.zip');
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData
+      });
+
+      let uploadData = {};
+      try {
+        uploadData = await uploadRes.json();
+      } catch (e) {}
+
+      // 5. Cleanup
+      try { await fs.rm(cacheDir, { recursive: true, force: true }); } catch (e) {}
+      try { await fs.rm(zipPath, { force: true }); } catch (e) {}
+
+      if (uploadRes.ok) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 0, data: uploadData }));
+      } else {
+        res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 502, message: uploadData.message || 'Upload failed', status: uploadRes.status }));
+      }
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 500, message: err.message }));
+    }
+  });
+}
+
+module.exports = { handleExportDefaultDir, handleExportPost, handleExportPublish };

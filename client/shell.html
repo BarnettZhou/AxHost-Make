@@ -21,7 +21,7 @@
           <div class="editor-dropdown-item" data-editor="vscode">使用 VS Code 打开</div>
           <div class="editor-dropdown-item" data-editor="cursor">使用 Cursor 打开</div>
         </div>
-        <button id="btn-export" title="导出"><iconpark-icon icon-id="download" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-export" title="导出"><iconpark-icon icon-id="upload" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-inspect" title="抓取元素"><iconpark-icon icon-id="magic" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-settings" title="Settings"><iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon></button>
       </div>
@@ -168,30 +168,75 @@
         <button class="export-modal-close" id="export-modal-close">&times;</button>
       </div>
       <div class="export-modal-body">
-        <div class="export-field">
-          <label>项目名称</label>
-          <input type="text" id="export-project-name" placeholder="项目名称">
-        </div>
-        <div class="export-field">
-          <label>保存目录</label>
-          <div class="export-dir-row">
-            <input type="text" id="export-target-dir" placeholder="保存目录">
-            <button id="export-select-dir">选择</button>
-            <input type="file" id="export-dir-input" webkitdirectory directory style="display:none">
+        <div class="export-left-panel">
+          <div class="export-mode-tabs">
+            <button data-mode="local" class="active">本地导出</button>
+            <button data-mode="remote">线上发布</button>
+          </div>
+          <div class="export-mode-content" id="export-local-content">
+            <div class="export-field">
+              <label>项目名称</label>
+              <input type="text" id="export-project-name" placeholder="项目名称">
+            </div>
+            <div class="export-field">
+              <label>保存目录</label>
+              <div class="export-dir-row">
+                <input type="text" id="export-target-dir" placeholder="保存目录">
+                <button id="export-select-dir">选择</button>
+                <input type="file" id="export-dir-input" webkitdirectory directory style="display:none">
+              </div>
+            </div>
+          </div>
+          <div class="export-mode-content hidden" id="export-remote-content">
+            <div class="export-field">
+              <label>托管项目</label>
+              <div class="host-project-row" id="export-host-project-row">
+                <div class="host-project-select-wrap" id="export-host-project-wrap">
+                  <input type="text" id="export-host-project-search" placeholder="搜索或选择项目..." autocomplete="off">
+                  <div class="host-project-dropdown" id="export-host-project-dropdown"></div>
+                  <div class="host-project-linked" id="export-host-project-linked" style="display:none;">
+                    <span id="export-host-project-linked-name"></span>
+                    <button class="text-btn" id="export-btn-unlink-project" title="解除关联">
+                      <iconpark-icon icon-id="close-small" size="12" color="currentColor"></iconpark-icon>
+                    </button>
+                  </div>
+                </div>
+                <button class="text-btn" id="export-btn-create-remote-project" title="创建新项目">
+                  <iconpark-icon icon-id="plus" size="14" color="currentColor"></iconpark-icon>
+                </button>
+              </div>
+              <div class="host-project-hint" id="export-host-project-hint"></div>
+            </div>
           </div>
         </div>
-        <div class="export-tabs">
-          <button data-tab="pages" class="active">pages</button>
-          <button data-tab="components">components</button>
-        </div>
-        <div class="export-tree" id="export-tree"></div>
-        <div class="export-select-all">
-          <label><input type="checkbox" id="export-select-all" checked> 全选</label>
+        <div class="export-right-panel">
+          <div class="export-tabs">
+            <button data-tab="pages" class="active">pages</button>
+            <button data-tab="components">components</button>
+          </div>
+          <div class="export-tree" id="export-tree"></div>
+          <div class="export-select-all">
+            <label><input type="checkbox" id="export-select-all" checked> 全选</label>
+          </div>
         </div>
       </div>
       <div class="export-modal-footer">
         <button id="export-cancel">取消</button>
         <button id="export-confirm" class="primary">导出</button>
+      </div>
+    </div>
+  </div>
+  <div class="modal-overlay" id="export-create-remote-modal">
+    <div class="modal-content" style="width:360px;">
+      <div class="modal-title">创建新项目</div>
+      <div class="modal-body">
+        <label for="export-new-remote-project-name">项目名称</label>
+        <input type="text" id="export-new-remote-project-name" placeholder="请输入项目名称" autocomplete="off">
+        <div id="export-create-remote-error" class="form-error"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="export-btn-cancel-create-remote">取消</button>
+        <button class="btn-primary" id="export-btn-confirm-create-remote">创建</button>
       </div>
     </div>
   </div>

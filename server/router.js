@@ -17,7 +17,7 @@ const { handleReorder } = require('./api/reorder.js');
 const { handleMove } = require('./api/move.js');
 const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
 const { handleProjectInfoGet } = require('./api/project-info.js');
-const { handleExportDefaultDir, handleExportPost } = require('./api/export.js');
+const { handleExportDefaultDir, handleExportPost, handleExportPublish } = require('./api/export.js');
 const { handleOpenEditor } = require('./api/open-editor.js');
 const { handleAxHostProxy } = require('./api/axhost-proxy.js');
 
@@ -94,6 +94,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/export' && req.method === 'POST') {
         return handleExportPost(req, res, workspaceRoot);
+      }
+      if (urlPath === '/api/export/publish' && req.method === 'POST') {
+        return handleExportPublish(req, res, workspaceRoot);
       }
       if (urlPath === '/api/open-editor' && req.method === 'POST') {
         return handleOpenEditor(req, res, workspaceRoot);
