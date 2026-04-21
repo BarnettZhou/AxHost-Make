@@ -172,7 +172,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serverUrl: baseUrl,
-          path: '/api/projects',
+          path: '/api/projects?project_type=my',
           method: 'GET',
           headers: token ? { 'Authorization': 'Bearer ' + token } : {}
         })
