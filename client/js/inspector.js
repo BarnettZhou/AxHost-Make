@@ -259,6 +259,10 @@
     const elClass = targetEl.className || '';
     const text = (targetEl.textContent || '').trim().replace(/\s+/g, ' ');
     const displayText = text.length > 50 ? text.slice(0, 50) + '…' : text;
+    const rect = targetEl.getBoundingClientRect();
+    const computed = getComputedStyle(targetEl);
+    const fontSize = computed.fontSize || '-';
+    const dims = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
 
     popup.innerHTML = `
       <div class="inspector-popup-header">
@@ -271,6 +275,8 @@
       <div class="inspector-popup-body">
         <div class="inspector-row"><label>ID</label><span>${escapeHtml(elId)}</span></div>
         <div class="inspector-row"><label>Class</label><span>${escapeHtml(elClass)}</span></div>
+        <div class="inspector-row"><label>尺寸</label><span>${escapeHtml(dims)}</span></div>
+        <div class="inspector-row"><label>字号</label><span>${escapeHtml(fontSize)}</span></div>
       </div>
       <div class="inspector-popup-footer">
         <button class="inspector-copy-selector">复制选择器</button>
@@ -280,7 +286,6 @@
     doc.body.appendChild(popup);
 
     // Position
-    const rect = targetEl.getBoundingClientRect();
     const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
     const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
     const viewportHeight = doc.documentElement.clientHeight;
