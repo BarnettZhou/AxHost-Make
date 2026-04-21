@@ -264,6 +264,7 @@
       resizer.addEventListener('mousedown', (e) => {
         e.preventDefault();
         document.body.style.userSelect = 'none';
+        target.classList.add('resizing');
         overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;cursor:col-resize;';
         document.body.appendChild(overlay);
@@ -276,6 +277,7 @@
         }
         function onUp() {
           document.body.style.userSelect = '';
+          target.classList.remove('resizing');
           if (overlay) { overlay.remove(); overlay = null; }
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);

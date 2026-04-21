@@ -653,16 +653,28 @@ body.dark .doc-tab.active {
   font-size: 13px;
   margin-bottom: 12px;
 }
-.settings-modal-body button {
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  padding: 6px 14px;
+.settings-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+}
+.settings-modal-footer button {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 6px 16px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 13px;
 }
-.settings-modal-body button:hover {
+.settings-modal-footer button.primary {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+.settings-modal-footer button:hover {
   opacity: 0.9;
 }
 

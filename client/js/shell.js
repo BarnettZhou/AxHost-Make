@@ -87,6 +87,8 @@
     });
     settingsClose.addEventListener('click', closeSettings);
     settingsModal.querySelector('.settings-modal-overlay').addEventListener('click', closeSettings);
+    const btnCancel = document.getElementById('settings-modal-cancel');
+    if (btnCancel) btnCancel.addEventListener('click', closeSettings);
   }
 
   function closeSettings() {
