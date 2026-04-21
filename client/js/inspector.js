@@ -6,8 +6,7 @@
   let active = false;
   let popup = null;
   let highlightEl = null;
-  let savedOutline = null;
-  let savedOutlineOffset = null;
+  let overlayEl = null;
   let injectedStyle = null;
 
   btnInspect.addEventListener('click', () => {
@@ -26,7 +25,8 @@
   // Re-attach when iframe loads new page
   iframe.addEventListener('load', () => {
     if (active) {
-      injectedStyle = null; // will be re-injected by attachListeners
+      injectedStyle = null;
+      overlayEl = null;
       attachListeners();
       setInspectCursor(true);
     }
@@ -50,6 +50,16 @@
   function buildPopupCSS() {
     const c = getThemeColors();
     return `
+      .inspector-overlay {
+        position: absolute;
+        z-index: 999998;
+        pointer-events: none;
+        background: rgba(22, 119, 255, 0.15);
+        border: 1px solid rgba(22, 119, 255, 0.8);
+        border-radius: 2px;
+        transition: all 0.05s ease;
+        display: none;
+      }
       .inspector-popup {
         position: absolute;
         z-index: 999999;
@@ -134,10 +144,12 @@
         padding: 8px 12px;
         border-top: 1px solid ${c.border};
         display: flex;
-        justify-content: flex-end;
+        align-items: center;
+        gap: 8px;
       }
-      .inspector-popup-footer button {
-        background: ${c.accent};
+      .inspector-popup-footer .inspector-copy-selector {
+        margin-left: auto;
+        background: #1677ff;
         color: #fff;
         border: none;
         padding: 5px 12px;
@@ -145,8 +157,29 @@
         cursor: pointer;
         font-size: 12px;
       }
-      .inspector-popup-footer button:hover {
+      .inspector-popup-footer .inspector-copy-selector:hover {
         opacity: 0.9;
+      }
+      .inspector-popup-footer .text-btn {
+        background: transparent;
+        border: none;
+        color: ${c.textMuted};
+        cursor: pointer;
+        padding: 2px 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        font-size: 14px;
+        line-height: 1;
+      }
+      .inspector-popup-footer .text-btn:hover:not(:disabled) {
+        color: ${c.textMain};
+        background: rgba(0,0,0,0.05);
+      }
+      .inspector-popup-footer .text-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
     `;
   }
@@ -167,10 +200,26 @@
     injectedStyle = null;
   }
 
+  function createOverlay(doc) {
+    if (overlayEl && overlayEl.ownerDocument === doc) return;
+    removeOverlay();
+    overlayEl = doc.createElement('div');
+    overlayEl.className = 'inspector-overlay';
+    doc.body.appendChild(overlayEl);
+  }
+
+  function removeOverlay() {
+    if (overlayEl && overlayEl.parentNode) {
+      overlayEl.parentNode.removeChild(overlayEl);
+    }
+    overlayEl = null;
+  }
+
   function attachListeners() {
     const doc = getDoc();
     if (!doc) return;
     injectStyles(doc);
+    createOverlay(doc);
     doc.addEventListener('mouseover', onMouseOver, true);
     doc.addEventListener('mouseout', onMouseOut, true);
     doc.addEventListener('click', onClick, true);
@@ -186,6 +235,8 @@
       doc.removeEventListener('mousedown', onMouseDown, true);
     }
     removeHighlight();
+    removeOverlay();
+    hidePopup();
     removeStyles();
   }
 
@@ -230,19 +281,22 @@
   function highlightElement(el) {
     removeHighlight();
     highlightEl = el;
-    savedOutline = el.style.getPropertyValue('outline');
-    savedOutlineOffset = el.style.getPropertyValue('outline-offset');
-    el.style.setProperty('outline', '2px solid #1677ff', 'important');
-    el.style.setProperty('outline-offset', '2px', 'important');
+    const doc = getDoc();
+    if (!doc || !overlayEl) return;
+    const rect = el.getBoundingClientRect();
+    const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
+    const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
+    overlayEl.style.left = (rect.left + scrollLeft) + 'px';
+    overlayEl.style.top = (rect.top + scrollTop) + 'px';
+    overlayEl.style.width = rect.width + 'px';
+    overlayEl.style.height = rect.height + 'px';
+    overlayEl.style.display = 'block';
   }
 
   function removeHighlight() {
-    if (highlightEl) {
-      highlightEl.style.setProperty('outline', savedOutline || '', '');
-      highlightEl.style.setProperty('outline-offset', savedOutlineOffset || '', '');
-      highlightEl = null;
-      savedOutline = null;
-      savedOutlineOffset = null;
+    highlightEl = null;
+    if (overlayEl) {
+      overlayEl.style.display = 'none';
     }
   }
 
@@ -263,6 +317,7 @@
     const computed = getComputedStyle(targetEl);
     const fontSize = computed.fontSize || '-';
     const dims = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
+    const hasParent = !!targetEl.parentElement && targetEl.parentElement !== doc.body;
 
     popup.innerHTML = `
       <div class="inspector-popup-header">
@@ -279,6 +334,7 @@
         <div class="inspector-row"><label>字号</label><span>${escapeHtml(fontSize)}</span></div>
       </div>
       <div class="inspector-popup-footer">
+        <button class="inspector-popup-parent text-btn" title="选中父元素" ${hasParent ? '' : 'disabled'}>↑</button>
         <button class="inspector-copy-selector">复制选择器</button>
       </div>
     `;
@@ -293,9 +349,9 @@
     const popupWidth = popup.offsetWidth || 220;
 
     let top = rect.bottom + scrollTop + 4;
-    // 预估 popup 高度约 150px，下方空间不足时向上弹出
-    if (rect.bottom + 150 > viewportHeight) {
-      top = rect.top + scrollTop - 150 - 4;
+    // 预估 popup 高度约 180px，下方空间不足时向上弹出
+    if (rect.bottom + 180 > viewportHeight) {
+      top = rect.top + scrollTop - 180 - 4;
     }
 
     let left = rect.left + scrollLeft;
@@ -318,6 +374,17 @@
       const selector = generateSelector(targetEl);
       copyToClipboard(selector);
     });
+    const btnParent = popup.querySelector('.inspector-popup-parent');
+    if (btnParent && hasParent) {
+      btnParent.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const parent = targetEl.parentElement;
+        if (parent) {
+          highlightElement(parent);
+          showPopup(parent);
+        }
+      });
+    }
   }
 
   function hidePopup() {
