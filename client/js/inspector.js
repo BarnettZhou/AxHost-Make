@@ -165,12 +165,11 @@
         border: none;
         color: ${c.textMuted};
         cursor: pointer;
-        padding: 2px 6px;
+        padding: 2px;
         display: flex;
         align-items: center;
         justify-content: center;
         border-radius: 4px;
-        font-size: 14px;
         line-height: 1;
       }
       .inspector-popup-footer .text-btn:hover:not(:disabled) {
@@ -200,6 +199,20 @@
     injectedStyle = null;
   }
 
+  function injectIconPark(doc) {
+    if (!doc || !doc.head) return;
+    if (doc.querySelector('script[data-iconpark]')) return;
+    var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_39.3d5334329926fcf46130549c922bd1c4.js';
+    if (window.__axhostIconParkES5) {
+      url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_39.3d5334329926fcf46130549c922bd1c4.es5.js';
+    }
+    var script = doc.createElement('script');
+    script.src = url;
+    script.defer = true;
+    script.setAttribute('data-iconpark', 'true');
+    doc.head.appendChild(script);
+  }
+
   function createOverlay(doc) {
     if (overlayEl && overlayEl.ownerDocument === doc) return;
     removeOverlay();
@@ -219,6 +232,7 @@
     const doc = getDoc();
     if (!doc) return;
     injectStyles(doc);
+    injectIconPark(doc);
     createOverlay(doc);
     doc.addEventListener('mouseover', onMouseOver, true);
     doc.addEventListener('mouseout', onMouseOut, true);
@@ -300,7 +314,7 @@
     }
   }
 
-  function showPopup(targetEl) {
+  function showPopup(targetEl, opts) {
     const doc = getDoc();
     if (!doc) return;
     hidePopup();
@@ -334,7 +348,9 @@
         <div class="inspector-row"><label>字号</label><span>${escapeHtml(fontSize)}</span></div>
       </div>
       <div class="inspector-popup-footer">
-        <button class="inspector-popup-parent text-btn" title="选中父元素" ${hasParent ? '' : 'disabled'}>↑</button>
+        <button class="inspector-popup-parent text-btn" title="选中父元素" ${hasParent ? '' : 'disabled'}>
+          <iconpark-icon icon-id="up" size="14" color="currentColor"></iconpark-icon>
+        </button>
         <button class="inspector-copy-selector">复制选择器</button>
       </div>
     `;
@@ -342,27 +358,30 @@
     doc.body.appendChild(popup);
 
     // Position
-    const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
-    const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
-    const viewportHeight = doc.documentElement.clientHeight;
-    const viewportWidth = doc.documentElement.clientWidth;
-    const popupWidth = popup.offsetWidth || 220;
+    if (opts && opts.left != null && opts.top != null) {
+      popup.style.left = opts.left;
+      popup.style.top = opts.top;
+    } else {
+      const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
+      const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
+      const viewportHeight = doc.documentElement.clientHeight;
+      const viewportWidth = doc.documentElement.clientWidth;
+      const popupWidth = popup.offsetWidth || 220;
 
-    let top = rect.bottom + scrollTop + 4;
-    // 预估 popup 高度约 180px，下方空间不足时向上弹出
-    if (rect.bottom + 180 > viewportHeight) {
-      top = rect.top + scrollTop - 180 - 4;
+      let top = rect.bottom + scrollTop + 4;
+      if (rect.bottom + 180 > viewportHeight) {
+        top = rect.top + scrollTop - 180 - 4;
+      }
+
+      let left = rect.left + scrollLeft;
+      if (left + popupWidth > viewportWidth) {
+        left = viewportWidth - popupWidth - 4;
+        if (left < 4) left = 4;
+      }
+
+      popup.style.left = left + 'px';
+      popup.style.top = top + 'px';
     }
-
-    let left = rect.left + scrollLeft;
-    // 右侧空间不足时贴右边缘
-    if (left + popupWidth > viewportWidth) {
-      left = viewportWidth - popupWidth - 4;
-      if (left < 4) left = 4;
-    }
-
-    popup.style.left = left + 'px';
-    popup.style.top = top + 'px';
 
     // Events
     popup.querySelector('.inspector-popup-close').addEventListener('click', (e) => {
@@ -380,8 +399,10 @@
         e.stopPropagation();
         const parent = targetEl.parentElement;
         if (parent) {
+          const savedLeft = popup.style.left;
+          const savedTop = popup.style.top;
           highlightElement(parent);
-          showPopup(parent);
+          showPopup(parent, { left: savedLeft, top: savedTop });
         }
       });
     }
