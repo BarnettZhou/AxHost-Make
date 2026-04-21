@@ -185,6 +185,19 @@
           el.setAttribute('fill', 'currentColor');
         });
       });
+
+      // 接收父页面主题同步
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'axhost-theme') {
+          const dark = e.data.theme === 'dark';
+          const currentlyDark = document.body.classList.contains('dark');
+          if (currentlyDark !== dark) {
+            document.body.classList.toggle('dark', dark);
+            localStorage.setItem('axhost-theme', dark ? 'dark' : 'light');
+            if (icon) icon.setAttribute('icon-id', dark ? 'dome-light' : 'moon');
+          }
+        }
+      });
     })();
   </script>
   <script src="/client/js/shell.js"></script>

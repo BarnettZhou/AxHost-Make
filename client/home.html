@@ -12,6 +12,26 @@
     <header id="home-header">
       <button id="btn-home" title="项目管理首页"><iconpark-icon icon-id="home" size="16"></iconpark-icon></button>
       <div id="tab-bar"></div>
+      <div class="header-avatar-wrap" id="avatar-wrap">
+        <button id="btn-avatar" class="avatar-btn" title="个人中心">
+          <div class="avatar">A</div>
+        </button>
+        <div class="dropdown-menu" id="avatar-dropdown">
+          <div class="dropdown-item" id="btn-theme-toggle">
+            <iconpark-icon id="theme-toggle-icon" icon-id="moon" size="14" color="currentColor"></iconpark-icon>
+            <span>切换主题</span>
+          </div>
+          <div class="dropdown-item" id="btn-system-settings">
+            <iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon>
+            <span>系统设置</span>
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" id="btn-login">
+            <iconpark-icon icon-id="login" size="14" color="currentColor"></iconpark-icon>
+            <span>登录账号</span>
+          </div>
+        </div>
+      </div>
     </header>
 
     <main id="home-main">
@@ -70,6 +90,32 @@
       <div class="modal-actions">
         <button class="btn-secondary" id="btn-cancel-new">取消</button>
         <button class="btn-primary" id="btn-confirm-new">创建</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 系统设置弹窗 -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-title">系统设置</div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);">功能开发中，敬请期待...</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-cancel-settings">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 登录弹窗 -->
+  <div class="modal-overlay" id="login-modal">
+    <div class="modal-content">
+      <div class="modal-title">登录账号</div>
+      <div class="modal-body">
+        <p style="color:var(--text-muted);">功能开发中，敬请期待...</p>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-cancel-login">关闭</button>
       </div>
     </div>
   </div>

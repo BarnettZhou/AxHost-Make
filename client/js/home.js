@@ -35,7 +35,18 @@
     newProjectModal: document.getElementById('new-project-modal'),
     newProjectName: document.getElementById('new-project-name'),
     btnCancelNew: document.getElementById('btn-cancel-new'),
-    btnConfirmNew: document.getElementById('btn-confirm-new')
+    btnConfirmNew: document.getElementById('btn-confirm-new'),
+    avatarWrap: document.getElementById('avatar-wrap'),
+    btnAvatar: document.getElementById('btn-avatar'),
+    avatarDropdown: document.getElementById('avatar-dropdown'),
+    btnThemeToggle: document.getElementById('btn-theme-toggle'),
+    themeToggleIcon: document.getElementById('theme-toggle-icon'),
+    btnSystemSettings: document.getElementById('btn-system-settings'),
+    btnLogin: document.getElementById('btn-login'),
+    settingsModal: document.getElementById('settings-modal'),
+    btnCancelSettings: document.getElementById('btn-cancel-settings'),
+    loginModal: document.getElementById('login-modal'),
+    btnCancelLogin: document.getElementById('btn-cancel-login')
   };
 
   // ===== Utilities =====
@@ -72,6 +83,21 @@
   function applyTheme() {
     const isDark = localStorage.getItem('axhost-theme') === 'dark';
     document.body.classList.toggle('dark', isDark);
+    if (els.themeToggleIcon) {
+      els.themeToggleIcon.setAttribute('icon-id', isDark ? 'dome-light' : 'moon');
+    }
+    // 同步到所有已打开的 iframe
+    document.querySelectorAll('.shell-frame').forEach(frame => {
+      try {
+        frame.contentWindow.postMessage({ type: 'axhost-theme', theme: isDark ? 'dark' : 'light' }, '*');
+      } catch (e) {}
+    });
+  }
+
+  function toggleTheme() {
+    const isDark = !document.body.classList.contains('dark');
+    localStorage.setItem('axhost-theme', isDark ? 'dark' : 'light');
+    applyTheme();
   }
 
   // ===== Tabs =====
@@ -396,6 +422,41 @@
 
     els.btnImportProject.addEventListener('click', () => {
       alert('导入功能即将推出');
+    });
+
+    // Avatar dropdown
+    els.btnAvatar.addEventListener('click', (e) => {
+      e.stopPropagation();
+      els.avatarDropdown.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!els.avatarWrap.contains(e.target)) {
+        els.avatarDropdown.classList.remove('open');
+      }
+    });
+    els.btnThemeToggle.addEventListener('click', () => {
+      toggleTheme();
+      els.avatarDropdown.classList.remove('open');
+    });
+    els.btnSystemSettings.addEventListener('click', () => {
+      els.settingsModal.classList.add('active');
+      els.avatarDropdown.classList.remove('open');
+    });
+    els.btnCancelSettings.addEventListener('click', () => {
+      els.settingsModal.classList.remove('active');
+    });
+    els.settingsModal.addEventListener('click', (e) => {
+      if (e.target === els.settingsModal) els.settingsModal.classList.remove('active');
+    });
+    els.btnLogin.addEventListener('click', () => {
+      els.loginModal.classList.add('active');
+      els.avatarDropdown.classList.remove('open');
+    });
+    els.btnCancelLogin.addEventListener('click', () => {
+      els.loginModal.classList.remove('active');
+    });
+    els.loginModal.addEventListener('click', (e) => {
+      if (e.target === els.loginModal) els.loginModal.classList.remove('active');
     });
   }
 

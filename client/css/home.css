@@ -23,6 +23,36 @@ body.dark { background: #1a1a1a; color: #e0e0e0; }
 }
 body.dark #home-header { background: #252525; border-color: #3a3a3a; }
 
+.header-avatar-wrap { position: relative; }
+.avatar-btn {
+  width: 32px; height: 32px;
+  border: none; border-radius: 50%;
+  background: transparent; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+}
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #1677ff; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 500;
+}
+body.dark .avatar { background: #1677ff; }
+
+#avatar-dropdown {
+  right: 0; top: calc(100% + 4px);
+  min-width: 160px;
+}
+#avatar-dropdown .dropdown-item {
+  display: flex; align-items: center; gap: 8px;
+  justify-content: flex-start;
+}
+.dropdown-divider {
+  height: 1px; background: #e5e5e5; margin: 4px 12px;
+}
+body.dark .dropdown-divider { background: #444; }
+
 #btn-home {
   width: 32px; height: 32px;
   border: none; border-radius: 6px;
@@ -314,6 +344,12 @@ body.dark .modal-body input {
 .modal-body input:focus { border-color: #4a90d9; }
 .modal-actions {
   display: flex; justify-content: flex-end; gap: 10px;
+}
+#settings-modal .modal-body,
+#login-modal .modal-body {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
 }
 
 /* Empty state */
