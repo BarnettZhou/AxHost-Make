@@ -723,6 +723,9 @@ body.dark .doc-tab.active {
 .host-project-select-wrap input[type="text"]:focus {
   border-color: #1677ff;
 }
+#host-project-search {
+  margin-bottom: 0;
+}
 .host-project-dropdown {
   position: absolute;
   top: calc(100% + 4px);
