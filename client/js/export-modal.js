@@ -498,7 +498,9 @@
     try {
       btnConfirm.disabled = true;
       btnConfirm.textContent = '发布中...';
-      const res = await fetch('/api/export/publish', {
+      const projectId = window.__axhostProjectId || '';
+      const publishUrl = projectId ? `/api/export/publish?project=${encodeURIComponent(projectId)}` : '/api/export/publish';
+      const res = await fetch(publishUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
