@@ -45,8 +45,14 @@
     btnLogin: document.getElementById('btn-login'),
     settingsModal: document.getElementById('settings-modal'),
     btnCancelSettings: document.getElementById('btn-cancel-settings'),
+    btnSaveSettings: document.getElementById('btn-save-settings'),
+    axhostServerUrl: document.getElementById('axhost-server-url'),
     loginModal: document.getElementById('login-modal'),
-    btnCancelLogin: document.getElementById('btn-cancel-login')
+    btnCancelLogin: document.getElementById('btn-cancel-login'),
+    btnConfirmLogin: document.getElementById('btn-confirm-login'),
+    loginEmployeeId: document.getElementById('login-employee-id'),
+    loginPassword: document.getElementById('login-password'),
+    loginError: document.getElementById('login-error')
   };
 
   // ===== Utilities =====
@@ -98,6 +104,45 @@
     const isDark = !document.body.classList.contains('dark');
     localStorage.setItem('axhost-theme', isDark ? 'dark' : 'light');
     applyTheme();
+  }
+
+  // ===== Toast =====
+  function showToast(message, type) {
+    type = type || 'info';
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.textContent = message;
+    container.appendChild(el);
+    setTimeout(() => {
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }, 3000);
+  }
+
+  // ===== API Helpers =====
+  function getAxHostBaseUrl() {
+    const url = localStorage.getItem('axhost-server-url');
+    if (!url) return null;
+    return url.replace(/\/+$/, '');
+  }
+
+  function getAxHostToken() {
+    return localStorage.getItem('axhost-token') || '';
+  }
+
+  async function axhostRequest(path, options) {
+    const baseUrl = getAxHostBaseUrl();
+    if (!baseUrl) throw new Error('AxHost 服务地址未设置');
+    const url = baseUrl + path;
+    const token = getAxHostToken();
+    const headers = Object.assign({}, options && options.headers);
+    if (token) headers['Authorization'] = 'Bearer ' + token;
+    if (options && options.body && typeof options.body === 'string') {
+      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+    }
+    const res = await fetch(url, Object.assign({}, options, { headers }));
+    return res;
   }
 
   // ===== Tabs =====
@@ -439,6 +484,8 @@
       els.avatarDropdown.classList.remove('open');
     });
     els.btnSystemSettings.addEventListener('click', () => {
+      const saved = getAxHostBaseUrl() || '';
+      if (els.axhostServerUrl) els.axhostServerUrl.value = saved;
       els.settingsModal.classList.add('active');
       els.avatarDropdown.classList.remove('open');
     });
@@ -448,15 +495,75 @@
     els.settingsModal.addEventListener('click', (e) => {
       if (e.target === els.settingsModal) els.settingsModal.classList.remove('active');
     });
+    els.btnSaveSettings.addEventListener('click', () => {
+      const url = (els.axhostServerUrl.value || '').trim();
+      if (!url) {
+        showToast('请输入 AxHost 服务地址', 'error');
+        return;
+      }
+      if (!/^https?:\/\//i.test(url)) {
+        showToast('地址必须以 http:// 或 https:// 开头', 'error');
+        return;
+      }
+      localStorage.setItem('axhost-server-url', url.replace(/\/+$/, ''));
+      els.settingsModal.classList.remove('active');
+      showToast('设置已保存', 'success');
+    });
     els.btnLogin.addEventListener('click', () => {
+      els.loginEmployeeId.value = '';
+      els.loginPassword.value = '';
+      els.loginError.textContent = '';
       els.loginModal.classList.add('active');
       els.avatarDropdown.classList.remove('open');
+      setTimeout(() => els.loginEmployeeId.focus(), 50);
     });
     els.btnCancelLogin.addEventListener('click', () => {
       els.loginModal.classList.remove('active');
     });
     els.loginModal.addEventListener('click', (e) => {
       if (e.target === els.loginModal) els.loginModal.classList.remove('active');
+    });
+    els.btnConfirmLogin.addEventListener('click', async () => {
+      const baseUrl = getAxHostBaseUrl();
+      if (!baseUrl) {
+        showToast('AxHost 服务地址未设置，请先前往设置页面完成设置', 'error');
+        return;
+      }
+      const employeeId = els.loginEmployeeId.value.trim();
+      const password = els.loginPassword.value;
+      if (!employeeId || !password) {
+        els.loginError.textContent = '请输入工号和密码';
+        return;
+      }
+      els.loginError.textContent = '';
+      els.btnConfirmLogin.disabled = true;
+      els.btnConfirmLogin.textContent = '登录中...';
+      try {
+        const res = await fetch(baseUrl + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ employee_id: employeeId, password: password })
+        });
+        const data = await res.json();
+        if (res.ok && data.access_token) {
+          localStorage.setItem('axhost-token', data.access_token);
+          els.loginModal.classList.remove('active');
+          showToast('登录成功', 'success');
+          if (data.user && data.user.name) {
+            document.querySelector('.avatar').textContent = data.user.name.charAt(0).toUpperCase();
+          }
+        } else {
+          els.loginError.textContent = data.message || '登录失败，请检查工号和密码';
+        }
+      } catch (err) {
+        els.loginError.textContent = '网络错误，请检查服务地址是否正确';
+      } finally {
+        els.btnConfirmLogin.disabled = false;
+        els.btnConfirmLogin.textContent = '登录';
+      }
+    });
+    els.loginPassword.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') els.btnConfirmLogin.click();
     });
   }
 

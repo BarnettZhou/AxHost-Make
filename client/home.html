@@ -99,10 +99,12 @@
     <div class="modal-content">
       <div class="modal-title">系统设置</div>
       <div class="modal-body">
-        <p style="color:var(--text-muted);">功能开发中，敬请期待...</p>
+        <label for="axhost-server-url">AxHost 服务地址</label>
+        <input type="url" id="axhost-server-url" placeholder="https://axhost.example.com" autocomplete="off">
       </div>
       <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-settings">关闭</button>
+        <button class="btn-secondary" id="btn-cancel-settings">取消</button>
+        <button class="btn-primary" id="btn-save-settings">保存</button>
       </div>
     </div>
   </div>
@@ -112,13 +114,20 @@
     <div class="modal-content">
       <div class="modal-title">登录账号</div>
       <div class="modal-body">
-        <p style="color:var(--text-muted);">功能开发中，敬请期待...</p>
+        <label for="login-employee-id">工号</label>
+        <input type="text" id="login-employee-id" placeholder="请输入工号" autocomplete="off">
+        <label for="login-password">密码</label>
+        <input type="password" id="login-password" placeholder="请输入密码">
+        <div id="login-error" class="form-error"></div>
       </div>
       <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-login">关闭</button>
+        <button class="btn-secondary" id="btn-cancel-login">取消</button>
+        <button class="btn-primary" id="btn-confirm-login">登录</button>
       </div>
     </div>
   </div>
+
+  <div id="toast-container"></div>
 
   <script src="/client/js/icons.js"></script>
   <script src="/client/js/home.js"></script>
