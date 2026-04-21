@@ -277,21 +277,31 @@
       </div>
     `;
 
+    doc.body.appendChild(popup);
+
     // Position
     const rect = targetEl.getBoundingClientRect();
     const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
     const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
     const viewportHeight = doc.documentElement.clientHeight;
+    const viewportWidth = doc.documentElement.clientWidth;
+    const popupWidth = popup.offsetWidth || 220;
 
     let top = rect.bottom + scrollTop + 4;
     // 预估 popup 高度约 150px，下方空间不足时向上弹出
     if (rect.bottom + 150 > viewportHeight) {
       top = rect.top + scrollTop - 150 - 4;
     }
-    popup.style.left = (rect.left + scrollLeft) + 'px';
-    popup.style.top = top + 'px';
 
-    doc.body.appendChild(popup);
+    let left = rect.left + scrollLeft;
+    // 右侧空间不足时贴右边缘
+    if (left + popupWidth > viewportWidth) {
+      left = viewportWidth - popupWidth - 4;
+      if (left < 4) left = 4;
+    }
+
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
 
     // Events
     popup.querySelector('.inspector-popup-close').addEventListener('click', (e) => {
