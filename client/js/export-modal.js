@@ -45,6 +45,8 @@
 
   // Open / Close
   function open() {
+    treeData = { pages: [], components: [] };
+    expandedPaths = new Set();
     loadDefaultInfo();
     loadTree(currentTab);
     modal.classList.add('open');
