@@ -34,8 +34,11 @@ body.dark #home-header { background: #252525; border-color: #3a3a3a; }
 body.dark #btn-home { color: #aaa; }
 #btn-home:hover { background: rgba(0,0,0,0.06); }
 body.dark #btn-home:hover { background: rgba(255,255,255,0.06); }
-#btn-home.active { background: #e7f4ff; color: #1677ff; }
-body.dark #btn-home.active { background: #1677ff; color: #fff; }
+#btn-home.active {
+  background: #fff; color: #222;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+body.dark #btn-home.active { background: #303030; color: #eee; box-shadow: none; }
 
 #tab-bar {
   display: flex; align-items: center; gap: 4px;
@@ -170,7 +173,7 @@ body.dark .dropdown-item.active { color: #6aaef0; }
 .btn-primary {
   height: 36px; padding: 0 16px;
   border: none; border-radius: 8px;
-  background: #4a90d9; color: #fff;
+  background: #1677ff; color: #fff;
   cursor: pointer; font-size: 13px; font-weight: 500;
   display: flex; align-items: center; gap: 6px;
   transition: background 0.2s;
