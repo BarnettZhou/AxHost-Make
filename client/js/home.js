@@ -131,17 +131,24 @@
     return localStorage.getItem('axhost-token') || '';
   }
 
-  async function axhostRequest(path, options) {
+  async function axhostRequest(apiPath, options) {
     const baseUrl = getAxHostBaseUrl();
     if (!baseUrl) throw new Error('AxHost 服务地址未设置');
-    const url = baseUrl + path;
     const token = getAxHostToken();
     const headers = Object.assign({}, options && options.headers);
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    if (options && options.body && typeof options.body === 'string') {
-      headers['Content-Type'] = headers['Content-Type'] || 'application/json';
-    }
-    const res = await fetch(url, Object.assign({}, options, { headers }));
+    const proxyBody = options && options.body ? (typeof options.body === 'string' ? JSON.parse(options.body) : options.body) : undefined;
+    const res = await fetch('/api/axhost-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        serverUrl: baseUrl,
+        path: apiPath,
+        method: (options && options.method) || 'GET',
+        headers: headers,
+        body: proxyBody
+      })
+    });
     return res;
   }
 
@@ -539,9 +546,8 @@
       els.btnConfirmLogin.disabled = true;
       els.btnConfirmLogin.textContent = '登录中...';
       try {
-        const res = await fetch(baseUrl + '/api/auth/login', {
+        const res = await axhostRequest('/api/auth/login', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ employee_id: employeeId, password: password })
         });
         const data = await res.json();
