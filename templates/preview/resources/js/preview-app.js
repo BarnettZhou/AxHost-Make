@@ -4,6 +4,7 @@
   const sidebar = document.getElementById('panel-nav');
   const preview = document.getElementById('preview-frame');
   const docsPanel = document.getElementById('panel-docs');
+  const docsResizer = document.getElementById('docs-resizer');
   const btnDocs = document.getElementById('btn-toggle-docs');
   const btnToggleNav = document.getElementById('btn-toggle-nav');
   const docTabs = document.getElementById('doc-tabs-scroll');
@@ -17,8 +18,13 @@
   let expandedPaths = new Set();
   let loadToken = 0;
 
+  if (docsResizer && docsPanel && docsPanel.classList.contains('hidden')) {
+    docsResizer.classList.add('hidden');
+  }
+
   btnDocs.addEventListener('click', () => {
     docsPanel.classList.toggle('hidden');
+    if (docsResizer) docsResizer.classList.toggle('hidden');
   });
   if (btnToggleNav) {
     btnToggleNav.addEventListener('click', () => {
