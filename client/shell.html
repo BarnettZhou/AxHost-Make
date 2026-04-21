@@ -107,10 +107,44 @@
       <div class="settings-modal-body">
         <label for="project-name-input">项目名称</label>
         <input type="text" id="project-name-input" placeholder="Prototype">
+
+        <label>托管项目</label>
+        <div class="host-project-row">
+          <div class="host-project-select-wrap" id="host-project-wrap">
+            <input type="text" id="host-project-search" placeholder="搜索或选择项目..." autocomplete="off">
+            <div class="host-project-dropdown" id="host-project-dropdown"></div>
+            <div class="host-project-linked" id="host-project-linked" style="display:none;">
+              <span id="host-project-linked-name"></span>
+              <button class="text-btn" id="btn-unlink-project" title="解除关联">
+                <iconpark-icon icon-id="close-small" size="12" color="currentColor"></iconpark-icon>
+              </button>
+            </div>
+          </div>
+          <button class="text-btn" id="btn-create-remote-project" title="创建新项目">
+            <iconpark-icon icon-id="plus" size="14" color="currentColor"></iconpark-icon>
+          </button>
+        </div>
+        <div class="host-project-hint" id="host-project-hint"></div>
       </div>
       <div class="settings-modal-footer">
         <button id="settings-modal-cancel">取消</button>
         <button id="btn-save-settings" class="primary">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 创建远程项目弹窗 -->
+  <div class="modal-overlay" id="create-remote-project-modal">
+    <div class="modal-content" style="width:360px;">
+      <div class="modal-title">创建新项目</div>
+      <div class="modal-body">
+        <label for="new-remote-project-name">项目名称</label>
+        <input type="text" id="new-remote-project-name" placeholder="请输入项目名称" autocomplete="off">
+        <div id="create-remote-error" class="form-error"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-cancel-create-remote">取消</button>
+        <button class="btn-primary" id="btn-confirm-create-remote">创建</button>
       </div>
     </div>
   </div>

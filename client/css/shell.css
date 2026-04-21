@@ -701,6 +701,164 @@ body.dark .doc-tab.active {
   opacity: 0.9;
 }
 
+.host-project-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.host-project-select-wrap {
+  position: relative;
+  flex: 1;
+}
+.host-project-select-wrap input[type="text"] {
+  width: 100%;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  outline: none;
+}
+.host-project-select-wrap input[type="text"]:focus {
+  border-color: #1677ff;
+}
+.host-project-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  z-index: 10;
+  display: none;
+}
+.host-project-dropdown.open {
+  display: block;
+}
+.host-project-dropdown-item {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.host-project-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+.host-project-dropdown-empty {
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.host-project-linked {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-main);
+}
+.host-project-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  min-height: 16px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90vw;
+  padding: 24px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.modal-body label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.modal-body input[type="text"] {
+  width: 100%;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 40px;
+  font-size: 14px;
+  outline: none;
+}
+.modal-body input[type="text"]:focus {
+  border-color: #1677ff;
+}
+.form-error {
+  color: #ff4d4f;
+  font-size: 12px;
+  margin-top: 8px;
+  min-height: 16px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.modal-actions .btn-secondary {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.modal-actions .btn-primary {
+  background: #1677ff;
+  border: 1px solid #1677ff;
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.modal-actions button:hover {
+  opacity: 0.9;
+}
+
+#create-remote-project-modal.modal-overlay {
+  display: none;
+}
+#create-remote-project-modal.modal-overlay.active {
+  display: flex;
+}
+
 .resizer {
   flex-shrink: 0;
   z-index: 10;
