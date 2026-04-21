@@ -293,7 +293,8 @@
   initResizers();
 
   const hashId = location.hash ? location.hash.slice(1) : '';
-  const hashNode = hashId ? findNodeById(map[activeType] || [], hashId) : null;
+  const allNodes = [...(map.pages || []), ...(map.components || [])];
+  const hashNode = hashId ? findNodeById(allNodes, hashId) : null;
   const target = hashNode || findFirst(map.pages) || findFirst(map.components);
   if (target) {
     if (hashNode) {
