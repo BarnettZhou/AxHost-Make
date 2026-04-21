@@ -1156,6 +1156,7 @@ body.dark .doc-tab.active {
   flex: 1;
   background: transparent;
   border: none;
+  border-bottom: 2px solid transparent;
   color: var(--text-muted);
   padding: 8px 0;
   cursor: pointer;
@@ -1163,7 +1164,7 @@ body.dark .doc-tab.active {
 }
 .export-mode-tabs button.active {
   color: var(--text-main);
-  border-bottom: 2px solid var(--accent);
+  border-bottom-color: var(--accent);
 }
 .export-mode-content {
   padding: 16px;
@@ -1229,6 +1230,7 @@ body.dark .doc-tab.active {
   flex: 1;
   background: transparent;
   border: none;
+  border-bottom: 2px solid transparent;
   color: var(--text-muted);
   padding: 8px 0;
   cursor: pointer;
@@ -1236,7 +1238,7 @@ body.dark .doc-tab.active {
 }
 .export-tabs button.active {
   color: var(--text-main);
-  border-bottom: 2px solid var(--accent);
+  border-bottom-color: var(--accent);
 }
 .export-tree {
   height: 300px;
