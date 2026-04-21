@@ -288,8 +288,6 @@
     });
   }
 
-  renderTabs();
-  renderTree();
   initResizers();
 
   const hashId = location.hash ? location.hash.slice(1) : '';
@@ -297,16 +295,19 @@
   const hashNode = hashId ? findNodeById(allNodes, hashId) : null;
   const target = hashNode || findFirst(map.pages) || findFirst(map.components);
   if (target) {
+    activePath = target.path;
     if (hashNode) {
       activeType = getNodeTypeForTab(target) === 'component' ? 'components' : 'pages';
-      renderTabs();
-      expandAncestors(target.path);
-      renderTree();
     }
-    activePath = target.path;
+    renderTabs();
+    expandAncestors(target.path);
+    renderTree();
     const prefix = activeType === 'components' ? 'components' : 'pages';
     preview.src = basePath + prefix + '/' + target.path + '/index.html';
     loadDocs(activeType, target.path);
+  } else {
+    renderTabs();
+    renderTree();
   }
 
   window.addEventListener('hashchange', () => {
