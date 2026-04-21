@@ -413,6 +413,14 @@ body.dark #prompt-box:focus-within {
 .preview-mode #prompt-box {
   display: none;
 }
+#prompt-box.collapsed {
+  height: auto !important;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+#prompt-box.collapsed #prompt-input {
+  display: none;
+}
 #prompt-box textarea {
   flex: 1;
   width: 100%;
@@ -432,6 +440,21 @@ body.dark #prompt-box:focus-within {
   gap: 10px;
   padding: 8px 12px;
   border-top: 1px solid var(--border);
+}
+.text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.text-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
 }
 #prompt-status {
   color: var(--text-muted);

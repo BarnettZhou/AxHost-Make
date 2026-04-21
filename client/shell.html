@@ -67,6 +67,12 @@
         <div id="prompt-box">
           <textarea id="prompt-input" placeholder="描述你想要的修改，例如：将表格背景改为深蓝色，增加一个导出按钮..."></textarea>
           <div class="prompt-actions">
+            <button id="btn-prompt-collapse" class="text-btn" title="收起">
+              <iconpark-icon icon-id="down" size="14" color="currentColor"></iconpark-icon>
+            </button>
+            <button id="btn-prompt-expand" class="text-btn" title="展开" style="display:none;">
+              <iconpark-icon icon-id="up" size="14" color="currentColor"></iconpark-icon>
+            </button>
             <span id="prompt-context" class="prompt-context"></span>
             <span id="prompt-status">点击复制按钮后粘贴到Agent即可</span>
             <button id="btn-prompt-copy">复制提示词</button>

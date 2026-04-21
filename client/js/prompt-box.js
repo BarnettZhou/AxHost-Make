@@ -102,6 +102,29 @@
     }
   }
 
+  const promptBox = document.getElementById('prompt-box');
+  const promptResizer = document.getElementById('prompt-resizer');
+  const btnCollapse = document.getElementById('btn-prompt-collapse');
+  const btnExpand = document.getElementById('btn-prompt-expand');
+  let savedPromptHeight = null;
+
+  if (btnCollapse && btnExpand && promptBox && promptResizer) {
+    btnCollapse.addEventListener('click', () => {
+      savedPromptHeight = promptBox.style.height || '';
+      promptBox.classList.add('collapsed');
+      promptResizer.classList.add('hidden');
+      btnCollapse.style.display = 'none';
+      btnExpand.style.display = '';
+    });
+    btnExpand.addEventListener('click', () => {
+      promptBox.classList.remove('collapsed');
+      promptResizer.classList.remove('hidden');
+      if (savedPromptHeight) promptBox.style.height = savedPromptHeight;
+      btnCollapse.style.display = '';
+      btnExpand.style.display = 'none';
+    });
+  }
+
   btnCopy.addEventListener('click', handleCopy);
 
   window.promptBox = { updateStatus };
