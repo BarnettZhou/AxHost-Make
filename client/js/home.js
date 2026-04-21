@@ -101,6 +101,7 @@
 
   function switchToTab(projectId) {
     state.activeTabId = projectId;
+    if (els.btnHome) els.btnHome.classList.remove('active');
 
     let frame = document.querySelector(`.shell-frame[data-project="${CSS.escape(projectId)}"]`);
     const tab = state.tabs.find(t => t.projectId === projectId);
@@ -154,6 +155,7 @@
     els.shellContainer.classList.remove('active');
     saveTabs();
     renderTabs();
+    if (els.btnHome) els.btnHome.classList.add('active');
   }
 
   function renderTabs() {

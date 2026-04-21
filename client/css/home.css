@@ -34,6 +34,8 @@ body.dark #home-header { background: #252525; border-color: #3a3a3a; }
 body.dark #btn-home { color: #aaa; }
 #btn-home:hover { background: rgba(0,0,0,0.06); }
 body.dark #btn-home:hover { background: rgba(255,255,255,0.06); }
+#btn-home.active { background: #e7f4ff; color: #1677ff; }
+body.dark #btn-home.active { background: #1677ff; color: #fff; }
 
 #tab-bar {
   display: flex; align-items: center; gap: 4px;
@@ -173,7 +175,7 @@ body.dark .dropdown-item.active { color: #6aaef0; }
   display: flex; align-items: center; gap: 6px;
   transition: background 0.2s;
 }
-.btn-primary:hover { background: #3a7bc8; }
+.btn-primary:hover { background: #4096ff; }
 .btn-secondary {
   height: 36px; padding: 0 16px;
   border: 1px solid #ddd; border-radius: 8px;
