@@ -118,10 +118,13 @@ async function handleMove(req, res, projectRoot) {
         return;
       }
 
-      // Update meta
-      const sourceMeta = await readMeta(sourceAbs);
-      sourceMeta.parentId = targetName;
-      await writeMeta(sourceAbs, sourceMeta);
+      // Update meta if physical dir exists
+      try {
+        await fs.access(path.join(sourceAbs, '.axhost-meta.json'));
+        const sourceMeta = await readMeta(sourceAbs);
+        sourceMeta.parentId = targetName;
+        await writeMeta(sourceAbs, sourceMeta);
+      } catch {}
 
       // Update sitemap: remove from current position, insert under target
       const movedNode = removeNode(tree, sourceName);

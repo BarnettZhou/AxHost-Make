@@ -31,13 +31,17 @@ async function handleRename(req, res, projectRoot) {
         return;
       }
 
+      // Update .axhost-meta.json if physical dir exists (page/component)
       const metaPath = path.join(absPath, '.axhost-meta.json');
-      let meta = { name: newName };
       try {
-        const existing = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
-        meta = { ...existing, name: newName };
+        await fs.access(metaPath);
+        let meta = { name: newName };
+        try {
+          const existing = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+          meta = { ...existing, name: newName };
+        } catch {}
+        await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
       } catch {}
-      await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
 
       // 同步更新 index.html 中的 <title>
       const indexPath = path.join(absPath, 'index.html');

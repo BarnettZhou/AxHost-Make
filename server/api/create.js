@@ -101,14 +101,8 @@ async function createItem(projectRoot, parentPath, name, kind) {
     if (err.code !== 'ENOENT') throw err;
   }
 
-  await fs.mkdir(targetDir, { recursive: true });
-
-  const meta = { name, kind };
-  if (parentId) meta.parentId = parentId;
-  await writeMeta(targetDir, meta);
-
   if (kind === 'folder') {
-    // Update sitemap
+    // Dir nodes are logical only — no physical directory needed
     const sitemap = await readSitemap(projectRoot);
     addNodeToSitemap(sitemap, tab, parentId, {
       id: hash,
@@ -121,6 +115,12 @@ async function createItem(projectRoot, parentPath, name, kind) {
     await writeSitemap(projectRoot, sitemap);
     return { id: hash, name, path: hash, kind };
   }
+
+  await fs.mkdir(targetDir, { recursive: true });
+
+  const meta = { name, kind };
+  if (parentId) meta.parentId = parentId;
+  await writeMeta(targetDir, meta);
 
   const vars = { PAGE_NAME: name, DATE: new Date().toISOString().slice(0, 10) };
   const templateFile = kind === 'page' ? 'page.html' : 'component.html';
