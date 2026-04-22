@@ -250,7 +250,6 @@
     const parts = nodePath.split('/');
     let prefix = '';
     for (let i = 0; i < parts.length; i++) {
-      if (parts[i] === 'sub-pages') continue;
       prefix = prefix ? `${prefix}/${parts[i]}` : parts[i];
       if (i < parts.length - 1) {
         expandedPaths.add(prefix);

@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { scanNode } = require('./scan.js');
+const { scanFlat } = require('./scan.js');
 
 async function regenerateSitemap(projectRoot) {
   const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
@@ -14,10 +14,10 @@ async function regenerateSitemap(projectRoot) {
     existingName = oldData.name || existingName;
   } catch (e) {}
 
-  const pages = await scanNode(path.join(projectRoot, 'prototype/pages'), '', 'page');
-  const components = await scanNode(path.join(projectRoot, 'prototype/components'), '', 'component');
+  const pages = await scanFlat(path.join(projectRoot, 'prototype/pages'), 'page');
+  const components = await scanFlat(path.join(projectRoot, 'prototype/components'), 'component');
 
-  // 构建扁平映射（供 Agent / CLI 查询）
+  // Build flat mapping (for Agent / CLI queries)
   const flatMap = {};
   function buildFlatMap(nodes, tab) {
     for (const node of nodes) {

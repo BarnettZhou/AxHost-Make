@@ -7,9 +7,21 @@ async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
 
-function isDescendant(parent, child) {
-  const rel = path.relative(parent, child);
-  return rel && !rel.startsWith('..') && !path.isAbsolute(rel);
+async function readMeta(absPath) {
+  try {
+    const content = await fs.readFile(path.join(absPath, '.axhost-meta.json'), 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
+
+async function writeMeta(absPath, meta) {
+  await fs.writeFile(
+    path.join(absPath, '.axhost-meta.json'),
+    JSON.stringify(meta, null, 2) + '\n',
+    'utf-8'
+  );
 }
 
 async function handleMove(req, res, projectRoot) {
@@ -33,84 +45,49 @@ async function handleMove(req, res, projectRoot) {
         res.end(JSON.stringify({ code: 403, message: 'Forbidden path' }));
         return;
       }
-      if (isDescendant(sourceAbs, targetAbs)) {
-        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 400, message: 'Cannot move into itself' }));
-        return;
-      }
 
       const sourceName = path.basename(sourceAbs);
       const targetName = path.basename(targetAbs);
+      const tabPath = path.dirname(sourceAbs); // e.g. prototype/pages
 
-      // before / after：移到 target 的同级并排序
+      // before / after: reorder within tab root
       if (position === 'before' || position === 'after') {
-        const targetParentAbs = path.dirname(targetAbs);
-        const sourceParentAbs = path.dirname(sourceAbs);
-        const targetOrder = await readOrder(targetParentAbs) || [];
-
-        if (sourceParentAbs === targetParentAbs) {
-          // 同级重排
-          const order = targetOrder.slice();
-          const oldIdx = order.indexOf(sourceName);
-          let newIdx = order.indexOf(targetName);
-          if (oldIdx !== -1 && newIdx !== -1) {
-            order.splice(oldIdx, 1);
-            if (position === 'after') {
-              if (newIdx > oldIdx) newIdx -= 1;
-              newIdx += 1;
-            }
-            order.splice(newIdx, 0, sourceName);
-            await writeOrder(targetParentAbs, order);
+        const targetOrder = await readOrder(tabPath) || [];
+        const order = targetOrder.slice();
+        const oldIdx = order.indexOf(sourceName);
+        let newIdx = order.indexOf(targetName);
+        if (oldIdx !== -1 && newIdx !== -1) {
+          order.splice(oldIdx, 1);
+          if (position === 'after') {
+            if (newIdx > oldIdx) newIdx -= 1;
+            newIdx += 1;
           }
-        } else {
-          // 跨目录移到 target 的 parent
-          await removeFromOrder(sourceParentAbs, sourceName);
-          const finalTargetAbs = path.join(targetParentAbs, sourceName);
-          await fs.mkdir(path.dirname(finalTargetAbs), { recursive: true });
-          await fs.rename(sourceAbs, finalTargetAbs);
-
-          let order = targetOrder.slice();
-          const targetIdx = order.indexOf(targetName);
-          let insertIdx = targetIdx !== -1 ? (position === 'before' ? targetIdx : targetIdx + 1) : order.length;
-          const sIdx = order.indexOf(sourceName);
-          if (sIdx !== -1) {
-            order.splice(sIdx, 1);
-            if (sIdx < insertIdx) insertIdx -= 1;
-          }
-          order.splice(insertIdx, 0, sourceName);
-          await writeOrder(targetParentAbs, order);
+          order.splice(newIdx, 0, sourceName);
+          await writeOrder(tabPath, order);
         }
         await regenerateSitemap(projectRoot);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 0, data: { newPath: path.posix.join(path.posix.dirname(resolvedTarget), sourceName) } }));
+        res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
         return;
       }
 
-      // drop-into：放入 target 内部（目录直接放入，页面/组件放入 sub-pages）
-      const targetStat = await fs.stat(targetAbs).catch(() => null);
-      if (!targetStat || !targetStat.isDirectory()) {
+      // drop-into: change parentId in meta
+      const targetMeta = await readMeta(targetAbs);
+      const targetHasIndex = await exists(path.join(targetAbs, 'index.html'));
+      const targetKind = targetMeta.kind || (targetHasIndex ? 'page' : 'dir');
+      if (targetKind !== 'dir') {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 400, message: 'Target does not exist or is not a directory' }));
+        res.end(JSON.stringify({ code: 400, message: 'Target is not a directory' }));
         return;
       }
 
-      const targetIndexExists = await exists(path.join(targetAbs, 'index.html'));
-      const finalTargetDir = targetIndexExists
-        ? path.join(targetAbs, 'sub-pages')
-        : targetAbs;
-      const finalTargetAbs = path.join(finalTargetDir, sourceName);
-      const finalTargetRel = path.relative(projectRoot, finalTargetAbs).replace(/\\/g, '/');
-
-      const sourceParentAbs = path.dirname(sourceAbs);
-      await removeFromOrder(sourceParentAbs, sourceName);
-      await fs.mkdir(path.dirname(finalTargetAbs), { recursive: true });
-      await addToOrder(finalTargetDir, sourceName);
-
-      await fs.rename(sourceAbs, finalTargetAbs);
+      const sourceMeta = await readMeta(sourceAbs);
+      sourceMeta.parentId = targetName;
+      await writeMeta(sourceAbs, sourceMeta);
 
       await regenerateSitemap(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ code: 0, data: { newPath: finalTargetRel } }));
+      res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 500, message: err.message }));

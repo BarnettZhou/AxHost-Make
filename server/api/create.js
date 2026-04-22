@@ -23,13 +23,8 @@ async function collectExistingIds(projectRoot) {
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       const name = entry.name;
-      // 识别已有的 hash 目录（8 位十六进制）
       if (/^[a-f0-9]{8}$/i.test(name)) {
         ids.add(name.toLowerCase());
-      }
-      // 递归扫描，排除已知资源目录
-      if (name !== 'resources' && name !== 'docs') {
-        await scan(path.join(absPath, name));
       }
     }
   }
@@ -38,23 +33,39 @@ async function collectExistingIds(projectRoot) {
   return ids;
 }
 
+async function readMeta(absPath) {
+  try {
+    const content = await fs.readFile(path.join(absPath, '.axhost-meta.json'), 'utf-8');
+    return JSON.parse(content);
+  } catch {
+    return {};
+  }
+}
+
+async function writeMeta(absPath, meta) {
+  await fs.writeFile(
+    path.join(absPath, '.axhost-meta.json'),
+    JSON.stringify(meta, null, 2) + '\n',
+    'utf-8'
+  );
+}
+
 async function createItem(projectRoot, parentPath, name, kind) {
   if (!isSafePath(projectRoot, parentPath)) {
     throw new Error('Forbidden parent path');
   }
 
-  let actualParentPath = parentPath;
-  const parentAbs = path.resolve(projectRoot, parentPath);
-  const parentIndexExists = await fs.access(path.join(parentAbs, 'index.html')).then(() => true).catch(() => false);
-  if (parentIndexExists && kind === 'folder') {
-    // 在页面下创建子目录时，自动放到 sub-pages 下
-    actualParentPath = path.posix.join(parentPath, 'sub-pages');
-  }
+  // parentPath is like "prototype/pages" or "prototype/pages/85a10724"
+  // Extract tab and parentId
+  const parts = parentPath.replace(/^prototype\//, '').split(/[\\/]/);
+  const tab = parts[0]; // "pages" or "components"
+  const parentId = parts.length > 1 ? parts[parts.length - 1] : null;
+  const tabPath = path.join(projectRoot, 'prototype', tab);
 
-  // 生成唯一 hash 作为目录名
+  // Generate unique hash as directory name
   const existingIds = await collectExistingIds(projectRoot);
   const hash = generateId(name, existingIds);
-  const targetDir = path.resolve(projectRoot, actualParentPath, hash);
+  const targetDir = path.join(tabPath, hash);
 
   try {
     await fs.access(targetDir);
@@ -64,17 +75,14 @@ async function createItem(projectRoot, parentPath, name, kind) {
   }
 
   await fs.mkdir(targetDir, { recursive: true });
-  await addToOrder(path.resolve(projectRoot, actualParentPath), hash);
+  await addToOrder(tabPath, hash);
 
-  // 写入 .axhost-meta.json
-  await fs.writeFile(
-    path.join(targetDir, '.axhost-meta.json'),
-    JSON.stringify({ name }, null, 2) + '\n',
-    'utf-8'
-  );
+  const meta = { name, kind };
+  if (parentId) meta.parentId = parentId;
+  await writeMeta(targetDir, meta);
 
   if (kind === 'folder') {
-    return { id: hash, name, path: path.posix.join(actualParentPath.replace(/^prototype\//, ''), hash), kind };
+    return { id: hash, name, path: hash, kind };
   }
 
   const vars = { PAGE_NAME: name, DATE: new Date().toISOString().slice(0, 10) };
@@ -95,7 +103,7 @@ async function createItem(projectRoot, parentPath, name, kind) {
   await fs.mkdir(path.join(targetDir, 'docs'), { recursive: true });
   await fs.writeFile(path.join(targetDir, 'docs', 'readme.md'), applyTemplate(tplDoc, vars), 'utf-8');
 
-  return { id: hash, name, path: path.posix.join(actualParentPath.replace(/^prototype\//, ''), hash), kind };
+  return { id: hash, name, path: hash, kind };
 }
 
 async function handleCreate(req, res, projectRoot) {

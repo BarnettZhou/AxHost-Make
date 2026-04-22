@@ -43,7 +43,6 @@
     const parts = nodePath.split('/');
     let prefix = '';
     for (let i = 0; i < parts.length; i++) {
-      if (parts[i] === 'sub-pages') continue;
       prefix = prefix ? `${prefix}/${parts[i]}` : parts[i];
       if (i < parts.length - 1) {
         expandedPaths.add(prefix);
@@ -332,7 +331,6 @@
     const parts = parentPath.split('/');
     let nodes = treeData;
     for (const part of parts) {
-      if (part === 'sub-pages') continue;
       const dir = nodes.find(n => n.id === part && (n.type === 'dir' || n.type === 'page' || n.type === 'component'));
       if (!dir) return [];
       nodes = dir.children || [];
@@ -396,9 +394,9 @@
     renderMenu(e, items, (action) => {
       if (action === 'create_page') {
         const kind = type === 'components' ? 'component' : 'page';
-        handleCreate(node.path + '/sub-pages', kind);
+        handleCreate(node.path, kind);
       } else if (action === 'create_subfolder') {
-        handleCreate(node.path + '/sub-pages', 'folder');
+        handleCreate(node.path, 'folder');
       } else if (action === 'copy_path') {
         const projectId = window.__axhostProjectId || '';
         const protoBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
@@ -458,8 +456,7 @@
       const parent = `prototype/${currentTab}${parentPath ? '/' + parentPath : ''}`;
       await window.apiClient.postCreate({ parentPath: parent, name, kind });
       if (parentPath) {
-        const expandPath = parentPath.endsWith('/sub-pages') ? parentPath.replace(/\/sub-pages$/, '') : parentPath;
-        expandedPaths.add(expandPath);
+        expandedPaths.add(parentPath);
       }
       await loadTree(currentTab);
       window.showToast(kind === 'folder' ? '目录创建成功' : (kind === 'component' ? '组件创建成功' : '页面创建成功'), 'success');

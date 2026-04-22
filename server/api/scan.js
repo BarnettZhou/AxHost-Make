@@ -1,67 +1,74 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { ensureOrder } = require('../lib/order.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
 
-async function readMetaName(absPath, fallback) {
+async function readMeta(absPath, fallback) {
   try {
     const content = await fs.readFile(path.join(absPath, '.axhost-meta.json'), 'utf-8');
-    const meta = JSON.parse(content);
-    return meta.name || fallback;
+    return JSON.parse(content);
   } catch {
-    return fallback;
+    return { name: fallback };
   }
 }
 
-async function scanNode(absPath, relPath, nodeType) {
-  const entries = await fs.readdir(absPath, { withFileTypes: true }).catch(() => []);
-  const names = entries
-    .filter(e => e.isDirectory())
-    .map(e => e.name);
+async function readDocs(absPath) {
+  const docsDir = path.join(absPath, 'docs');
+  if (!await exists(docsDir)) return [];
+  const entries = await fs.readdir(docsDir, { withFileTypes: true }).catch(() => []);
+  return entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name).sort();
+}
 
-  const order = await ensureOrder(absPath, names);
+async function scanFlat(tabPath, nodeType) {
+  const entries = await fs.readdir(tabPath, { withFileTypes: true }).catch(() => []);
+  const dirNames = entries.filter(e => e.isDirectory()).map(e => e.name);
 
-  const results = [];
-  for (const dirName of order) {
-    if (!names.includes(dirName)) continue;
-
-    const childAbs = path.join(absPath, dirName);
-    const childRel = relPath ? path.posix.join(relPath, dirName) : dirName;
-
-    const displayName = await readMetaName(childAbs, dirName);
+  const nodes = [];
+  for (const dirName of dirNames) {
+    const childAbs = path.join(tabPath, dirName);
+    const meta = await readMeta(childAbs, dirName);
     const hasIndex = await exists(path.join(childAbs, 'index.html'));
+    const kind = meta.kind || (hasIndex ? nodeType : 'dir');
 
-    if (hasIndex) {
-      const docsDir = path.join(childAbs, 'docs');
-      let docs = [];
-      if (await exists(docsDir)) {
-        const docsEntries = await fs.readdir(docsDir, { withFileTypes: true }).catch(() => []);
-        docs = docsEntries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name).sort();
-      }
-      const node = { id: dirName, name: displayName, path: childRel, type: nodeType, docs };
-      const subPagesAbs = path.join(childAbs, 'sub-pages');
-      if (await exists(subPagesAbs)) {
-        const children = await scanNode(subPagesAbs, path.posix.join(childRel, 'sub-pages'), nodeType);
-        if (children.length > 0) node.children = children;
-      }
-      results.push(node);
+    nodes.push({
+      id: dirName,
+      name: meta.name || dirName,
+      path: dirName,
+      type: kind === 'dir' ? 'dir' : nodeType,
+      kind,
+      parentId: meta.parentId || null,
+      docs: kind !== 'dir' ? await readDocs(childAbs) : []
+    });
+  }
+
+  // Assemble tree by parentId
+  const nodeMap = {};
+  for (const node of nodes) {
+    nodeMap[node.id] = { ...node, children: undefined };
+  }
+
+  const rootNodes = [];
+  for (const node of nodes) {
+    const n = nodeMap[node.id];
+    if (node.parentId && nodeMap[node.parentId]) {
+      if (!nodeMap[node.parentId].children) nodeMap[node.parentId].children = [];
+      nodeMap[node.parentId].children.push(n);
     } else {
-      const children = await scanNode(childAbs, childRel, nodeType);
-      results.push({ id: dirName, name: displayName, path: childRel, type: 'dir', children });
+      rootNodes.push(n);
     }
   }
-  return results;
+
+  return rootNodes;
 }
 
 async function handleScan(req, res, projectRoot) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const type = url.searchParams.get('type');
-    const pages = await scanNode(path.join(projectRoot, 'prototype/pages'), '', 'page');
-    const components = await scanNode(path.join(projectRoot, 'prototype/components'), '', 'component');
+    const pages = await scanFlat(path.join(projectRoot, 'prototype/pages'), 'page');
+    const components = await scanFlat(path.join(projectRoot, 'prototype/components'), 'component');
 
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     if (type === 'pages') {
@@ -77,4 +84,4 @@ async function handleScan(req, res, projectRoot) {
   }
 }
 
-module.exports = { handleScan, scanNode };
+module.exports = { handleScan, scanFlat };
