@@ -1,7 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { regenerateSitemap } = require('./sitemap.js');
-const { removeFromOrder, addToOrder, readOrder, writeOrder } = require('../lib/order.js');
+const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -22,6 +21,34 @@ async function writeMeta(absPath, meta) {
     JSON.stringify(meta, null, 2) + '\n',
     'utf-8'
   );
+}
+
+function findParentArray(nodes, id, parentRef) {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].id === id) {
+      parentRef.arr = nodes;
+      parentRef.idx = i;
+      return true;
+    }
+    if (nodes[i].children) {
+      if (findParentArray(nodes[i].children, id, parentRef)) return true;
+    }
+  }
+  return false;
+}
+
+function removeNode(nodes, id) {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].id === id) {
+      const removed = nodes.splice(i, 1)[0];
+      return removed;
+    }
+    if (nodes[i].children) {
+      const removed = removeNode(nodes[i].children, id);
+      if (removed) return removed;
+    }
+  }
+  return null;
 }
 
 async function handleMove(req, res, projectRoot) {
@@ -48,30 +75,40 @@ async function handleMove(req, res, projectRoot) {
 
       const sourceName = path.basename(sourceAbs);
       const targetName = path.basename(targetAbs);
-      const tabPath = path.dirname(sourceAbs); // e.g. prototype/pages
+      const tab = type || (resolvedSource.includes('components') ? 'components' : 'pages');
+      const sitemap = await readSitemap(projectRoot);
+      const tree = sitemap[tab] || [];
 
-      // before / after: reorder within tab root
+      // before / after: reorder within the same parent array
       if (position === 'before' || position === 'after') {
-        const targetOrder = await readOrder(tabPath) || [];
-        const order = targetOrder.slice();
-        const oldIdx = order.indexOf(sourceName);
-        let newIdx = order.indexOf(targetName);
-        if (oldIdx !== -1 && newIdx !== -1) {
-          order.splice(oldIdx, 1);
-          if (position === 'after') {
-            if (newIdx > oldIdx) newIdx -= 1;
-            newIdx += 1;
-          }
-          order.splice(newIdx, 0, sourceName);
-          await writeOrder(tabPath, order);
+        const sourceRef = {};
+        const targetRef = {};
+        findParentArray(tree, sourceName, sourceRef);
+        findParentArray(tree, targetName, targetRef);
+
+        if (!sourceRef.arr || !targetRef.arr || sourceRef.arr !== targetRef.arr) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ code: 400, message: 'Cannot reorder across different parents' }));
+          return;
         }
-        await regenerateSitemap(projectRoot);
+
+        const arr = sourceRef.arr;
+        const oldIdx = sourceRef.idx;
+        let newIdx = targetRef.idx;
+        const node = arr.splice(oldIdx, 1)[0];
+        if (position === 'after') {
+          if (newIdx > oldIdx) newIdx -= 1;
+          newIdx += 1;
+        }
+        arr.splice(newIdx, 0, node);
+
+        await writeSitemap(projectRoot, sitemap);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
         return;
       }
 
-      // drop-into: change parentId in meta
+      // drop-into: change parentId in meta and move in sitemap tree
       const targetMeta = await readMeta(targetAbs);
       const targetHasIndex = await exists(path.join(targetAbs, 'index.html'));
       const targetKind = targetMeta.kind || (targetHasIndex ? 'page' : 'dir');
@@ -81,11 +118,30 @@ async function handleMove(req, res, projectRoot) {
         return;
       }
 
+      // Update meta
       const sourceMeta = await readMeta(sourceAbs);
       sourceMeta.parentId = targetName;
       await writeMeta(sourceAbs, sourceMeta);
 
-      await regenerateSitemap(projectRoot);
+      // Update sitemap: remove from current position, insert under target
+      const movedNode = removeNode(tree, sourceName);
+      if (movedNode) {
+        movedNode.parentId = targetName;
+        function insertUnderTarget(nodes) {
+          for (const n of nodes) {
+            if (n.id === targetName) {
+              if (!n.children) n.children = [];
+              n.children.push(movedNode);
+              return true;
+            }
+            if (n.children && insertUnderTarget(n.children)) return true;
+          }
+          return false;
+        }
+        insertUnderTarget(tree);
+      }
+
+      await writeSitemap(projectRoot, sitemap);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
     } catch (err) {

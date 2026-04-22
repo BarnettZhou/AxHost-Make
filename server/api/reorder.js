@@ -1,6 +1,4 @@
-const fs = require('fs/promises');
-const path = require('path');
-const { reorder: reorderFile } = require('../lib/order.js');
+const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
 
 async function handleReorder(req, res, projectRoot) {
   let body = '';
@@ -14,16 +12,19 @@ async function handleReorder(req, res, projectRoot) {
     return;
   }
 
-  // Flat architecture: order is always at tab root
-  const dirPath = path.join(projectRoot, 'prototype', type);
+  const sitemap = await readSitemap(projectRoot);
+  const list = sitemap[type] || [];
 
-  const ok = await reorderFile(dirPath, oldIndex, newIndex);
-  if (!ok) {
+  if (oldIndex < 0 || oldIndex >= list.length || newIndex < 0 || newIndex >= list.length) {
     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ code: 400, message: 'Reorder failed' }));
+    res.end(JSON.stringify({ code: 400, message: 'Index out of range' }));
     return;
   }
 
+  const [moved] = list.splice(oldIndex, 1);
+  list.splice(newIndex, 0, moved);
+
+  await writeSitemap(projectRoot, sitemap);
   res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ code: 0 }));
 }

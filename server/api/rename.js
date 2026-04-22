@@ -1,6 +1,17 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { regenerateSitemap } = require('./sitemap.js');
+const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
+
+function updateNodeName(nodes, id, newName) {
+  for (const n of nodes) {
+    if (n.id === id) {
+      n.name = newName;
+      return true;
+    }
+    if (n.children && updateNodeName(n.children, id, newName)) return true;
+  }
+  return false;
+}
 
 async function handleRename(req, res, projectRoot) {
   let body = '';
@@ -20,8 +31,6 @@ async function handleRename(req, res, projectRoot) {
         return;
       }
 
-      // 新架构下，重命名只改 .axhost-meta.json 里的显示名称
-      // 目录名（hash）保持不变
       const metaPath = path.join(absPath, '.axhost-meta.json');
       let meta = { name: newName };
       try {
@@ -30,7 +39,7 @@ async function handleRename(req, res, projectRoot) {
       } catch {}
       await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
 
-      // 同步更新 index.html 中的 <title>，确保发布到 AxHost 后名称一致
+      // 同步更新 index.html 中的 <title>
       const indexPath = path.join(absPath, 'index.html');
       try {
         const indexContent = await fs.readFile(indexPath, 'utf-8');
@@ -40,7 +49,17 @@ async function handleRename(req, res, projectRoot) {
         }
       } catch {}
 
-      await regenerateSitemap(projectRoot);
+      // Update sitemap
+      const tab = targetPath.includes('components') ? 'components' : 'pages';
+      const sitemap = await readSitemap(projectRoot);
+      const tree = sitemap[tab] || [];
+      const id = path.basename(absPath);
+      updateNodeName(tree, id, newName);
+      if (sitemap._map && sitemap._map[id]) {
+        sitemap._map[id].name = newName;
+      }
+      await writeSitemap(projectRoot, sitemap);
+
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { path: targetPath } }));
     } catch (err) {

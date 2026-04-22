@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const { readSitemap } = require('../lib/sitemap-io.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -66,8 +67,11 @@ async function handleScan(req, res, projectRoot) {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const type = url.searchParams.get('type');
-    const pages = await scanFlat(path.join(projectRoot, 'prototype/pages'), 'page');
-    const components = await scanFlat(path.join(projectRoot, 'prototype/components'), 'component');
+
+    // Primary source: sitemap.js (order is maintained there)
+    const sitemap = await readSitemap(projectRoot);
+    const pages = sitemap.pages || [];
+    const components = sitemap.components || [];
 
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     if (type === 'pages') {

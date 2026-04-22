@@ -2,15 +2,30 @@ const fs = require('fs/promises');
 const path = require('path');
 const { scanFlat } = require('./scan.js');
 
-async function regenerateSitemap(projectRoot) {
+async function readSitemap(projectRoot) {
   const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
-  const mapPath = path.join(projectRoot, 'prototype', '.axhost-map.json');
+  try {
+    const content = await fs.readFile(sitemapPath, 'utf-8');
+    const jsonPart = content.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
+    return JSON.parse(jsonPart);
+  } catch (e) {
+    return { name: 'Prototype', pages: [], components: [] };
+  }
+}
 
+async function writeSitemap(projectRoot, data) {
+  const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
+  await fs.writeFile(
+    sitemapPath,
+    `window.__axhostSitemap = ${JSON.stringify(data, null, 2)};\n`,
+    'utf-8'
+  );
+}
+
+async function regenerateSitemap(projectRoot) {
   let existingName = 'Prototype';
   try {
-    const oldContent = await fs.readFile(sitemapPath, 'utf-8');
-    const jsonPart = oldContent.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
-    const oldData = JSON.parse(jsonPart);
+    const oldData = await readSitemap(projectRoot);
     existingName = oldData.name || existingName;
   } catch (e) {}
 
@@ -42,19 +57,8 @@ async function regenerateSitemap(projectRoot) {
     generatedBy: 'axhost-make'
   };
 
-  await fs.writeFile(
-    sitemapPath,
-    `window.__axhostSitemap = ${JSON.stringify(sitemap, null, 2)};\n`,
-    'utf-8'
-  );
-
-  await fs.writeFile(
-    mapPath,
-    JSON.stringify(flatMap, null, 2) + '\n',
-    'utf-8'
-  );
-
+  await writeSitemap(projectRoot, sitemap);
   return sitemap;
 }
 
-module.exports = { regenerateSitemap };
+module.exports = { readSitemap, writeSitemap, regenerateSitemap };

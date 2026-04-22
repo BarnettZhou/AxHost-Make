@@ -1,39 +1,29 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { regenerateSitemap } = require('./sitemap.js');
-const { removeFromOrder } = require('../lib/order.js');
+const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
 
-async function readMeta(absPath) {
-  try {
-    const content = await fs.readFile(path.join(absPath, '.axhost-meta.json'), 'utf-8');
-    return JSON.parse(content);
-  } catch {
-    return {};
-  }
-}
-
-async function collectChildren(tabPath, parentId) {
-  const entries = await fs.readdir(tabPath, { withFileTypes: true }).catch(() => []);
-  const children = [];
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const meta = await readMeta(path.join(tabPath, entry.name));
-    if (meta.parentId === parentId) {
-      children.push(entry.name);
+function removeNodeFromTree(nodes, id) {
+  for (let i = 0; i < nodes.length; i++) {
+    if (nodes[i].id === id) {
+      nodes.splice(i, 1);
+      return true;
+    }
+    if (nodes[i].children && removeNodeFromTree(nodes[i].children, id)) {
+      return true;
     }
   }
-  return children;
+  return false;
 }
 
-async function deleteRecursively(tabPath, id) {
-  // Cascade delete: delete this node and all its descendants
-  const children = await collectChildren(tabPath, id);
-  for (const childId of children) {
-    await deleteRecursively(tabPath, childId);
+function collectDescendantIds(nodes, parentId, result) {
+  for (const node of nodes) {
+    if (node.parentId === parentId) {
+      result.push(node.id);
+      if (node.children) {
+        collectDescendantIds(node.children, node.id, result);
+      }
+    }
   }
-  const absPath = path.join(tabPath, id);
-  await removeFromOrder(tabPath, id);
-  await fs.rm(absPath, { recursive: true, force: true });
 }
 
 async function handleDelete(req, res, projectRoot) {
@@ -56,10 +46,50 @@ async function handleDelete(req, res, projectRoot) {
 
       const tabPath = path.dirname(absPath);
       const id = path.basename(absPath);
+      const tab = tabPath.endsWith('components') ? 'components' : 'pages';
 
-      await deleteRecursively(tabPath, id);
+      // 1. Remove from sitemap (cascade: remove node and all descendants)
+      const sitemap = await readSitemap(projectRoot);
+      const tree = sitemap[tab] || [];
 
-      await regenerateSitemap(projectRoot);
+      // Collect all descendant ids from the tree
+      function findNode(nodes, targetId) {
+        for (const n of nodes) {
+          if (n.id === targetId) return n;
+          if (n.children) {
+            const f = findNode(n.children, targetId);
+            if (f) return f;
+          }
+        }
+        return null;
+      }
+      const targetNode = findNode(tree, id);
+      const idsToDelete = [id];
+      if (targetNode && targetNode.children) {
+        function collectIds(nodes) {
+          for (const n of nodes) {
+            idsToDelete.push(n.id);
+            if (n.children) collectIds(n.children);
+          }
+        }
+        collectIds(targetNode.children);
+      }
+      removeNodeFromTree(tree, id);
+
+      // Clean up flat map
+      if (sitemap._map) {
+        for (const delId of idsToDelete) {
+          delete sitemap._map[delId];
+        }
+      }
+      await writeSitemap(projectRoot, sitemap);
+
+      // 2. Remove physical directories
+      for (const delId of idsToDelete) {
+        const delPath = path.join(tabPath, delId);
+        await fs.rm(delPath, { recursive: true, force: true });
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0 }));
     } catch (err) {

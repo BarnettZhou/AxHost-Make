@@ -1,8 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { regenerateSitemap } = require('./sitemap.js');
+const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
 const { generateId } = require('../lib/ids.js');
-const { addToOrder } = require('../lib/order.js');
 
 const TEMPLATE_ROOT = path.resolve(__dirname, '../../templates/project');
 
@@ -50,6 +49,34 @@ async function writeMeta(absPath, meta) {
   );
 }
 
+function addNodeToSitemap(sitemap, tab, parentId, node) {
+  const list = sitemap[tab] || [];
+  if (!parentId) {
+    list.push(node);
+    sitemap[tab] = list;
+  } else {
+    function findAndInsert(nodes) {
+      for (const n of nodes) {
+        if (n.id === parentId) {
+          if (!n.children) n.children = [];
+          n.children.push(node);
+          return true;
+        }
+        if (n.children && findAndInsert(n.children)) return true;
+      }
+      return false;
+    }
+    findAndInsert(list);
+  }
+  // Update flat map
+  if (!sitemap._map) sitemap._map = {};
+  sitemap._map[node.id] = {
+    name: node.name,
+    type: node.type,
+    path: `${tab.slice(0, -1)}/${node.path}`
+  };
+}
+
 async function createItem(projectRoot, parentPath, name, kind) {
   if (!isSafePath(projectRoot, parentPath)) {
     throw new Error('Forbidden parent path');
@@ -75,13 +102,23 @@ async function createItem(projectRoot, parentPath, name, kind) {
   }
 
   await fs.mkdir(targetDir, { recursive: true });
-  await addToOrder(tabPath, hash);
 
   const meta = { name, kind };
   if (parentId) meta.parentId = parentId;
   await writeMeta(targetDir, meta);
 
   if (kind === 'folder') {
+    // Update sitemap
+    const sitemap = await readSitemap(projectRoot);
+    addNodeToSitemap(sitemap, tab, parentId, {
+      id: hash,
+      name,
+      path: hash,
+      type: 'dir',
+      parentId,
+      docs: []
+    });
+    await writeSitemap(projectRoot, sitemap);
     return { id: hash, name, path: hash, kind };
   }
 
@@ -103,6 +140,19 @@ async function createItem(projectRoot, parentPath, name, kind) {
   await fs.mkdir(path.join(targetDir, 'docs'), { recursive: true });
   await fs.writeFile(path.join(targetDir, 'docs', 'readme.md'), applyTemplate(tplDoc, vars), 'utf-8');
 
+  // Update sitemap
+  const sitemap = await readSitemap(projectRoot);
+  const docs = ['readme.md'];
+  addNodeToSitemap(sitemap, tab, parentId, {
+    id: hash,
+    name,
+    path: hash,
+    type: kind,
+    parentId,
+    docs
+  });
+  await writeSitemap(projectRoot, sitemap);
+
   return { id: hash, name, path: hash, kind };
 }
 
@@ -118,7 +168,6 @@ async function handleCreate(req, res, projectRoot) {
         return;
       }
       const result = await createItem(projectRoot, parentPath, name, kind);
-      await regenerateSitemap(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: result }));
     } catch (err) {
