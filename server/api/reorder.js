@@ -6,7 +6,7 @@ async function handleReorder(req, res, projectRoot) {
   let body = '';
   for await (const chunk of req) body += chunk;
   const data = JSON.parse(body || '{}');
-  const { type, parentPath, oldIndex, newIndex } = data;
+  const { type, oldIndex, newIndex } = data;
 
   if (!type || (type !== 'pages' && type !== 'components') || typeof oldIndex !== 'number' || typeof newIndex !== 'number') {
     res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -14,9 +14,8 @@ async function handleReorder(req, res, projectRoot) {
     return;
   }
 
-  const dirPath = parentPath
-    ? path.join(projectRoot, 'prototype', type, parentPath)
-    : path.join(projectRoot, 'prototype', type);
+  // Flat architecture: order is always at tab root
+  const dirPath = path.join(projectRoot, 'prototype', type);
 
   const ok = await reorderFile(dirPath, oldIndex, newIndex);
   if (!ok) {

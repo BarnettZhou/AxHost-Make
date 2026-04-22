@@ -138,7 +138,7 @@ node axhost-make/bin/axhost-make.js list
 ```
 Pages:
   a1b2c3d4  订单列表  (pages/a1b2c3d4)
-  b2c3d4e5  子订单    (pages/a1b2c3d4/sub-pages/b2c3d4e5)
+  b2c3d4e5  子订单    (pages/b2c3d4e5)
 ```
 
 ### find — 通过精确名称查找 hash
@@ -209,7 +209,7 @@ workspace/                 # 工作空间根目录（与 axhost-make/ 平级）
 
 ```
 pages/a1b2c3d4/
-├── .axhost-meta.json    # { "name": "订单列表" }
+├── .axhost-meta.json    # { "name": "订单列表", "parentId": null }
 ├── index.html           # 页面源码
 ├── resources/
 │   ├── css/
@@ -277,8 +277,8 @@ cat "$FILE_PATH"
 <!-- 页面内引用私有资源 -->
 <script src="resources/js/mock-data.js"></script>
 
-<!-- 页面内引用全局资源（从 pages/{hash}/yyy/index.html 向上回退到 prototype 根目录） -->
-<script src="../../../resources/js/marked.min.js"></script>
+<!-- 页面内引用全局资源（从 pages/{hash}/index.html 向上回退到 prototype 根目录） -->
+<script src="../resources/js/marked.min.js"></script>
 ```
 
 > **⚠️ 线上托管路径警告**：项目最终可能部署在子目录（如 `/projects/2026xxx/`）中。**禁止**在页面内部使用以 `/prototype/` 开头的绝对路径引用图片、脚本或样式表，否则浏览器会从域名根目录查找资源，导致 404。所有页面级引用全局共享资源时，必须使用相对于当前 HTML 文件的相对路径（如 `../../../resources/images/xxx.png`）。

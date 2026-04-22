@@ -489,8 +489,8 @@
       window.showToast('名称不能为空', 'error');
       return;
     }
-    const parentPath = nodePath.includes('/') ? nodePath.substring(0, nodePath.lastIndexOf('/')) : '';
-    if (hasSiblingName(parentPath, newName)) {
+    const parentId = node ? (node.parentId || '') : '';
+    if (hasSiblingName(parentId, newName)) {
       window.showToast(`同级下已存在名为 "${newName}" 的目录或页面`, 'error');
       return;
     }

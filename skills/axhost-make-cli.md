@@ -10,8 +10,8 @@
 
 - **名称校验**：页面、目录、组件、文档的名称均只能包含字母、数字、下划线、连字符和中文字符，不可使用空格或特殊符号。
 - **路径格式**：
-  - **完整路径**：以 `pages/` 或 `components/` 开头，例如 `pages/每日签到-PC/每日签到-签满`
-  - **Hash 值**：8 位十六进制字符串（页面/组件在 `.axhost-ids.json` 中注册的唯一 ID），例如 `6e3d21e9`
+  - **完整路径**：以 `pages/` 或 `components/` 开头，例如 `pages/85a10724`
+  - **Hash 值**：8 位十六进制字符串（页面/组件在 `.axhost-meta.json` 中注册的唯一 ID），例如 `6e3d21e9`
 - **执行方式**：
   - 通过主 CLI：`node axhost-make/bin/axhost-make.js <command> [args]`
   - 或直接执行脚本：`node axhost-make/bin/<script> [args]`
@@ -28,13 +28,12 @@ node axhost-make/bin/axhost-make.js add-page <name> [--parent <path-or-hash>]
 ### 说明
 - 在 `prototype/pages/` 下创建新页面。
 - 若不指定 `--parent`，页面将放在 `prototype/pages/` 根目录。
-- `--parent` 支持完整路径或 hash 值。如果上级是页面，子页面会自动放到 `sub-pages/` 下。
+- `--parent` 支持完整路径或 hash 值。逻辑层级由 `.axhost-meta.json` 中的 `parentId` 描述。
 - 自动初始化：
-  - `{page_name}/index.html`
-  - `{page_name}/resources/css/style.css`
-  - `{page_name}/resources/js/main.js`
-  - `{page_name}/docs/readme.md`
-  - 注册 hash ID
+  - `{hash}/index.html`
+  - `{hash}/resources/css/style.css`
+  - `{hash}/resources/js/main.js`
+  - `{hash}/docs/readme.md`
   - 更新 `sitemap.js`
 
 ### 示例
@@ -43,7 +42,7 @@ node axhost-make/bin/axhost-make.js add-page <name> [--parent <path-or-hash>]
 node axhost-make/bin/axhost-make.js add-page 用户中心
 
 # 在指定页面下创建子页面（使用完整路径）
-node axhost-make/bin/axhost-make.js add-page 签到记录 --parent pages/每日签到-PC
+node axhost-make/bin/axhost-make.js add-page 签到记录 --parent pages/85a10724
 
 # 使用 hash 指定上级
 node axhost-make/bin/axhost-make.js add-page 签到记录 --parent 6e3d21e9
@@ -84,7 +83,7 @@ node axhost-make/bin/axhost-make.js add-folder <name> [--parent <path-or-hash>] 
 ### 说明
 - 在 `prototype/pages/` 或 `prototype/components/` 下创建目录。
 - 默认归属 `pages`，可通过 `-t components` 指定到组件侧。
-- 若 `--parent` 指向一个页面，新目录会自动放在该页面的 `sub-pages/` 下（与 server 接口行为一致）。
+- 逻辑层级由 `.axhost-meta.json` 中的 `parentId` 描述，所有目录物理平级。
 - 更新 `sitemap.js`。
 
 ### 示例
@@ -96,7 +95,7 @@ node axhost-make/bin/axhost-make.js add-folder 营销活动
 node axhost-make/bin/axhost-make.js add-folder 表单组件 -t components
 
 # 在指定目录下创建子目录
-node axhost-make/bin/axhost-make.js add-folder 春节活动 --parent pages/营销活动
+node axhost-make/bin/axhost-make.js add-folder 春节活动 --parent pages/85a10724
 ```
 
 ---
@@ -117,7 +116,7 @@ node axhost-make/bin/axhost-make.js add-doc <name> --to <path-or-hash>
 ### 示例
 ```bash
 # 为页面新增文档（使用完整路径）
-node axhost-make/bin/axhost-make.js add-doc 需求变更 --to pages/每日签到-PC/每日签到-签满
+node axhost-make/bin/axhost-make.js add-doc 需求变更 --to pages/85a10724
 
 # 为组件新增文档（使用 hash）
 node axhost-make/bin/axhost-make.js add-doc API说明 --to 6e3d21e9

@@ -39,7 +39,6 @@ async function resolveParent(projectRoot, parentInput, tab) {
     }
     return `prototype/${resolved.tab}/${resolved.relPath}`;
   }
-  // 允许直接传入相对路径（如 sub-pages/xxx），在前面补 tab
   if (!parentInput.includes('prototype/')) {
     return `prototype/${tab}/${parentInput}`;
   }
