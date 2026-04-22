@@ -50,9 +50,7 @@ async function scanNode(absPath, relPath, nodeType) {
       results.push(node);
     } else {
       const children = await scanNode(childAbs, childRel, nodeType);
-      if (children.length > 0) {
-        results.push({ id: dirName, name: displayName, path: childRel, type: 'dir', children });
-      }
+      results.push({ id: dirName, name: displayName, path: childRel, type: 'dir', children });
     }
   }
   return results;

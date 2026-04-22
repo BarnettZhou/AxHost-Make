@@ -45,6 +45,10 @@
   const rulesRoot = document.getElementById('rules-root');
   const ruleViewer = document.getElementById('rule-viewer');
   const ruleViewerContent = document.getElementById('rule-viewer-content');
+  const deleteRuleModal = document.getElementById('delete-rule-modal');
+  const deleteRuleMessage = document.getElementById('delete-rule-message');
+  const btnCancelDeleteRule = document.getElementById('btn-cancel-delete-rule');
+  const btnConfirmDeleteRule = document.getElementById('btn-confirm-delete-rule');
   const iframeWrapper = document.getElementById('iframe-wrapper');
   const promptBox = document.getElementById('prompt-box');
   const promptResizer = document.getElementById('prompt-resizer');
@@ -224,7 +228,6 @@
       settingsModal.classList.add('open');
     });
     settingsClose.addEventListener('click', closeSettings);
-    settingsModal.querySelector('.settings-modal-overlay').addEventListener('click', closeSettings);
     const btnCancel = document.getElementById('settings-modal-cancel');
     if (btnCancel) btnCancel.addEventListener('click', closeSettings);
   }
@@ -500,12 +503,15 @@
       });
     }
 
-    // context menu on empty area
+    // context menu on rules items and empty area
     rulesRoot.addEventListener('contextmenu', (e) => {
       const item = e.target.closest('.rules-item');
-      if (item) return; // let default behavior or ignore
       e.preventDefault();
-      showRulesContextMenu(e);
+      if (item) {
+        showRulesItemContextMenu(e, item.dataset.name);
+      } else {
+        showRulesContextMenu(e);
+      }
     });
   }
 
@@ -528,6 +534,110 @@
     setTimeout(() => {
       document.addEventListener('click', removeRulesContextMenu, { once: true });
     }, 0);
+  }
+
+  function showRulesItemContextMenu(e, fileName) {
+    removeRulesContextMenu();
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.id = 'rules-context-menu';
+    menu.style.left = e.clientX + 'px';
+    menu.style.top = e.clientY + 'px';
+
+    // Edit submenu
+    const editItem = document.createElement('div');
+    editItem.className = 'context-menu-item';
+    editItem.textContent = '编辑';
+    const subMenu = document.createElement('div');
+    subMenu.className = 'context-menu-submenu';
+    ['vscode', 'cursor', 'trae'].forEach(editor => {
+      const sub = document.createElement('div');
+      sub.className = 'context-menu-item';
+      const nameMap = { vscode: 'VS Code', cursor: 'Cursor', trae: 'Trae' };
+      sub.textContent = `使用 ${nameMap[editor]} 打开`;
+      sub.onclick = () => {
+        removeRulesContextMenu();
+        openRuleInEditor(editor, fileName);
+      };
+      subMenu.appendChild(sub);
+    });
+    editItem.appendChild(subMenu);
+    menu.appendChild(editItem);
+
+    // Delete
+    const deleteItem = document.createElement('div');
+    deleteItem.className = 'context-menu-item';
+    if (fileName === 'dev-spec.md') {
+      deleteItem.classList.add('disabled');
+      deleteItem.textContent = '删除';
+      deleteItem.title = 'dev-spec.md 不允许删除';
+    } else {
+      deleteItem.textContent = '删除';
+      deleteItem.onclick = () => {
+        removeRulesContextMenu();
+        showDeleteRuleModal(fileName);
+      };
+    }
+    menu.appendChild(deleteItem);
+
+    document.body.appendChild(menu);
+    setTimeout(() => {
+      document.addEventListener('click', removeRulesContextMenu, { once: true });
+    }, 0);
+  }
+
+  async function openRuleInEditor(editor, fileName) {
+    try {
+      const res = await window.apiClient.postOpenEditor({ editor, filePath: `rules/${fileName}` });
+      if (res.code === 0) {
+        const nameMap = { vscode: 'VS Code', cursor: 'Cursor', trae: 'Trae' };
+        window.showToast(`已在 ${nameMap[editor]} 中打开`, 'success');
+      } else {
+        window.showToast(res.message, 'error');
+      }
+    } catch (err) {
+      window.showToast(err.message, 'error');
+    }
+  }
+
+  function showDeleteRuleModal(fileName) {
+    if (!deleteRuleModal || !deleteRuleMessage) return;
+    deleteRuleMessage.textContent = `是否删除 ${fileName}？`;
+    deleteRuleModal.classList.add('active');
+    deleteRuleModal._targetFile = fileName;
+  }
+
+  function hideDeleteRuleModal() {
+    if (deleteRuleModal) deleteRuleModal.classList.remove('active');
+  }
+
+  async function confirmDeleteRule() {
+    const fileName = deleteRuleModal ? deleteRuleModal._targetFile : null;
+    if (!fileName) return;
+    hideDeleteRuleModal();
+    try {
+      await window.apiClient.postDelete({ path: `rules/${fileName}` });
+      window.showToast('删除成功', 'success');
+      await loadRulesList();
+      if (activeRuleItem && activeRuleItem.dataset.name === fileName) {
+        ruleViewerContent.innerHTML = '';
+        activeRuleItem = null;
+      }
+    } catch (err) {
+      window.showToast(err.message, 'error');
+    }
+  }
+
+  if (btnCancelDeleteRule) {
+    btnCancelDeleteRule.addEventListener('click', hideDeleteRuleModal);
+  }
+  if (btnConfirmDeleteRule) {
+    btnConfirmDeleteRule.addEventListener('click', confirmDeleteRule);
+  }
+  if (deleteRuleModal) {
+    deleteRuleModal.addEventListener('click', (e) => {
+      if (e.target === deleteRuleModal) hideDeleteRuleModal();
+    });
   }
 
   function removeRulesContextMenu() {
@@ -661,7 +771,6 @@
 
       btnOk.onclick = () => { cleanup(); resolve(true); };
       btnCancel.onclick = () => { cleanup(); resolve(false); };
-      overlay.onclick = () => { cleanup(); resolve(false); };
     });
   };
 
@@ -716,7 +825,6 @@
 
       btnOk.onclick = submit;
       btnCancel.onclick = cancel;
-      overlay.onclick = cancel;
       input.onkeydown = (e) => {
         if (e.key === 'Enter') submit();
         else if (e.key === 'Escape') cancel();

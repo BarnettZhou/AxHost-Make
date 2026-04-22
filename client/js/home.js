@@ -497,9 +497,7 @@
       if (e.key === 'Enter') createProject();
       if (e.key === 'Escape') closeModal();
     });
-    els.newProjectModal.addEventListener('click', (e) => {
-      if (e.target === els.newProjectModal) closeModal();
-    });
+
 
     els.btnImportProject.addEventListener('click', () => {
       alert('导入功能即将推出');
@@ -528,9 +526,7 @@
     els.btnCancelSettings.addEventListener('click', () => {
       els.settingsModal.classList.remove('active');
     });
-    els.settingsModal.addEventListener('click', (e) => {
-      if (e.target === els.settingsModal) els.settingsModal.classList.remove('active');
-    });
+
     els.btnSaveSettings.addEventListener('click', () => {
       const url = (els.axhostServerUrl.value || '').trim();
       if (!url) {
@@ -561,9 +557,7 @@
     els.btnCancelLogin.addEventListener('click', () => {
       els.loginModal.classList.remove('active');
     });
-    els.loginModal.addEventListener('click', (e) => {
-      if (e.target === els.loginModal) els.loginModal.classList.remove('active');
-    });
+
     els.btnConfirmLogin.addEventListener('click', async () => {
       const baseUrl = getAxHostBaseUrl();
       if (!baseUrl) {

@@ -31,6 +31,7 @@ async function handleOpenEditor(req, res, workspaceRoot) {
         return;
       }
 
+      const { filePath } = JSON.parse(body || '{}');
       const projectPath = path.join(workspaceRoot, 'projects', projectId);
       const command = { vscode: 'code', cursor: 'cursor', trae: 'trae' }[editor];
 
@@ -40,15 +41,8 @@ async function handleOpenEditor(req, res, workspaceRoot) {
         return;
       }
 
-      const child = spawn(command, [projectPath], { windowsHide: true });
-      child.unref();
-
-      child.on('error', (err) => {
-        if (!res.writableEnded) {
-          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ code: 400, message: `Failed to launch ${command}: ${err.message}` }));
-        }
-      });
+      const targetPath = filePath ? path.join(projectPath, filePath) : projectPath;
+      const child = spawn(command, [targetPath], { shell: true, windowsHide: true });
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { editor, projectPath } }));

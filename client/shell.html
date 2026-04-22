@@ -137,6 +137,20 @@
     </div>
   </div>
 
+  <!-- 删除规则文件确认弹窗 -->
+  <div class="modal-overlay" id="delete-rule-modal">
+    <div class="modal-content" style="width:360px;">
+      <div class="modal-title">删除确认</div>
+      <div class="modal-body">
+        <div id="delete-rule-message">确定要删除该文件吗？</div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" id="btn-cancel-delete-rule">取消</button>
+        <button class="btn-primary" id="btn-confirm-delete-rule">删除</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 创建远程项目弹窗 -->
   <div class="modal-overlay" id="create-remote-project-modal">
     <div class="modal-content" style="width:360px;">
@@ -210,6 +224,10 @@
                 </button>
               </div>
               <div class="host-project-hint" id="export-host-project-hint"></div>
+            </div>
+            <div class="export-field" id="export-preview-url-field" style="display:none;">
+              <label>线上原型地址</label>
+              <a id="export-preview-url" href="#" target="_blank" class="export-preview-url"></a>
             </div>
           </div>
         </div>

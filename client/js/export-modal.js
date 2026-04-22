@@ -26,6 +26,8 @@
   const btnUnlinkProject = document.getElementById('export-btn-unlink-project');
   const btnCreateRemoteProject = document.getElementById('export-btn-create-remote-project');
   const hostProjectHint = document.getElementById('export-host-project-hint');
+  const exportPreviewUrlField = document.getElementById('export-preview-url-field');
+  const exportPreviewUrl = document.getElementById('export-preview-url');
   const createRemoteModal = document.getElementById('export-create-remote-modal');
   const newRemoteProjectName = document.getElementById('export-new-remote-project-name');
   const btnCancelCreateRemote = document.getElementById('export-btn-cancel-create-remote');
@@ -59,7 +61,6 @@
   btnExport.addEventListener('click', open);
   btnClose.addEventListener('click', close);
   btnCancel.addEventListener('click', close);
-  modal.querySelector('.export-modal-overlay').addEventListener('click', close);
 
   // Load default project name and dir
   async function loadDefaultInfo() {
@@ -252,6 +253,19 @@
   }
 
   // ===== Host Project Logic =====
+  function updatePreviewUrl() {
+    if (!exportPreviewUrlField || !exportPreviewUrl) return;
+    const baseUrl = localStorage.getItem('axhost-server-url');
+    if (selectedHostProject && selectedHostProject.id && baseUrl) {
+      const url = baseUrl.replace(/\/+$/, '') + `/projects/${selectedHostProject.id}/index.html`;
+      exportPreviewUrl.href = url;
+      exportPreviewUrl.textContent = url;
+      exportPreviewUrlField.style.display = '';
+    } else {
+      exportPreviewUrlField.style.display = 'none';
+    }
+  }
+
   function renderHostProjectState() {
     if (currentSettingsLink && currentSettingsLink.remoteProjectId) {
       hostProjectSearch.style.display = 'none';
@@ -264,6 +278,7 @@
       selectedHostProject = null;
     }
     hostProjectHint.textContent = '';
+    updatePreviewUrl();
   }
 
   async function fetchHostProjects() {
@@ -317,6 +332,7 @@
           hostProjectSearch.value = p.name || '';
           hostProjectDropdown.classList.remove('open');
           hostProjectHint.textContent = '';
+          updatePreviewUrl();
         });
         hostProjectDropdown.appendChild(div);
       });

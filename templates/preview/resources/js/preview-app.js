@@ -34,6 +34,7 @@
 
   const map = window.__axhostSitemap || { name: 'Prototype', pages: [], components: [] };
   if (projectNameEl) projectNameEl.textContent = map.name || 'Prototype';
+  document.title = map.name || 'Prototype';
 
   function renderMarkdown(mdText) {
     if (!window.marked) return '<p>marked.js not loaded</p>';

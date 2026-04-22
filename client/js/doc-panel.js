@@ -152,9 +152,7 @@
     modalEl.classList.remove('open');
   }
 
-  addModal.querySelector('.add-doc-modal-overlay').addEventListener('click', () => closeModal(addModal));
   addModal.querySelector('.doc-modal-cancel').addEventListener('click', () => closeModal(addModal));
-  renameModal.querySelector('.add-doc-modal-overlay').addEventListener('click', () => closeModal(renameModal));
   renameModal.querySelector('.doc-modal-cancel').addEventListener('click', () => closeModal(renameModal));
 
   function buildDocContent(title) {
