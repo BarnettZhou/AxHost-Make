@@ -20,6 +20,7 @@
         <div id="editor-dropdown" class="editor-dropdown">
           <div class="editor-dropdown-item" data-editor="vscode">使用 VS Code 打开</div>
           <div class="editor-dropdown-item" data-editor="cursor">使用 Cursor 打开</div>
+          <div class="editor-dropdown-item" data-editor="trae">使用 Trae 打开</div>
         </div>
         <button id="btn-export" title="导出"><iconpark-icon icon-id="upload" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-inspect" title="抓取元素"><iconpark-icon icon-id="magic" size="14" color="currentColor"></iconpark-icon></button>
@@ -107,6 +108,9 @@
       <div class="settings-modal-body">
         <label for="project-name-input">项目名称</label>
         <input type="text" id="project-name-input" placeholder="Prototype">
+
+        <label>项目 ID</label>
+        <div class="settings-project-id" id="settings-project-id"></div>
 
         <label>托管项目</label>
         <div class="host-project-row">

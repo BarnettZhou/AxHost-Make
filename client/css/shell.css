@@ -680,6 +680,18 @@ body.dark .doc-tab.active {
   font-size: 13px;
   margin-bottom: 12px;
 }
+.settings-project-id {
+  width: 100%;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  font-family: monospace;
+  user-select: all;
+}
 .settings-modal-footer {
   display: flex;
   justify-content: flex-end;

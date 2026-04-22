@@ -18,7 +18,7 @@
       try {
         const errData = await res.json();
         if (errData && errData.message) {
-          errMsg = `${errMsg}: ${errData.message}`;
+          errMsg = errData.message;
         }
       } catch (e) {}
       console.error('[API Error]', url, errMsg);

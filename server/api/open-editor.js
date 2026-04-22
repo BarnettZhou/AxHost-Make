@@ -1,5 +1,15 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
+
+function commandExists(cmd) {
+  try {
+    const check = process.platform === 'win32' ? `where ${cmd}` : `which ${cmd}`;
+    execSync(check, { stdio: 'ignore', timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 async function handleOpenEditor(req, res, workspaceRoot) {
   let body = '';
@@ -7,9 +17,9 @@ async function handleOpenEditor(req, res, workspaceRoot) {
   req.on('end', async () => {
     try {
       const { editor } = JSON.parse(body || '{}');
-      if (!editor || !['vscode', 'cursor'].includes(editor)) {
+      if (!editor || !['vscode', 'cursor', 'trae'].includes(editor)) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 400, message: 'editor must be "vscode" or "cursor"' }));
+        res.end(JSON.stringify({ code: 400, message: 'editor must be "vscode", "cursor" or "trae"' }));
         return;
       }
 
@@ -22,27 +32,26 @@ async function handleOpenEditor(req, res, workspaceRoot) {
       }
 
       const projectPath = path.join(workspaceRoot, 'projects', projectId);
-      const command = editor === 'vscode' ? 'code' : 'cursor';
+      const command = { vscode: 'code', cursor: 'cursor', trae: 'trae' }[editor];
 
-      const child = spawn(command, [projectPath], { shell: true, detached: true });
-      let errorOutput = '';
+      if (!commandExists(command)) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: `${command} 命令未找到，请确认 ${editor} 已安装并添加到系统 PATH` }));
+        return;
+      }
 
-      child.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-      });
+      const child = spawn(command, [projectPath], { windowsHide: true });
+      child.unref();
 
       child.on('error', (err) => {
-        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 500, message: `Failed to launch ${command}: ${err.message}` }));
+        if (!res.writableEnded) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ code: 400, message: `Failed to launch ${command}: ${err.message}` }));
+        }
       });
 
-      // Give it a short time to fail; if it hasn't, assume success
-      setTimeout(() => {
-        if (!res.writableEnded) {
-          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ code: 0, data: { editor, projectPath } }));
-        }
-      }, 300);
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 0, data: { editor, projectPath } }));
 
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });

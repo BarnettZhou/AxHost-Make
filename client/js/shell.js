@@ -83,12 +83,13 @@
         try {
           const res = await window.apiClient.postOpenEditor({ editor });
           if (res.code === 0) {
-            window.showToast(`已在 ${editor === 'vscode' ? 'VS Code' : 'Cursor'} 中打开`, 'success');
+            const editorName = { vscode: 'VS Code', cursor: 'Cursor', trae: 'Trae' }[editor] || editor;
+            window.showToast(`已在 ${editorName} 中打开`, 'success');
           } else {
             window.showToast(res.message || '打开失败', 'error');
           }
         } catch (err) {
-          window.showToast('打开失败: ' + err.message, 'error');
+          window.showToast(err.message, 'error');
         }
       });
     });
@@ -143,6 +144,10 @@
         renderHostProjectState();
       }
     } catch (e) {}
+    const projectIdEl = document.getElementById('settings-project-id');
+    if (projectIdEl) {
+      projectIdEl.textContent = projectId || '-';
+    }
   }
 
   function renderHostProjectState() {
