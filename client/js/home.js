@@ -131,6 +131,35 @@
     return localStorage.getItem('axhost-token') || '';
   }
 
+  function isLoggedIn() {
+    return !!getAxHostToken();
+  }
+
+  function updateLoginUI() {
+    const token = getAxHostToken();
+    const userName = localStorage.getItem('axhost-user-name') || '';
+    const avatarEl = document.querySelector('.avatar');
+    const loginBtn = els.btnLogin;
+    if (token && userName) {
+      if (avatarEl) avatarEl.textContent = userName.charAt(0).toUpperCase();
+      if (loginBtn) {
+        loginBtn.innerHTML = `<iconpark-icon icon-id="logout" size="14" color="currentColor"></iconpark-icon><span>退出登录</span>`;
+      }
+    } else {
+      if (avatarEl) avatarEl.textContent = 'A';
+      if (loginBtn) {
+        loginBtn.innerHTML = `<iconpark-icon icon-id="login" size="14" color="currentColor"></iconpark-icon><span>登录账号</span>`;
+      }
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('axhost-token');
+    localStorage.removeItem('axhost-user-name');
+    updateLoginUI();
+    showToast('已退出登录', 'info');
+  }
+
   async function axhostRequest(apiPath, options) {
     const baseUrl = getAxHostBaseUrl();
     if (!baseUrl) throw new Error('AxHost 服务地址未设置');
@@ -517,6 +546,11 @@
       showToast('设置已保存', 'success');
     });
     els.btnLogin.addEventListener('click', () => {
+      if (isLoggedIn()) {
+        logout();
+        els.avatarDropdown.classList.remove('open');
+        return;
+      }
       els.loginEmployeeId.value = '';
       els.loginPassword.value = '';
       els.loginError.textContent = '';
@@ -556,7 +590,8 @@
           els.loginModal.classList.remove('active');
           showToast('登录成功', 'success');
           if (data.user && data.user.name) {
-            document.querySelector('.avatar').textContent = data.user.name.charAt(0).toUpperCase();
+            localStorage.setItem('axhost-user-name', data.user.name);
+            updateLoginUI();
           }
         } else {
           els.loginError.textContent = data.message || '登录失败，请检查工号和密码';
@@ -601,6 +636,7 @@
     renderTabs();
     loadProjects();
     startReleaseTimer();
+    updateLoginUI();
 
     // If there was an active tab, restore it
     if (state.activeTabId) {
@@ -612,6 +648,19 @@
         saveTabs();
       }
     }
+
+    // Listen for login request from iframe (e.g. export-modal publish)
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'axhost-request-login') {
+        if (!isLoggedIn()) {
+          els.loginEmployeeId.value = '';
+          els.loginPassword.value = '';
+          els.loginError.textContent = '';
+          els.loginModal.classList.add('active');
+          setTimeout(() => els.loginEmployeeId.focus(), 50);
+        }
+      }
+    });
   }
 
   init();

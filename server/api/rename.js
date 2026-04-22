@@ -30,6 +30,16 @@ async function handleRename(req, res, projectRoot) {
       } catch {}
       await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
 
+      // 同步更新 index.html 中的 <title>，确保发布到 AxHost 后名称一致
+      const indexPath = path.join(absPath, 'index.html');
+      try {
+        const indexContent = await fs.readFile(indexPath, 'utf-8');
+        const updatedContent = indexContent.replace(/<title>.*?<\/title>/i, `<title>${newName}</title>`);
+        if (updatedContent !== indexContent) {
+          await fs.writeFile(indexPath, updatedContent, 'utf-8');
+        }
+      } catch {}
+
       await regenerateSitemap(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { path: targetPath } }));

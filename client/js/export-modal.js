@@ -273,6 +273,10 @@
       return [];
     }
     const token = localStorage.getItem('axhost-token') || '';
+    if (!token) {
+      hostProjectHint.textContent = '请先登录';
+      return [];
+    }
     try {
       const res = await fetch('/api/axhost-proxy', {
         method: 'POST',
@@ -322,6 +326,11 @@
 
   if (hostProjectSearch) {
     hostProjectSearch.addEventListener('focus', async () => {
+      const token = localStorage.getItem('axhost-token') || '';
+      if (!token) {
+        hostProjectHint.textContent = '请先登录';
+        return;
+      }
       if (hostProjectList.length === 0) {
         hostProjectList = await fetchHostProjects();
       }
@@ -494,6 +503,9 @@
     }
     if (!token) {
       window.showToast('请先登录', 'error');
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'axhost-request-login' }, '*');
+      }
       return;
     }
 

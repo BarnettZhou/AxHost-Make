@@ -94,7 +94,8 @@ workspace/
 │   │   ├── router.js         # 路由分发（支持多项目）
 │   │   └── api/              # API 实现
 │   │       ├── projects.js   # GET/POST /api/projects 项目列表/新建
-│   │       ├── export.js     # POST /api/export 导出功能
+│   │       ├── export.js     # POST /api/export 导出功能 + /api/export/publish 线上发布
+│   │       ├── axhost-proxy.js # POST /api/axhost-proxy 跨域代理（供前端调用远程 AxHost API）
 │   │       ├── project-info.js # GET /api/project-info 项目元数据
 │   ├── templates/            # 模板目录
 │   │   ├── preview/          # Preview 入口产物（build 生成）
@@ -170,6 +171,40 @@ workspace/
 - **禁止**在 `axhost-make/` 内创建 `prototype/` 目录（这是之前的技术债，已清理）。
 - **禁止**引入 Vue/React/Angular 等框架到 `client/` 或 `templates/` 中。
 - **禁止**未经用户确认执行 `git push`、`git reset`、`git rebase`。
+
+---
+
+## AxHost 集成（登录 / 设置 / 发布）
+
+框架支持与远程 AxHost 平台对接，实现项目托管和线上发布。
+
+### 登录
+- **入口**：home 页面 header 头像 dropdown → 登录账号
+- 调用 `POST {baseUrl}/api/auth/login`（工号 + 密码）
+- Token 保存到 `localStorage('axhost-token')`，有效期 30 天
+- 浏览器 CORS 限制：前端不直接请求远程，统一走 `/api/axhost-proxy` 由 Node 服务端转发
+
+### 设置（AxHost 服务地址 / 托管项目）
+- **AxHost 服务地址**：home 页面头像 dropdown → 系统设置，保存到 `localStorage('axhost-server-url')`
+- **托管项目关联**：shell 页面 → 项目设置（#btn-settings）→ 托管项目
+  - 支持下拉搜索 / 选择已有项目 / 创建新项目并自动关联
+  - 关联信息保存在项目根目录 `.axhost-link.json`：`{ remoteProjectId, remoteProjectName }`
+  - 接口：`GET/POST /api/settings`（扩展了 link 字段）
+
+### 线上发布
+- **入口**：shell 页面 → 导出按钮（#btn-export，icon-id=upload）→ 线上发布 tab
+- **流程**：
+  1. 选择右侧 pages/components（复用导出弹窗的树形勾选）
+  2. 左侧选择托管项目（未关联时无法发布）
+  3. 点击「发布」调用 `POST /api/export/publish`
+  4. Server 端：复制文件到 `../cache/{projectId}` → `tar -acf` 打包 zip → `fetch` + `FormData` 上传到 AxHost `POST /api/projects/{id}/update-file`
+  5. 上传完成后自动清理 cache 目录
+- **前置检查**：发布前校验 `axhost-server-url`、`axhost-token`、托管项目是否已设置
+
+### 代理接口
+- `POST /api/axhost-proxy`
+- 请求体：`{ serverUrl, path, method, headers, body }`
+- 用于前端调用所有 AxHost 远程 API（解决浏览器 CORS）
 
 ---
 
