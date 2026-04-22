@@ -8,10 +8,13 @@ function isValidName(name) {
 }
 
 async function readMap(projectRoot) {
-  const mapPath = path.join(projectRoot, 'prototype', '.axhost-map.json');
+  // Read flat map from sitemap.js _map field
+  const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
   try {
-    const content = await fs.readFile(mapPath, 'utf-8');
-    return JSON.parse(content);
+    const content = await fs.readFile(sitemapPath, 'utf-8');
+    const jsonPart = content.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
+    const data = JSON.parse(jsonPart);
+    return data._map || {};
   } catch {
     return {};
   }
@@ -53,7 +56,7 @@ async function resolvePageOrComponent(projectRoot, input) {
   if (/^[a-f0-9]{8}$/i.test(input)) {
     const resolved = await resolveByHash(projectRoot, input);
     if (!resolved) {
-      throw new Error(`无法找到 hash 对应的节点: ${input}`);
+      throw new Error(`无法解析归属页面/组件: ${input}，请使用完整路径（pages/xxx 或 components/xxx）或 hash 值`);
     }
     return resolved;
   }

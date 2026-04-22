@@ -62,3 +62,6 @@ async function regenerateSitemap(projectRoot) {
 }
 
 module.exports = { readSitemap, writeSitemap, regenerateSitemap };
+
+
+module.exports = { readSitemap, writeSitemap, regenerateSitemap };

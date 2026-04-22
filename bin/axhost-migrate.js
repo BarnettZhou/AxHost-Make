@@ -139,7 +139,7 @@ async function migrate(projectRoot) {
 
   console.log(`\n✅ 迁移完成，共迁移 ${migrations.length} 个节点`);
   console.log('旧的 .axhost-ids.json 已删除');
-  console.log('新的 .axhost-map.json 和 sitemap.js 已生成');
+  console.log('新的 sitemap.js 已生成');
 }
 
 module.exports = { migrate };

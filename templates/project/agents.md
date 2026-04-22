@@ -119,7 +119,7 @@ node ../../axhost-make/bin/axhost-make.js migrate
 ```
 
 - 将旧格式的中文目录名页面/组件迁移为 **hash 目录名 + `.axhost-meta.json`** 新格式。
-- 迁移后会删除旧的 `.axhost-ids.json`，生成新的 `.axhost-map.json`。
+- 迁移后会删除旧的 `.axhost-ids.json`，生成新的 `sitemap.js`。
 - 如果项目已经是新格式，此命令会安全跳过。
 
 ---
@@ -192,7 +192,7 @@ workspace/                 # 工作空间根目录（与 axhost-make/ 平级）
 │       │   ├── pages/     # 页面原型（目录名为 8 位 hash）
 │       │   ├── components/# 组件原型（目录名为 8 位 hash）
 │       │   ├── resources/ # 公共资源（js/css/图片等）
-│       │   ├── .axhost-map.json
+
 │       │   ├── sitemap.js # 站点地图
 │       │   ├── index.html # 独立入口
 │       │   └── start.html # 跳转页
@@ -242,8 +242,8 @@ pages/a1b2c3d4/
 # 方式 A：读取轻量级映射文件
 node axhost-make/bin/axhost-make.js list
 
-# 方式 B：读取 .axhost-map.json
-cat prototype/.axhost-map.json
+# 方式 B：读取 sitemap.js 中的 _map
+cat prototype/sitemap.js | sed 's/window.__axhostSitemap = //' | sed 's/;//' | jq '._map'
 ```
 
 ### 2. 使用 CLI 获取准确路径

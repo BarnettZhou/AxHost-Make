@@ -137,11 +137,7 @@ async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selecte
     'utf-8'
   );
 
-  await fs.writeFile(
-    path.join(exportDir, '.axhost-map.json'),
-    JSON.stringify(flatMap, null, 2) + '\n',
-    'utf-8'
-  );
+
 }
 
 async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents) {
