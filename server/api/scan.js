@@ -37,7 +37,6 @@ async function scanFlat(tabPath, nodeType) {
       name: meta.name || dirName,
       path: dirName,
       type: kind === 'dir' ? 'dir' : nodeType,
-      kind,
       parentId: meta.parentId || null,
       docs: kind !== 'dir' ? await readDocs(childAbs) : []
     });
