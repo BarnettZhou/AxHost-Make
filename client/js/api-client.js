@@ -64,6 +64,10 @@
       method: 'POST',
       body: JSON.stringify(data)
     }),
+    postCopy: (data) => request('/api/copy', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     postExport: (data) => request('/api/export', {
       method: 'POST',
       body: JSON.stringify(data)

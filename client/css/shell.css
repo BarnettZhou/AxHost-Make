@@ -953,6 +953,18 @@ body.dark .doc-tab.active {
 .context-menu-item.disabled:hover {
   background: transparent;
 }
+.context-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 8px;
+}
+.context-menu-item.danger {
+  color: #ff4d4f;
+}
+.context-menu-item.danger:hover {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
 .context-menu-submenu {
   position: absolute;
   left: 100%;

@@ -15,6 +15,7 @@ const { handleSettingsGet, handleSettingsPost } = require('./api/settings.js');
 const { handleDocsGet } = require('./api/docs.js');
 const { handleReorder } = require('./api/reorder.js');
 const { handleMove } = require('./api/move.js');
+const { handleCopy } = require('./api/copy.js');
 const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
 const { handleProjectInfoGet } = require('./api/project-info.js');
 const { handleExportDefaultDir, handleExportPost, handleExportPublish } = require('./api/export.js');
@@ -136,6 +137,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/move' && req.method === 'POST') {
         return handleMove(req, res, projectRoot);
+      }
+      if (urlPath === '/api/copy' && req.method === 'POST') {
+        return handleCopy(req, res, projectRoot);
       }
       res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 404, message: 'API not found' }));

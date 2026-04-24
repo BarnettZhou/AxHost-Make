@@ -26,7 +26,6 @@ Usage:
 
   # 查询操作（Agent 友好）
   axhost-make list
-  axhost-make find <name>
   axhost-make info <hash>
   axhost-make search <keyword>
   axhost-make path <hash> [doc-name]
@@ -46,7 +45,6 @@ Commands:
   add-doc        Create a new markdown doc for a page or component
 
   list           List all pages and components with hash and name
-  find           Find hash by exact name
   info           Show detailed info by hash
   search         Fuzzy search by keyword
   path           Get absolute file path by hash (optionally for a doc)
@@ -157,7 +155,7 @@ async function main() {
     return;
   }
 
-  const queryCommands = ['list', 'find', 'info', 'search', 'path', 'copy'];
+  const queryCommands = ['list', 'info', 'search', 'path', 'copy'];
   if (queryCommands.includes(command)) {
     const scriptPath = path.join(__dirname, 'axhost-query.js');
     const { spawn } = require('child_process');

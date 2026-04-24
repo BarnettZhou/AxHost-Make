@@ -12,13 +12,6 @@
       ? `http://${location.host}/project/${projectId}/prototype`
       : `http://${location.host}/prototype`;
     return [
-      '# System Prompt',
-      '',
-      '请遵循项目根目录下的 agents.md 以及 rules/ 目录中的规则文件来绘制原型（若你的上下文中已包含这些规则，则无需重复读取）。',
-      '如需补充信息，可参考页面路径下的 docs/*.md 以及根目录下的 wiki/ 目录。',
-      '',
-      '---',
-      '',
       '# Current Page',
       '',
       `- **页面类型**: ${pageType}`,
@@ -27,7 +20,6 @@
       `- **项目绝对路径**: ${projectInfo.projectAbsolutePath || ''}`,
       `- **页面相对路径**: ${pageRelativePath || ''}`,
       `- **页面绝对路径**: ${pageAbsolutePath || ''}`,
-      `- **访问 URL**: ${baseUrl}/${pageType}s/${pagePath}/index.html`,
       '',
       '---',
       '',

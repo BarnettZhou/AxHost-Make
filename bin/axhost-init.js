@@ -73,7 +73,7 @@ async function init(projectRoot) {
   // Copy dev-spec.md to rules
   const devSpecPath = path.join(projectRoot, 'rules', 'dev-spec.md');
   if (!await exists(devSpecPath)) {
-    const devSpecTpl = path.join(projectTplRoot, 'dev-spec.md');
+    const devSpecTpl = path.join(projectTplRoot, 'rules', 'dev-spec.md');
     if (await exists(devSpecTpl)) {
       await fs.mkdir(path.dirname(devSpecPath), { recursive: true });
       await fs.copyFile(devSpecTpl, devSpecPath);

@@ -7,7 +7,9 @@
   let popup = null;
   let highlightEl = null;
   let overlayEl = null;
+  let hoverOverlayEl = null;
   let injectedStyle = null;
+  let locked = false;
 
   btnInspect.addEventListener('click', () => {
     active = !active;
@@ -17,7 +19,6 @@
       setInspectCursor(true);
     } else {
       detachListeners();
-      hidePopup();
       setInspectCursor(false);
     }
   });
@@ -27,6 +28,7 @@
     if (active) {
       injectedStyle = null;
       overlayEl = null;
+      hoverOverlayEl = null;
       attachListeners();
       setInspectCursor(true);
     }
@@ -59,6 +61,11 @@
         border-radius: 2px;
         transition: all 0.05s ease;
         display: none;
+      }
+      .inspector-overlay.locked {
+        background: rgba(22, 119, 255, 0.25);
+        border: 2px solid #1677ff;
+        box-shadow: 0 0 0 2px rgba(22, 119, 255, 0.2);
       }
       .inspector-popup {
         position: absolute;
@@ -214,11 +221,14 @@
   }
 
   function createOverlay(doc) {
-    if (overlayEl && overlayEl.ownerDocument === doc) return;
+    if (overlayEl && overlayEl.ownerDocument === doc && hoverOverlayEl && hoverOverlayEl.ownerDocument === doc) return;
     removeOverlay();
     overlayEl = doc.createElement('div');
     overlayEl.className = 'inspector-overlay';
     doc.body.appendChild(overlayEl);
+    hoverOverlayEl = doc.createElement('div');
+    hoverOverlayEl.className = 'inspector-overlay';
+    doc.body.appendChild(hoverOverlayEl);
   }
 
   function removeOverlay() {
@@ -226,6 +236,10 @@
       overlayEl.parentNode.removeChild(overlayEl);
     }
     overlayEl = null;
+    if (hoverOverlayEl && hoverOverlayEl.parentNode) {
+      hoverOverlayEl.parentNode.removeChild(hoverOverlayEl);
+    }
+    hoverOverlayEl = null;
   }
 
   function attachListeners() {
@@ -248,9 +262,8 @@
       doc.removeEventListener('click', onClick, true);
       doc.removeEventListener('mousedown', onMouseDown, true);
     }
-    removeHighlight();
+    clearInspectState();
     removeOverlay();
-    hidePopup();
     removeStyles();
   }
 
@@ -268,14 +281,22 @@
     if (!active) return;
     if (isInspectorElement(e.target)) return;
     e.stopPropagation();
-    highlightElement(e.target);
+    if (locked) {
+      highlightElement(e.target, true);
+    } else {
+      highlightElement(e.target);
+    }
   }
 
   function onMouseOut(e) {
     if (!active) return;
     if (isInspectorElement(e.target)) return;
     e.stopPropagation();
-    removeHighlight();
+    if (locked && highlightEl) {
+      highlightElement(highlightEl);
+    } else {
+      removeHighlight();
+    }
   }
 
   function onMouseDown(e) {
@@ -289,28 +310,41 @@
     if (isInspectorElement(e.target)) return;
     e.preventDefault();
     e.stopPropagation();
+    locked = true;
+    highlightElement(e.target);
     showPopup(e.target);
   }
 
-  function highlightElement(el) {
-    removeHighlight();
-    highlightEl = el;
+  function highlightElement(el, isTemp) {
     const doc = getDoc();
-    if (!doc || !overlayEl) return;
+    if (!doc) return;
+    const targetOverlay = isTemp ? hoverOverlayEl : overlayEl;
+    if (!targetOverlay) return;
+    if (!isTemp) {
+      highlightEl = el;
+      if (hoverOverlayEl) {
+        hoverOverlayEl.classList.remove('locked');
+        hoverOverlayEl.style.display = 'none';
+      }
+    }
     const rect = el.getBoundingClientRect();
-    const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
-    const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
-    overlayEl.style.left = (rect.left + scrollLeft) + 'px';
-    overlayEl.style.top = (rect.top + scrollTop) + 'px';
-    overlayEl.style.width = rect.width + 'px';
-    overlayEl.style.height = rect.height + 'px';
-    overlayEl.style.display = 'block';
+    targetOverlay.style.left = rect.left + 'px';
+    targetOverlay.style.top = rect.top + 'px';
+    targetOverlay.style.width = rect.width + 'px';
+    targetOverlay.style.height = rect.height + 'px';
+    targetOverlay.classList.toggle('locked', true);
+    targetOverlay.style.display = 'block';
   }
 
   function removeHighlight() {
     highlightEl = null;
     if (overlayEl) {
+      overlayEl.classList.remove('locked');
       overlayEl.style.display = 'none';
+    }
+    if (hoverOverlayEl) {
+      hoverOverlayEl.classList.remove('locked');
+      hoverOverlayEl.style.display = 'none';
     }
   }
 
@@ -362,22 +396,25 @@
       popup.style.left = opts.left;
       popup.style.top = opts.top;
     } else {
-      const scrollTop = doc.documentElement.scrollTop || doc.body.scrollTop || 0;
-      const scrollLeft = doc.documentElement.scrollLeft || doc.body.scrollLeft || 0;
       const viewportHeight = doc.documentElement.clientHeight;
       const viewportWidth = doc.documentElement.clientWidth;
       const popupWidth = popup.offsetWidth || 220;
+      const popupHeight = popup.offsetHeight || 180;
 
-      let top = rect.bottom + scrollTop + 4;
-      if (rect.bottom + 180 > viewportHeight) {
-        top = rect.top + scrollTop - 180 - 4;
+      let top = rect.bottom + 4;
+      if (top + popupHeight > viewportHeight) {
+        top = rect.top - popupHeight - 4;
+      }
+      if (top < 4) {
+        top = 4;
       }
 
-      let left = rect.left + scrollLeft;
+      let left = rect.left;
       if (left + popupWidth > viewportWidth) {
         left = viewportWidth - popupWidth - 4;
         if (left < 4) left = 4;
       }
+      if (left < 4) left = 4;
 
       popup.style.left = left + 'px';
       popup.style.top = top + 'px';
@@ -386,7 +423,7 @@
     // Events
     popup.querySelector('.inspector-popup-close').addEventListener('click', (e) => {
       e.stopPropagation();
-      hidePopup();
+      clearInspectState();
     });
     popup.querySelector('.inspector-copy-selector').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -401,6 +438,7 @@
         if (parent) {
           const savedLeft = popup.style.left;
           const savedTop = popup.style.top;
+          locked = true;
           highlightElement(parent);
           showPopup(parent, { left: savedLeft, top: savedTop });
         }
@@ -413,6 +451,12 @@
       popup.parentNode.removeChild(popup);
       popup = null;
     }
+  }
+
+  function clearInspectState() {
+    hidePopup();
+    removeHighlight();
+    locked = false;
   }
 
   function generateSelector(el) {

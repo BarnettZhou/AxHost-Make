@@ -362,9 +362,11 @@
     const items = [
       { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
       { label: '新建目录', action: 'create_folder' },
+      { divider: true },
       { label: '复制路径', action: 'copy_path' },
       { label: '重命名', action: 'rename' },
-      { label: '删除', action: 'delete' }
+      { divider: true },
+      { label: '删除', action: 'delete', danger: true }
     ];
     renderMenu(e, items, (action) => {
       if (action === 'create_page') {
@@ -386,10 +388,12 @@
     const items = [
       { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
       { label: '新建子目录', action: 'create_subfolder' },
+      { label: type === 'components' ? '复制组件' : '复制页面', action: 'copy_page' },
+      { divider: true },
       { label: '复制路径', action: 'copy_path' },
-      { label: '新标签页打开', action: 'open_new' },
       { label: '重命名', action: 'rename' },
-      { label: '删除', action: 'delete' }
+      { divider: true },
+      { label: type === 'components' ? '删除组件' : '删除页面', action: 'delete', danger: true }
     ];
     renderMenu(e, items, (action) => {
       if (action === 'create_page') {
@@ -397,14 +401,12 @@
         handleCreate(node.path, kind);
       } else if (action === 'create_subfolder') {
         handleCreate(node.path, 'folder');
+      } else if (action === 'copy_page') {
+        handleCopy(node.path, type);
       } else if (action === 'copy_path') {
         const projectId = window.__axhostProjectId || '';
         const protoBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
-        navigator.clipboard.writeText(`${protoBase}/${type}/${node.path}/index.html`);
-      } else if (action === 'open_new') {
-        const projectId = window.__axhostProjectId || '';
-        const protoBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
-        window.open(`${protoBase}/${type}/${node.path}/index.html`, '_blank');
+        navigator.clipboard.writeText(`${protoBase}/${type}/${node.path}`);
       } else if (action === 'rename') {
         handleRename(node.path, type, false);
       } else if (action === 'delete') {
@@ -421,8 +423,14 @@
     menu.style.left = event.clientX + 'px';
     menu.style.top = event.clientY + 'px';
     items.forEach(item => {
+      if (item.divider) {
+        const hr = document.createElement('div');
+        hr.className = 'context-menu-divider';
+        menu.appendChild(hr);
+        return;
+      }
       const div = document.createElement('div');
-      div.className = 'context-menu-item';
+      div.className = 'context-menu-item' + (item.danger ? ' danger' : '');
       div.textContent = item.label;
       div.onclick = () => {
         onSelect(item.action);
@@ -503,6 +511,17 @@
     } catch (err) {
       console.error('Rename error:', err);
       window.showToast('重命名失败: ' + err.message, 'error');
+    }
+  }
+
+  async function handleCopy(nodePath, type) {
+    try {
+      await window.apiClient.postCopy({ sourcePath: nodePath, type });
+      await loadTree(currentTab);
+      window.showToast('复制成功', 'success');
+    } catch (err) {
+      console.error('Copy error:', err);
+      window.showToast('复制失败: ' + err.message, 'error');
     }
   }
 

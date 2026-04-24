@@ -11,7 +11,6 @@ Axhost-Make Query CLI
 
 Usage:
   axhost-make list
-  axhost-make find <name>
   axhost-make info <hash>
   axhost-make search <keyword>
   axhost-make path <hash> [doc-name]
@@ -19,7 +18,6 @@ Usage:
 
 Commands:
   list      列出所有页面和组件（树形结构）
-  find      通过精确名称查找 hash
   info      通过 hash 获取详细信息
   search    模糊搜索名称
   path      获取文件绝对路径（可指定文档名）
@@ -49,18 +47,6 @@ async function cmdList(projectRoot) {
   if (pages.length === 0 && components.length === 0) {
     console.log('暂无页面或组件。');
   }
-}
-
-async function cmdFind(projectRoot, name) {
-  const map = await readMap(projectRoot);
-  for (const [id, info] of Object.entries(map)) {
-    if (info.name === name) {
-      console.log(id);
-      return;
-    }
-  }
-  console.error(`未找到名称 "${name}"`);
-  process.exit(1);
 }
 
 async function cmdInfo(projectRoot, hash) {
@@ -189,13 +175,6 @@ async function main() {
 
   if (command === 'list') {
     await cmdList(projectRoot);
-    return;
-  }
-
-  if (command === 'find') {
-    const name = args[1];
-    if (!name) { console.error('Usage: axhost-make find <name>'); process.exit(1); }
-    await cmdFind(projectRoot, name);
     return;
   }
 

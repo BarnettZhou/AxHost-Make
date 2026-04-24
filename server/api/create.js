@@ -136,7 +136,7 @@ async function createItem(projectRoot, parentPath, name, kind) {
   try { await fs.access(cssPath); } catch { await fs.writeFile(cssPath, '', 'utf-8'); }
   try { await fs.access(jsPath); } catch { await fs.writeFile(jsPath, '', 'utf-8'); }
 
-  const tplDoc = await fs.readFile(path.join(TEMPLATE_ROOT, 'doc.md'), 'utf-8');
+  const tplDoc = await fs.readFile(path.join(TEMPLATE_ROOT, 'docs', 'readme.md'), 'utf-8');
   await fs.mkdir(path.join(targetDir, 'docs'), { recursive: true });
   await fs.writeFile(path.join(targetDir, 'docs', 'readme.md'), applyTemplate(tplDoc, vars), 'utf-8');
 
