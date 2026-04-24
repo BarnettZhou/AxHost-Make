@@ -56,7 +56,7 @@
 
   // Header controls
   const projectId = window.__axhostProjectId || '';
-  const prototypeBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
+  const prototypeBase = projectId ? `/projects/${projectId}/prototype` : '/prototype';
 
   if (btnPreview) {
     btnPreview.addEventListener('click', () => {
@@ -369,12 +369,13 @@
 
   function loadPage(type, pagePath) {
     exitRuleMode();
-    const url = `${prototypeBase}/${type}s/${pagePath}/index.html`;
+    const tab = type === 'component' ? 'components' : 'pages';
+    const url = `${prototypeBase}/${tab}/${pagePath}/index.html`;
     previewFrame.src = url;
     const info = window.__axhostProjectInfo || {};
-    const pageRelativePath = `prototype\\${type}s\\${pagePath}`;
+    const pageRelativePath = `prototype\\${tab}\\${pagePath}`;
     const pageAbsolutePath = info.projectAbsolutePath
-      ? `${info.projectAbsolutePath}\\prototype\\${type}s\\${pagePath}`
+      ? `${info.projectAbsolutePath}\\prototype\\${tab}\\${pagePath}`
       : '';
     window.__axhostState.currentPage = { type, path: pagePath, pageRelativePath, pageAbsolutePath };
     if (window.docPanel && window.docPanel.load) {
@@ -833,6 +834,17 @@
   };
 
   window.shell = { loadPage, exitRuleMode };
+
+  // Listen for iframe navigation requests
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'axhost-navigate') {
+      const { path, tab } = e.data;
+      if (path && window.shell.loadPage) {
+        const type = tab === 'pages' ? 'page' : tab === 'components' ? 'component' : (tab || 'page');
+        window.shell.loadPage(type, path);
+      }
+    }
+  });
 
   // Zoom control
   const zoomLevels = [0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5];

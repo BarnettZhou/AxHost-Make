@@ -268,7 +268,7 @@ cat prototype/sitemap.js | sed 's/window.__axhostSitemap = //' | sed 's/;//' | j
 
 ```bash
 FILE_PATH=$(node axhost-make/bin/axhost-make.js path a1b2c3d4)
-# → /Users/xxx/project/prototype/pages/a1b2c3d4/index.html
+# → /Users/xxx/projects/prototype/pages/a1b2c3d4/index.html
 cat "$FILE_PATH"
 ```
 

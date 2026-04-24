@@ -77,7 +77,7 @@ function addNodeToSitemap(sitemap, tab, parentId, node) {
   };
 }
 
-async function createItem(projectRoot, parentPath, name, kind) {
+async function createItem(projectRoot, parentPath, name, kind, template = 'default') {
   if (!isSafePath(projectRoot, parentPath)) {
     throw new Error('Forbidden parent path');
   }
@@ -123,9 +123,13 @@ async function createItem(projectRoot, parentPath, name, kind) {
   await writeMeta(targetDir, meta);
 
   const vars = { PAGE_NAME: name, DATE: new Date().toISOString().slice(0, 10) };
-  const templateFile = kind === 'page' ? 'page.html' : 'component.html';
+  const templateName = kind === 'page' ? (template === 'default' ? 'page' : template) : 'component';
 
-  const tplHtml = await fs.readFile(path.join(TEMPLATE_ROOT, templateFile), 'utf-8');
+  const tplPath = kind === 'page'
+    ? path.join(TEMPLATE_ROOT, `pages/${templateName}.html`)
+    : path.resolve(__dirname, '../../templates/components/component.html');
+
+  const tplHtml = await fs.readFile(tplPath, 'utf-8');
   await fs.writeFile(path.join(targetDir, 'index.html'), applyTemplate(tplHtml, vars), 'utf-8');
 
   await fs.mkdir(path.join(targetDir, 'resources', 'css'), { recursive: true });
@@ -133,7 +137,18 @@ async function createItem(projectRoot, parentPath, name, kind) {
 
   const cssPath = path.join(targetDir, 'resources', 'css', 'style.css');
   const jsPath = path.join(targetDir, 'resources', 'js', 'main.js');
-  try { await fs.access(cssPath); } catch { await fs.writeFile(cssPath, '', 'utf-8'); }
+
+  if (kind === 'page' && template !== 'default') {
+    const tplCssPath = path.join(TEMPLATE_ROOT, 'pages', `${template}.css`);
+    try {
+      const cssContent = await fs.readFile(tplCssPath, 'utf-8');
+      await fs.writeFile(cssPath, cssContent, 'utf-8');
+    } catch {
+      await fs.writeFile(cssPath, '', 'utf-8');
+    }
+  } else {
+    try { await fs.access(cssPath); } catch { await fs.writeFile(cssPath, '', 'utf-8'); }
+  }
   try { await fs.access(jsPath); } catch { await fs.writeFile(jsPath, '', 'utf-8'); }
 
   const tplDoc = await fs.readFile(path.join(TEMPLATE_ROOT, 'docs', 'readme.md'), 'utf-8');
@@ -161,13 +176,13 @@ async function handleCreate(req, res, projectRoot) {
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { parentPath, name, kind } = JSON.parse(body || '{}');
+      const { parentPath, name, kind, template } = JSON.parse(body || '{}');
       if (!parentPath || !name || !kind || !['folder', 'page', 'component'].includes(kind)) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 400, message: 'Invalid parameters' }));
         return;
       }
-      const result = await createItem(projectRoot, parentPath, name, kind);
+      const result = await createItem(projectRoot, parentPath, name, kind, template);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: result }));
     } catch (err) {

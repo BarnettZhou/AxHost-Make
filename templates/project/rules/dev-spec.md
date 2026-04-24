@@ -43,3 +43,44 @@ Agent 在生成 `prototype/resources/js/icon-loader.js` 时，应满足以下技
 - SVG 直接引用
 
 Agent 在引入图标时，应参考对应 CDN 的官方文档，选择最符合当前页面技术栈的用法，并在 `rules/dev-spec.md` 中记录该项目的默认用法，以便统一维护。
+
+---
+
+## 页面跳转规范
+
+### 1. 两种运行环境
+原型页面可能在两种环境下运行，跳转方式需做区分：
+
+| 环境 | 说明 | 推荐跳转方式 |
+|------|------|-------------|
+| **开发模式（Serve）** | 页面运行在 iframe 中，由 Shell 框架包裹 | `window.parent.postMessage` |
+| **预览模式（Preview）** | 页面运行在 iframe 中，由 Preview 框架包裹 | `window.parent.postMessage` |
+
+### 2. 开发模式（Serve）下的跳转
+在开发模式下，页面被加载在 `preview-frame` iframe 中。**禁止**在 iframe 内直接使用 `window.location.href` 进行绝对路径跳转，原因：
+- 父页面（Shell）感知不到 iframe 内的导航，左侧目录树不会同步高亮
+- 绝对路径可能因部署目录变化而失效
+
+**正确做法**：通过 `postMessage` 通知父页面统一导航。
+
+```js
+function navigateTo(targetHash, tab = 'pages') {
+  // 开发模式和预览模式均通过 postMessage 通知父页面统一导航
+  window.parent.postMessage({ type: 'axhost-navigate', path: targetHash, tab }, '*');
+}
+
+// 使用示例：从登录页跳转到首页
+navigateTo('313becb1', 'pages');
+```
+
+> `targetHash` 为目标页面的 8 位 hash 目录名（如 `313becb1`），`tab` 可选值为 `pages` 或 `components`。
+
+### 3. 预览模式（Preview）下的跳转
+预览模式下页面同样运行在 iframe 中（由 Preview 框架包裹），**同样使用 `postMessage` 通知父页面导航**，左侧目录树会自动同步高亮。
+
+```js
+window.parent.postMessage({ type: 'axhost-navigate', path: '目标hash', tab: 'pages' }, '*');
+```
+
+### 4. 兜底兼容
+框架已添加 iframe `load` 事件监听，即使页面直接使用 `window.location.href` 跳转，左侧目录树也会在 iframe 加载完成后自动同步。但仍强烈建议采用 `postMessage` 方案，以获得更即时、更可靠的导航体验。

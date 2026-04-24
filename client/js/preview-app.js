@@ -296,6 +296,26 @@
 
   initResizers();
 
+  window.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'axhost-navigate') {
+      const { path, tab } = e.data;
+      const allNodes = [...(map.pages || []), ...(map.components || [])];
+      const node = findNodeById(allNodes, path);
+      if (!node) return;
+      const type = getNodeTypeForTab(node);
+      const targetTab = type === 'component' ? 'components' : 'pages';
+      if (activeType !== targetTab) {
+        activeType = targetTab;
+        renderTabs();
+      }
+      activePath = node.path;
+      expandAncestors(node.path);
+      renderTree();
+      preview.src = basePath + targetTab + '/' + node.path + '/index.html';
+      loadDocs(targetTab, node.path);
+    }
+  });
+
   const hashId = location.hash ? location.hash.slice(1) : '';
   const allNodes = [...(map.pages || []), ...(map.components || [])];
   const hashNode = hashId ? findNodeById(allNodes, hashId) : null;

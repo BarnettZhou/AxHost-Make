@@ -39,8 +39,8 @@ function createRouter(workspaceRoot) {
   }
 
   function resolveProjectStaticUrl(urlPath) {
-    // /project/{id}/prototype/... → workspaceRoot/projects/{id}/prototype/...
-    const match = urlPath.match(/^\/project\/([^/]+)(\/.*)$/);
+    // /projects/{id}/prototype/... → workspaceRoot/projects/{id}/prototype/...
+    const match = urlPath.match(/^\/projects\/([^/]+)(\/.*)$/);
     if (match) {
       const projectId = match[1];
       const rest = match[2];

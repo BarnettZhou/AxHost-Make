@@ -93,7 +93,7 @@ node axhost-make/bin/axhost-make.js serve [--port <number>]
 | `http://localhost:3820` | **项目管理首页**（项目列表、搜索、新建/导入） |
 | `http://localhost:3820/shell.html?project=xxx` | **单项目开发模式**（导航 + iframe + 文档 + Prompt） |
 | `http://localhost:3820/client/preview-index.html` | **Preview 模式实时预览**（开发时直接查看 preview 效果，无需 build） |
-| `http://localhost:3820/project/xxx/prototype/index.html` | **独立入口 / 预览模式**（不依赖 axhost-make API 的静态页面） |
+| `http://localhost:3820/projects/xxx/prototype/index.html` | **独立入口 / 预览模式**（不依赖 axhost-make API 的静态页面） |
 
 ### 纯静态预览
 

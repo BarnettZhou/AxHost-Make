@@ -9,7 +9,7 @@
     const projectId = window.__axhostProjectId || '';
     const projectInfo = window.__axhostProjectInfo || {};
     const baseUrl = projectId
-      ? `http://${location.host}/project/${projectId}/prototype`
+      ? `http://${location.host}/projects/${projectId}/prototype`
       : `http://${location.host}/prototype`;
     return [
       '# Current Page',

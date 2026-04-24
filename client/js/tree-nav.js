@@ -54,9 +54,34 @@
     return node.type === 'component' ? 'component' : 'page';
   }
 
+  function syncTreeFromIframe() {
+    const iframe = document.getElementById('preview-frame');
+    if (!iframe) return;
+    try {
+      const url = iframe.contentWindow.location.href;
+      const match = url.match(/\/(pages|components)\/([a-f0-9]{8})(?:\/|$)/);
+      if (!match) return;
+      const tab = match[1];
+      const nodePath = match[2];
+      if (tab !== currentTab) {
+        currentTab = tab;
+        renderTabs();
+      }
+      selectedPath = nodePath;
+      expandAncestors(nodePath);
+      loadTree(currentTab);
+    } catch (e) {}
+  }
+
   async function initTreeNav() {
     renderTabs();
     await loadTree(currentTab);
+    const previewFrame = document.getElementById('preview-frame');
+    if (previewFrame) {
+      previewFrame.addEventListener('load', () => {
+        setTimeout(syncTreeFromIframe, 0);
+      });
+    }
     treeRoot.addEventListener('contextmenu', (e) => {
       const label = e.target.closest('.tree-label');
       if (!label) {
@@ -375,7 +400,7 @@
       } else if (action === 'create_folder') {
         handleCreate(node.path, 'folder');
       } else if (action === 'copy_path') {
-        navigator.clipboard.writeText(node.path);
+        navigator.clipboard.writeText(`prototype/${type}/${node.path}`);
       } else if (action === 'rename') {
         handleRename(node.path, type, true);
       } else if (action === 'delete') {
@@ -404,9 +429,7 @@
       } else if (action === 'copy_page') {
         handleCopy(node.path, type);
       } else if (action === 'copy_path') {
-        const projectId = window.__axhostProjectId || '';
-        const protoBase = projectId ? `/project/${projectId}/prototype` : '/prototype';
-        navigator.clipboard.writeText(`${protoBase}/${type}/${node.path}`);
+        navigator.clipboard.writeText(`prototype/${type}/${node.path}`);
       } else if (action === 'rename') {
         handleRename(node.path, type, false);
       } else if (action === 'delete') {
@@ -448,10 +471,106 @@
     document.querySelectorAll('.context-menu').forEach(el => el.remove());
   }
 
+  async function showCreatePagePrompt(title) {
+    return new Promise((resolve) => {
+      let modal = document.getElementById('axhost-create-page-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'axhost-create-page-modal';
+        modal.className = 'add-doc-modal';
+        modal.innerHTML = `
+          <div class="add-doc-modal-overlay"></div>
+          <div class="add-doc-modal-content">
+            <h4>${title}</h4>
+            <div class="page-type-cards">
+              <div class="page-type-card active" data-value="default">
+                <div class="page-type-icon"><iconpark-icon icon-id="browser" size="24"></iconpark-icon></div>
+                <span>默认页面</span>
+              </div>
+              <div class="page-type-card" data-value="mobile">
+                <div class="page-type-icon"><iconpark-icon icon-id="iphone" size="24"></iconpark-icon></div>
+                <span>手机页面</span>
+              </div>
+              <div class="page-type-card" data-value="mini-program">
+                <div class="page-type-icon"><iconpark-icon icon-id="wechat" size="24"></iconpark-icon></div>
+                <span>小程序</span>
+              </div>
+            </div>
+            <input type="text" class="create-page-name-input" placeholder="请输入页面名称">
+            <div class="add-doc-modal-actions">
+              <button class="create-page-cancel">取消</button>
+              <button class="create-page-confirm primary">确认</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      modal.querySelector('h4').textContent = title || '新建页面';
+      const input = modal.querySelector('.create-page-name-input');
+      input.value = '';
+      const cards = modal.querySelectorAll('.page-type-card');
+      cards.forEach(c => {
+        c.classList.toggle('active', c.dataset.value === 'default');
+        c.onclick = () => {
+          cards.forEach(x => x.classList.remove('active'));
+          c.classList.add('active');
+        };
+      });
+      modal.classList.add('open');
+      setTimeout(() => input.focus(), 0);
+
+      const btnOk = modal.querySelector('.create-page-confirm');
+      const btnCancel = modal.querySelector('.create-page-cancel');
+      const overlay = modal.querySelector('.add-doc-modal-overlay');
+
+      function cleanup() {
+        modal.classList.remove('open');
+        btnOk.onclick = null;
+        btnCancel.onclick = null;
+        overlay.onclick = null;
+        input.onkeydown = null;
+        cards.forEach(c => c.onclick = null);
+      }
+
+      function submit() {
+        const name = input.value.trim();
+        if (!name) {
+          cleanup();
+          resolve(null);
+          return;
+        }
+        const selected = modal.querySelector('.page-type-card.active');
+        cleanup();
+        resolve({ name, template: selected ? selected.dataset.value : 'default' });
+      }
+
+      function cancel() {
+        cleanup();
+        resolve(null);
+      }
+
+      btnOk.onclick = submit;
+      btnCancel.onclick = cancel;
+      overlay.onclick = cancel;
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') submit();
+        else if (e.key === 'Escape') cancel();
+      };
+    });
+  }
+
   async function handleCreate(parentPath, kind) {
     const labelMap = { page: '页面', component: '组件', folder: '目录' };
-    const name = await window.showPrompt(`请输入${labelMap[kind]}名称`);
-    if (!name) return;
+    let name, template = 'default';
+    if (kind === 'page') {
+      const result = await showCreatePagePrompt('请输入页面名称');
+      if (!result) return;
+      name = result.name;
+      template = result.template;
+    } else {
+      name = await window.showPrompt(`请输入${labelMap[kind]}名称`);
+      if (!name) return;
+    }
     if (!name.trim()) {
       window.showToast('名称不能为空', 'error');
       return;
@@ -462,7 +581,7 @@
     }
     try {
       const parent = `prototype/${currentTab}${parentPath ? '/' + parentPath : ''}`;
-      await window.apiClient.postCreate({ parentPath: parent, name, kind });
+      await window.apiClient.postCreate({ parentPath: parent, name, kind, template });
       if (parentPath) {
         expandedPaths.add(parentPath);
       }
@@ -576,9 +695,11 @@
       currentTab = tab;
       renderTabs();
     }
+    const isSamePage = selectedPath === node.path;
     selectedPath = node.path;
     expandAncestors(node.path);
     loadTree(currentTab);
+    if (isSamePage) return;
     if (window.shell && window.shell.loadPage) {
       window.shell.loadPage(type, node.path);
     }
