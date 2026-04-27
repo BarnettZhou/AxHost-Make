@@ -195,7 +195,7 @@ html, body {
 }
 
 .home-indicator {
-  height: 16px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +204,7 @@ html, body {
 
 .indicator-bar {
   width: 134px;
-  height: 5px;
+  height: 4px;
   background: #000;
-  border-radius: 2.5px;
+  border-radius: 2px;
 }
