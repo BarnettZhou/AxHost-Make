@@ -8,11 +8,31 @@
 </head>
 <body>
   <div class="phone">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="status-time">9:41</span>
+      <div class="dynamic-island"></div>
+      <div class="status-icons">
+        <div class="signal">
+          <span></span><span></span><span></span><span></span>
+        </div>
+        <div class="battery">
+          <div class="battery-level"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Page Content -->
     <div class="page-content">
       <div style="padding:24px;">
         <h1>{{PAGE_NAME}}</h1>
         <p>这是一个新创建的手机端原型页面，请在文档中描述需求后通过 Agent 生成具体内容。</p>
       </div>
+    </div>
+
+    <!-- Home Indicator -->
+    <div class="home-indicator">
+      <div class="indicator-bar"></div>
     </div>
   </div>
   <script src="resources/js/main.js"></script>

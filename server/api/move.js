@@ -79,28 +79,62 @@ async function handleMove(req, res, projectRoot) {
       const sitemap = await readSitemap(projectRoot);
       const tree = sitemap[tab] || [];
 
-      // before / after: reorder within the same parent array
+      // before / after: reorder within the same parent array, or move across parents
       if (position === 'before' || position === 'after') {
         const sourceRef = {};
         const targetRef = {};
         findParentArray(tree, sourceName, sourceRef);
         findParentArray(tree, targetName, targetRef);
 
-        if (!sourceRef.arr || !targetRef.arr || sourceRef.arr !== targetRef.arr) {
+        if (!sourceRef.arr || !targetRef.arr) {
           res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ code: 400, message: 'Cannot reorder across different parents' }));
+          res.end(JSON.stringify({ code: 400, message: 'Source or target not found' }));
           return;
         }
 
-        const arr = sourceRef.arr;
-        const oldIdx = sourceRef.idx;
-        let newIdx = targetRef.idx;
-        const node = arr.splice(oldIdx, 1)[0];
-        if (position === 'after') {
-          if (newIdx > oldIdx) newIdx -= 1;
-          newIdx += 1;
+        if (sourceRef.arr === targetRef.arr) {
+          // Same parent: just reorder
+          const arr = sourceRef.arr;
+          const oldIdx = sourceRef.idx;
+          let newIdx = targetRef.idx;
+          const node = arr.splice(oldIdx, 1)[0];
+          if (position === 'after') {
+            if (newIdx > oldIdx) newIdx -= 1;
+            newIdx += 1;
+          }
+          arr.splice(newIdx, 0, node);
+        } else {
+          // Different parents: move source into target's parent at the specified position
+          const movedNode = sourceRef.arr.splice(sourceRef.idx, 1)[0];
+
+          // Find target's parent id
+          function findParentId(nodes, childId, parentId) {
+            for (const n of nodes) {
+              if (n.id === childId) return parentId;
+              if (n.children) {
+                const found = findParentId(n.children, childId, n.id);
+                if (found !== undefined) return found;
+              }
+            }
+            return undefined;
+          }
+          const targetParentId = findParentId(tree, targetName, null);
+          movedNode.parentId = targetParentId;
+
+          let newIdx = targetRef.idx;
+          if (position === 'after') {
+            newIdx += 1;
+          }
+          targetRef.arr.splice(newIdx, 0, movedNode);
+
+          // Update meta
+          try {
+            await fs.access(path.join(sourceAbs, '.axhost-meta.json'));
+            const sourceMeta = await readMeta(sourceAbs);
+            sourceMeta.parentId = targetParentId;
+            await writeMeta(sourceAbs, sourceMeta);
+          } catch {}
         }
-        arr.splice(newIdx, 0, node);
 
         await writeSitemap(projectRoot, sitemap);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

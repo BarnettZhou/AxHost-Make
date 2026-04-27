@@ -1070,8 +1070,13 @@
       }
 
       function submit() {
+        const value = input.value.trim();
+        if (!value) {
+          window.showToast('名称不能为空', 'error');
+          return;
+        }
         cleanup();
-        resolve(input.value.trim() || null);
+        resolve(value);
       }
 
       function cancel() {

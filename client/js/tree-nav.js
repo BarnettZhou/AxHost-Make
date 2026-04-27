@@ -535,8 +535,7 @@
       function submit() {
         const name = input.value.trim();
         if (!name) {
-          cleanup();
-          resolve(null);
+          window.showToast('名称不能为空', 'error');
           return;
         }
         const selected = modal.querySelector('.page-type-card.active');

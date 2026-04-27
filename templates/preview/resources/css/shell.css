@@ -501,9 +501,7 @@ body.dark #prompt-box:focus-within {
   opacity: 0;
   border: none;
 }
-#panel-right-bar.hidden + .resizer-v {
-  display: none;
-}
+
 #panel-right-bar .right-bar-header {
   display: flex;
   align-items: center;
