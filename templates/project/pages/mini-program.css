@@ -24,14 +24,21 @@ html, body {
   flex-direction: column;
 }
 
-.page-content {
+.mini-program {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mini-program-content {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.page-content::-webkit-scrollbar {
+.mini-program-content::-webkit-scrollbar {
   display: none;
 }
 

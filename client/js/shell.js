@@ -7,14 +7,17 @@
     mode: isPreview ? 'preview' : 'dev',
     navVisible: true,
     docsVisible: false,
+    rightBarVisible: true,
     currentPage: null,
     currentDoc: null
   };
 
   const panelNav = document.getElementById('panel-nav');
   const panelDocs = document.getElementById('panel-docs');
+  const panelRightBar = document.getElementById('panel-right-bar');
   const btnToggleNav = document.getElementById('btn-toggle-nav');
   const btnToggleDocs = document.getElementById('btn-toggle-docs');
+  const btnToggleRightBar = document.getElementById('btn-toggle-right-bar');
   const btnPreview = document.getElementById('btn-preview');
   const btnSettings = document.getElementById('btn-settings');
   const settingsModal = document.getElementById('settings-modal');
@@ -50,8 +53,6 @@
   const btnCancelDeleteRule = document.getElementById('btn-cancel-delete-rule');
   const btnConfirmDeleteRule = document.getElementById('btn-confirm-delete-rule');
   const iframeWrapper = document.getElementById('iframe-wrapper');
-  const promptBox = document.getElementById('prompt-box');
-  const promptResizer = document.getElementById('prompt-resizer');
   const btnInspect = document.getElementById('btn-inspect');
 
   // Header controls
@@ -113,6 +114,20 @@
     panelDocs.classList.toggle('hidden', !window.__axhostState.docsVisible);
     if (docsResizer) docsResizer.classList.toggle('hidden', !window.__axhostState.docsVisible);
   });
+
+  const rightBarResizer = document.getElementById('right-bar-resizer');
+  if (rightBarResizer && !window.__axhostState.rightBarVisible) {
+    rightBarResizer.classList.add('hidden');
+  }
+  if (btnToggleRightBar) {
+    btnToggleRightBar.classList.toggle('active', window.__axhostState.rightBarVisible);
+    btnToggleRightBar.addEventListener('click', () => {
+      window.__axhostState.rightBarVisible = !window.__axhostState.rightBarVisible;
+      if (panelRightBar) panelRightBar.classList.toggle('hidden', !window.__axhostState.rightBarVisible);
+      if (rightBarResizer) rightBarResizer.classList.toggle('hidden', !window.__axhostState.rightBarVisible);
+      btnToggleRightBar.classList.toggle('active', window.__axhostState.rightBarVisible);
+    });
+  }
 
   async function loadProjectName() {
     try {
@@ -396,8 +411,6 @@
       panelDocs.classList.add('hidden');
     }
     if (iframeWrapper) iframeWrapper.classList.add('hidden');
-    if (promptBox) promptBox.classList.add('hidden');
-    if (promptResizer) promptResizer.classList.add('hidden');
     if (ruleViewer) ruleViewer.classList.remove('hidden');
     // hide inspector popup if any
     const doc = previewFrame.contentDocument;
@@ -411,8 +424,6 @@
     if (btnInspect) btnInspect.classList.remove('disabled');
     if (btnToggleDocs) btnToggleDocs.classList.remove('disabled');
     if (iframeWrapper) iframeWrapper.classList.remove('hidden');
-    if (promptBox) promptBox.classList.remove('hidden');
-    if (promptResizer) promptResizer.classList.remove('hidden');
     if (ruleViewer) ruleViewer.classList.add('hidden');
   }
 
@@ -692,7 +703,7 @@
         const startPos = isVertical ? e.clientX : e.clientY;
         const startSize = isVertical ? target.offsetWidth : target.offsetHeight;
         const minSize = isVertical ? 180 : 80;
-        let maxSize = isVertical ? (targetId === 'panel-docs' ? window.innerWidth * 0.5 : 400) : (targetId === 'prompt-box' ? 600 : 300);
+        let maxSize = isVertical ? (targetId === 'panel-docs' ? window.innerWidth * 0.5 : 400) : 300;
         if (targetId === 'panel-nav-top') {
           const panelNav = document.getElementById('panel-nav');
           maxSize = panelNav ? panelNav.offsetHeight - 80 - 5 : 300;

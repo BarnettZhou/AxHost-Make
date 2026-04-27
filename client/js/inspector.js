@@ -11,15 +11,27 @@
   let injectedStyle = null;
   let locked = false;
 
+  function onKeyDown(e) {
+    if (e.key === 'Escape') {
+      active = false;
+      btnInspect.classList.remove('active');
+      detachListeners();
+      setInspectCursor(false);
+      document.removeEventListener('keydown', onKeyDown);
+    }
+  }
+
   btnInspect.addEventListener('click', () => {
     active = !active;
     btnInspect.classList.toggle('active', active);
     if (active) {
       attachListeners();
       setInspectCursor(true);
+      document.addEventListener('keydown', onKeyDown);
     } else {
       detachListeners();
       setInspectCursor(false);
+      document.removeEventListener('keydown', onKeyDown);
     }
   });
 
@@ -252,6 +264,7 @@
     doc.addEventListener('mouseout', onMouseOut, true);
     doc.addEventListener('click', onClick, true);
     doc.addEventListener('mousedown', onMouseDown, true);
+    doc.addEventListener('keydown', onKeyDown);
   }
 
   function detachListeners() {
@@ -261,10 +274,12 @@
       doc.removeEventListener('mouseout', onMouseOut, true);
       doc.removeEventListener('click', onClick, true);
       doc.removeEventListener('mousedown', onMouseDown, true);
+      doc.removeEventListener('keydown', onKeyDown);
     }
     clearInspectState();
     removeOverlay();
     removeStyles();
+    document.removeEventListener('keydown', onKeyDown);
   }
 
   function setInspectCursor(enable) {

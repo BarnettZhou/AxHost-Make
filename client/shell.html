@@ -23,8 +23,8 @@
           <div class="editor-dropdown-item" data-editor="trae">使用 Trae 打开</div>
         </div>
         <button id="btn-export" title="导出"><iconpark-icon icon-id="upload" size="14" color="currentColor"></iconpark-icon></button>
-        <button id="btn-inspect" title="抓取元素"><iconpark-icon icon-id="magic" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-settings" title="Settings"><iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-toggle-right-bar" title="Toggle Right Bar"><iconpark-icon icon-id="right-bar" size="14" color="currentColor"></iconpark-icon></button>
       </div>
       <div class="header-right">
         <div class="zoom-control" title="预览缩放">
@@ -64,22 +64,25 @@
         <div id="rule-viewer" class="hidden">
           <div class="rule-viewer-content" id="rule-viewer-content"></div>
         </div>
-        <div class="resizer resizer-h" data-target="prompt-box" data-dir="h" data-invert="true" id="prompt-resizer"></div>
-        <div id="prompt-box">
+      </section>
+
+      <div class="resizer resizer-v" data-target="panel-right-bar" data-dir="v" data-invert="true" id="right-bar-resizer"></div>
+      <aside id="panel-right-bar">
+        <div class="right-bar-header">
+          <button id="btn-inspect" title="抓取元素"><iconpark-icon icon-id="magic" size="14" color="currentColor"></iconpark-icon></button>
+          <span id="prompt-context" class="prompt-context"></span>
+        </div>
+        <div class="right-bar-body">
           <textarea id="prompt-input" placeholder="描述你想要的修改，例如：将表格背景改为深蓝色，增加一个导出按钮..."></textarea>
-          <div class="prompt-actions">
-            <button id="btn-prompt-collapse" class="text-btn" title="收起">
-              <iconpark-icon icon-id="down" size="14" color="currentColor"></iconpark-icon>
-            </button>
-            <button id="btn-prompt-expand" class="text-btn" title="展开" style="display:none;">
-              <iconpark-icon icon-id="up" size="14" color="currentColor"></iconpark-icon>
-            </button>
-            <span id="prompt-context" class="prompt-context"></span>
-            <span id="prompt-status">点击复制按钮后粘贴到Agent即可</span>
-            <button id="btn-prompt-copy">复制提示词</button>
+          <div class="inspect-form hidden">
+            <!-- 第二种状态预留：抓取元素结果展示 -->
           </div>
         </div>
-      </section>
+        <div class="right-bar-footer">
+          <span id="prompt-status"></span>
+          <button id="btn-prompt-copy">复制提示词</button>
+        </div>
+      </aside>
 
       <div class="resizer resizer-v" data-target="panel-docs" data-dir="v" data-invert="true" id="docs-resizer"></div>
       <aside id="panel-docs" class="hidden">

@@ -52,7 +52,7 @@
     }
   }
 
-  const DEFAULT_STATUS = '点击复制按钮后粘贴到Agent即可';
+  const DEFAULT_STATUS = '';
   let statusTimer = null;
 
   async function handleCopy() {
@@ -75,9 +75,9 @@
     );
     const ok = await copyToClipboard(prompt);
     if (ok) {
-      updateStatus('✅ 已复制到剪贴板，可直接粘贴给 Agent', 3000);
+      updateStatus('复制成功', 3000);
     } else {
-      updateStatus('❌ 复制失败，请手动全选复制');
+      updateStatus('复制失败');
     }
   }
 
@@ -92,29 +92,6 @@
         promptStatus.textContent = DEFAULT_STATUS;
       }, autoResetDelay);
     }
-  }
-
-  const promptBox = document.getElementById('prompt-box');
-  const promptResizer = document.getElementById('prompt-resizer');
-  const btnCollapse = document.getElementById('btn-prompt-collapse');
-  const btnExpand = document.getElementById('btn-prompt-expand');
-  let savedPromptHeight = null;
-
-  if (btnCollapse && btnExpand && promptBox && promptResizer) {
-    btnCollapse.addEventListener('click', () => {
-      savedPromptHeight = promptBox.style.height || '';
-      promptBox.classList.add('collapsed');
-      promptResizer.classList.add('hidden');
-      btnCollapse.style.display = 'none';
-      btnExpand.style.display = '';
-    });
-    btnExpand.addEventListener('click', () => {
-      promptBox.classList.remove('collapsed');
-      promptResizer.classList.remove('hidden');
-      if (savedPromptHeight) promptBox.style.height = savedPromptHeight;
-      btnCollapse.style.display = '';
-      btnExpand.style.display = 'none';
-    });
   }
 
   btnCopy.addEventListener('click', handleCopy);
