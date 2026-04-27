@@ -195,7 +195,7 @@ html, body {
 }
 
 .home-indicator {
-  height: 34px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -576,6 +576,9 @@ body.dark #prompt-box:focus-within {
   overflow: auto;
   padding: 12px;
 }
+#panel-right-bar .right-bar-body .inspect-form.hidden {
+  display: none;
+}
 #panel-right-bar .right-bar-footer {
   display: flex;
   align-items: center;
