@@ -19,7 +19,7 @@
 
   function findFirstPage(nodes) {
     for (const n of nodes) {
-      if (n.type === 'page' || n.type === 'component') return n;
+      if (n.type === 'page' || n.type === 'component' || n.type === 'spec') return n;
       if (n.children) {
         const f = findFirstPage(n.children);
         if (f) return f;
@@ -51,7 +51,9 @@
   }
 
   function getNodeTypeForTab(node) {
-    return node.type === 'component' ? 'component' : 'page';
+    if (node.type === 'component') return 'component';
+    if (node.type === 'spec') return 'spec';
+    return 'page';
   }
 
   function syncTreeFromIframe() {
@@ -59,7 +61,7 @@
     if (!iframe) return;
     try {
       const url = iframe.contentWindow.location.href;
-      const match = url.match(/\/(pages|components)\/([a-f0-9]{8})(?:\/|$)/);
+      const match = url.match(/\/(pages|components|specs)\/([a-f0-9]{8})(?:\/|$)/);
       if (!match) return;
       const tab = match[1];
       const nodePath = match[2];
@@ -160,6 +162,11 @@
   }
 
   async function loadTree(type) {
+    if (type === 'wiki') {
+      treeData = [];
+      treeRoot.innerHTML = '';
+      return;
+    }
     try {
       const res = await window.apiClient.getScan(type);
       if (res.code !== 0) return;
@@ -255,6 +262,8 @@
       icon = createTreeIcon('page');
     } else if (node.type === 'component') {
       icon = createTreeIcon('figma-component');
+    } else if (node.type === 'spec') {
+      icon = createTreeIcon('doc-detail');
     }
 
     const text = document.createElement('span');
@@ -369,6 +378,7 @@
   }
 
   function showRootContextMenu(e) {
+    if (currentTab === 'wiki') return;
     const items = [
       { label: currentTab === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
       { label: '新建目录', action: 'create_folder' }
@@ -384,6 +394,7 @@
   }
 
   function showDirContextMenu(e, node, type) {
+    if (currentTab === 'wiki') return;
     const items = [
       { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
       { label: '新建目录', action: 'create_folder' },
@@ -410,6 +421,7 @@
   }
 
   function showPageContextMenu(e, node, type) {
+    if (currentTab === 'wiki') return;
     const items = [
       { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
       { label: '新建子目录', action: 'create_subfolder' },

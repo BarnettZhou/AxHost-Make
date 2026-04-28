@@ -242,14 +242,18 @@ body.dark .rules-item.active {
   flex: 1;
   background: transparent;
   border: none;
+  border-bottom: 2px solid transparent;
   color: var(--text-muted);
   padding: 8px 0;
   cursor: pointer;
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .nav-tabs button.active {
-  color: var(--text-main);
-  border-bottom: 2px solid #1777ff;
+  color: #1777ff;
+  border-bottom-color: #1777ff;
 }
 .tree-container {
   flex: 1;
@@ -1009,6 +1013,54 @@ body.dark .doc-tab.active {
   display: none;
   z-index: 1002;
 }
+#export-create-remote-modal.modal-overlay {
+  z-index: 1003;
+}
+.remote-password-option {
+  margin-top: 12px;
+}
+.remote-password-option .checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-main);
+  cursor: pointer;
+}
+.remote-password-option input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.remote-password-field {
+  margin-top: 10px;
+}
+.remote-password-field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.password-input-row {
+  display: flex;
+  gap: 8px;
+}
+.password-input-row input[type="text"] {
+  flex: 1;
+}
+.password-input-row .btn-secondary {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.password-input-row .btn-secondary:hover {
+  background: var(--bg-hover);
+}
 #create-remote-project-modal.modal-overlay.active {
   display: flex;
 }
@@ -1473,6 +1525,9 @@ body.dark .doc-tab.active {
   cursor: pointer;
   font-size: 13px;
   line-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .export-tabs button.active {
   color: var(--text-main);

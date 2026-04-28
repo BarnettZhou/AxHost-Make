@@ -42,8 +42,9 @@
       <aside id="panel-nav">
         <div id="panel-nav-top">
           <div class="nav-tabs">
-            <button data-tab="pages" class="active">Pages</button>
-            <button data-tab="components">Components</button>
+            <button data-tab="pages" class="active" title="Pages"><iconpark-icon icon-id="page" size="16"></iconpark-icon></button>
+            <button data-tab="components" title="Components"><iconpark-icon icon-id="components" size="16"></iconpark-icon></button>
+            <button data-tab="wiki" title="Wiki"><iconpark-icon icon-id="doc-detail" size="16"></iconpark-icon></button>
           </div>
           <div class="tree-container" id="tree-root"></div>
         </div>
@@ -162,6 +163,19 @@
       <div class="modal-body">
         <label for="new-remote-project-name">项目名称</label>
         <input type="text" id="new-remote-project-name" placeholder="请输入项目名称" autocomplete="off">
+        <div class="remote-password-option">
+          <label class="checkbox-label">
+            <input type="checkbox" id="needs-password">
+            <span>需要密码</span>
+          </label>
+        </div>
+        <div class="remote-password-field" id="password-field" style="display:none;">
+          <label for="remote-password">密码</label>
+          <div class="password-input-row">
+            <input type="text" id="remote-password" placeholder="请输入密码" maxlength="6" autocomplete="off">
+            <button class="btn-secondary" id="btn-random-password" type="button">随机生成</button>
+          </div>
+        </div>
         <div id="create-remote-error" class="form-error"></div>
       </div>
       <div class="modal-actions">
@@ -237,8 +251,9 @@
         </div>
         <div class="export-right-panel">
           <div class="export-tabs">
-            <button data-tab="pages" class="active">pages</button>
-            <button data-tab="components">components</button>
+            <button data-tab="pages" class="active" title="pages"><iconpark-icon icon-id="page" size="14"></iconpark-icon></button>
+            <button data-tab="components" title="components"><iconpark-icon icon-id="components" size="14"></iconpark-icon></button>
+            
           </div>
           <div class="export-tree" id="export-tree"></div>
           <div class="export-select-all">
@@ -258,6 +273,19 @@
       <div class="modal-body">
         <label for="export-new-remote-project-name">项目名称</label>
         <input type="text" id="export-new-remote-project-name" placeholder="请输入项目名称" autocomplete="off">
+        <div class="remote-password-option">
+          <label class="checkbox-label">
+            <input type="checkbox" id="export-needs-password">
+            <span>需要密码</span>
+          </label>
+        </div>
+        <div class="remote-password-field" id="export-password-field" style="display:none;">
+          <label for="export-remote-password">密码</label>
+          <div class="password-input-row">
+            <input type="text" id="export-remote-password" placeholder="请输入密码" maxlength="6" autocomplete="off">
+            <button class="btn-secondary" id="export-btn-random-password" type="button">随机生成</button>
+          </div>
+        </div>
         <div id="export-create-remote-error" class="form-error"></div>
       </div>
       <div class="modal-actions">

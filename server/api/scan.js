@@ -78,6 +78,8 @@ async function handleScan(req, res, projectRoot) {
       res.end(JSON.stringify({ code: 0, data: pages }));
     } else if (type === 'components') {
       res.end(JSON.stringify({ code: 0, data: components }));
+    } else if (type === 'wiki') {
+      res.end(JSON.stringify({ code: 0, data: [] }));
     } else {
       res.end(JSON.stringify({ code: 0, data: { pages, components } }));
     }

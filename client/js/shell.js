@@ -38,6 +38,10 @@
   const hostProjectHint = document.getElementById('host-project-hint');
   const createRemoteModal = document.getElementById('create-remote-project-modal');
   const newRemoteProjectName = document.getElementById('new-remote-project-name');
+  const needsPasswordCheckbox = document.getElementById('needs-password');
+  const passwordField = document.getElementById('password-field');
+  const remotePasswordInput = document.getElementById('remote-password');
+  const btnRandomPassword = document.getElementById('btn-random-password');
   const btnCancelCreateRemote = document.getElementById('btn-cancel-create-remote');
   const btnConfirmCreateRemote = document.getElementById('btn-confirm-create-remote');
   const createRemoteError = document.getElementById('create-remote-error');
@@ -139,7 +143,7 @@
     const style = doc.createElement('style');
     style.id = TOUCH_STYLE_ID;
     style.textContent = `
-      * { user-select: none !important; -webkit-user-select: none !important; }
+      * { user-select: none !important; -webkit-user-select: none !important; cursor: none !important; }
       #axhost-touch-cursor {
         position: fixed;
         width: 32px;
@@ -469,11 +473,16 @@
         const div = document.createElement('div');
         div.className = 'host-project-dropdown-item';
         div.textContent = p.name || p.object_id || p.id || '';
-        div.addEventListener('click', () => {
+        div.addEventListener('click', async () => {
           selectedHostProject = { id: p.object_id || p.id, name: p.name };
+          currentSettingsLink = { remoteProjectId: p.object_id || p.id, remoteProjectName: p.name };
           hostProjectSearch.value = p.name || '';
           hostProjectDropdown.classList.remove('open');
           hostProjectHint.textContent = '';
+          renderHostProjectState();
+          try {
+            await window.apiClient.postSettings({ link: currentSettingsLink });
+          } catch (e) {}
         });
         hostProjectDropdown.appendChild(div);
       });
@@ -514,9 +523,34 @@
   }
 
   if (btnUnlinkProject) {
-    btnUnlinkProject.addEventListener('click', () => {
+    btnUnlinkProject.addEventListener('click', async () => {
       currentSettingsLink = null;
       renderHostProjectState();
+      try {
+        await window.apiClient.postSettings({ link: null });
+      } catch (e) {}
+    });
+  }
+
+  function generateRandomPassword() {
+    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let pwd = '';
+    for (let i = 0; i < 6; i++) {
+      pwd += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return pwd;
+  }
+
+  if (needsPasswordCheckbox && passwordField) {
+    needsPasswordCheckbox.addEventListener('change', (e) => {
+      passwordField.style.display = e.target.checked ? '' : 'none';
+      if (!e.target.checked && remotePasswordInput) remotePasswordInput.value = '';
+    });
+  }
+
+  if (btnRandomPassword && remotePasswordInput) {
+    btnRandomPassword.addEventListener('click', () => {
+      remotePasswordInput.value = generateRandomPassword();
     });
   }
 
@@ -524,6 +558,9 @@
     btnCreateRemoteProject.addEventListener('click', () => {
       createRemoteModal.classList.add('active');
       newRemoteProjectName.value = '';
+      if (needsPasswordCheckbox) needsPasswordCheckbox.checked = false;
+      if (passwordField) passwordField.style.display = 'none';
+      if (remotePasswordInput) remotePasswordInput.value = '';
       createRemoteError.textContent = '';
       setTimeout(() => newRemoteProjectName.focus(), 50);
     });
@@ -568,7 +605,11 @@
             path: '/api/projects',
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
-            body: { name }
+            body: {
+              name,
+              is_public: !(needsPasswordCheckbox && needsPasswordCheckbox.checked),
+              view_password: (needsPasswordCheckbox && needsPasswordCheckbox.checked) ? (remotePasswordInput ? remotePasswordInput.value.trim() : '') : undefined
+            }
           })
         });
         const data = await res.json();
@@ -579,6 +620,10 @@
           renderHostProjectState();
           createRemoteModal.classList.remove('active');
           window.showToast('项目创建成功并已关联', 'success');
+          // 保存关联到 settings
+          try {
+            await window.apiClient.postSettings({ link: currentSettingsLink });
+          } catch (e) {}
           // 刷新列表
           hostProjectList = await fetchHostProjects();
         } else {

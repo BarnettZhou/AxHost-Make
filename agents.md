@@ -32,33 +32,33 @@
 
 - 修改了 `axhost-make/client/` 或 `axhost-make/templates/` 中的其他文件：
   ```bash
-  node axhost-make/bin/axhost-make.js update
+  node axhost-make/bin/axhost-make.js update --all
   ```
   该命令会将最新的模板、CSS、JS 同步到外层宿主项目的 `prototype/` 目录下。
 
 > **特别提醒**：`build` 命令仅在维护 preview 入口时需要使用，最终用户通常无需直接调用。不要手动复制粘贴修改内容到外层 `prototype/`，统一通过 `update` 或 `build` 命令同步，避免两边不一致。
 
-### 3. Server 代码修改后的重启
+- 修改了 `axhost-make/server/` 下的路由、API 或静态文件解析逻辑：
+  **必须重启 `serve` 才能生效**（Node 无热重载）。
+  ```bash
+  taskkill /F /IM node.exe   # Windows
+  pkill node                  # macOS/Linux
+  node axhost-make/bin/axhost-make.js serve --port 3820
+  ```
 
-如果修改了 `axhost-make/server/` 下的路由、API 或静态文件解析逻辑，**必须重启 `serve` 才能生效**（Node 无热重载）。
-
-重启步骤：
-1. 结束现有的 Node 进程：`taskkill /F /IM node.exe`（Windows）或 `pkill node`（macOS/Linux）
-2. 重新启动：`node axhost-make/bin/axhost-make.js serve --port 3820`
-
-### 4. 图标规范
+### 3. 图标规范
 
 框架统一使用 `<iconpark-icon>` 图标组件：
 - `client/js/icons.js` 是 IconPark CDN 的 loader。开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。
 - HTML/JS 中全部使用 `<iconpark-icon icon-id="xxx" size="14"></iconpark-icon>`。
-- 升级 CDN 时，只需修改 `client/js/icons.js` 中的 URL，再执行 `update` 即可。
+- 升级 CDN 时，只需修改 `client/js/icons.js` 中的 URL，再执行 `update --all` 即可。
 
 ---
 
 ## 术语
 
 - **预览模式 / preview**：直接运行 `prototype/` 下的静态原型（通过 `axhost-make preview` 或打开 `prototype/index.html`）。无开发工具，是最终交付版本。
-- **开发模式 / 服务模式 / client**：通过 `axhost-make serve` 启动，由 `axhost-make/client/` 提供 Shell 界面（含目录树、文档面板、Prompt 框等）。即使在外层宿主项目中启动，加载的仍是框架 `client/` 的代码，仅通过 iframe 预览宿主项目的 `prototype/` 页面。
+- **开发模式 / 服务模式 / client**：通过 `axhost-make serve` 启动，由 `axhost-make/client/` 提供 Shell 界面（含目录树、右侧面板 Prompt、文档面板等）。即使在外层宿主项目中启动，加载的仍是框架 `client/` 的代码，仅通过 iframe 预览宿主项目的 `prototype/` 页面。
 
 ---
 
@@ -69,22 +69,34 @@ workspace/
 ├── axhost-make/              # 框架核心代码
 │   ├── bin/                  # CLI 入口
 │   │   ├── axhost-make.js    # 命令分发
-│   │   ├── axhost-init.js    # init 命令
-│   │   ├── axhost-update.js  # update 命令
-│   │   └── axhost-build.js   # build 命令（生成 preview 入口模板）
+│   │   ├── axhost-init.js    # init / init-workspace 命令
+│   │   ├── axhost-update.js  # update 命令（同步模板到项目 prototype）
+│   │   ├── axhost-build.js   # build 命令（生成 preview 入口模板）
+│   │   ├── axhost-add-page.js      # 添加页面
+│   │   ├── axhost-add-component.js # 添加组件
+│   │   ├── axhost-add-folder.js    # 添加目录
+│   │   ├── axhost-add-doc.js       # 添加文档
+│   │   ├── axhost-query.js         # 查询项目信息
+│   │   ├── axhost-migrate.js       # 数据迁移
+│   │   └── lib/              # CLI 共享库
 │   ├── client/               # 前端壳层资源
-│   │   ├── css/              # 样式文件
+│   │   ├── css/
 │   │   │   ├── shell.css     # 开发模式主题与布局
 │   │   │   └── home.css      # 项目管理首页样式
-│   │   ├── js/               # 交互脚本
-│   │   │   ├── icons.js      # <axhost-icon> 内联图标
+│   │   ├── js/
+│   │   │   ├── icons.js      # IconPark CDN loader
+│   │   │   ├── api-client.js # 前端 API 封装
 │   │   │   ├── tree-nav.js   # 左侧目录树
-│   │   │   ├── prompt-box.js # Prompt 交互
+│   │   │   ├── inspector.js  # iframe 元素检查器
+│   │   │   ├── prompt-box.js # Prompt 构建与复制
+│   │   │   ├── export-modal.js # 导出/发布弹窗
 │   │   │   ├── doc-panel.js  # 文档面板
+│   │   │   ├── md-renderer.js# Markdown 渲染
 │   │   │   ├── shell.js      # 开发模式总控
 │   │   │   ├── home.js       # 项目管理首页逻辑
 │   │   │   └── preview-app.js# Preview 模式逻辑（纯静态渲染）
-│   │   ├── assets/           # 第三方静态资源（marked.min.js）
+│   │   ├── assets/
+│   │   │   └── marked.min.js # Markdown 解析器
 │   │   ├── home.html         # 项目管理首页入口
 │   │   ├── shell.html        # 开发模式入口（单项目工作台）
 │   │   ├── preview-index.html# Preview 模式源码入口
@@ -92,28 +104,63 @@ workspace/
 │   ├── server/               # Node HTTP 服务器
 │   │   ├── index.js          # 主服务入口
 │   │   ├── router.js         # 路由分发（支持多项目）
+│   │   ├── preview-server.js # preview 静态服务器
+│   │   ├── middleware/       # 中间件（cors、static）
+│   │   ├── utils/            # 工具函数
+│   │   ├── lib/              # 服务端共享库（ids、order、sitemap-io）
 │   │   └── api/              # API 实现
-│   │       ├── projects.js   # GET/POST /api/projects 项目列表/新建
-│   │       ├── export.js     # POST /api/export 导出功能 + /api/export/publish 线上发布
-│   │       ├── axhost-proxy.js # POST /api/axhost-proxy 跨域代理（供前端调用远程 AxHost API）
-│   │       ├── project-info.js # GET /api/project-info 项目元数据
+│   │       ├── projects.js   # GET/POST /api/projects
+│   │       ├── project-info.js # GET /api/project-info
+│   │       ├── settings.js   # GET/POST /api/settings
+│   │       ├── sitemap.js    # GET /api/sitemap
+│   │       ├── create.js     # POST /api/create
+│   │       ├── delete.js     # POST /api/delete
+│   │       ├── rename.js     # POST /api/rename
+│   │       ├── move.js       # POST /api/move
+│   │       ├── copy.js       # POST /api/copy
+│   │       ├── reorder.js    # POST /api/sitemap/reorder
+│   │       ├── docs.js       # GET/POST /api/docs
+│   │       ├── file.js       # GET/POST /api/file
+│   │       ├── export.js     # POST /api/export + /api/export/publish
+│   │       ├── open-editor.js# POST /api/open-editor
+│   │       ├── axhost-proxy.js # POST /api/axhost-proxy
+│   │       └── scan.js       # GET /api/scan
 │   ├── templates/            # 模板目录
 │   │   ├── preview/          # Preview 入口产物（build 生成）
+│   │   │   ├── index.html
+│   │   │   ├── start.html
+│   │   │   ├── icon.svg
+│   │   │   └── resources/
 │   │   ├── project/          # 用户项目初始化模板
-│   │   └── start-script/     # 启动脚本模板（start.cmd / start.ps1 / start.sh）
+│   │   │   ├── agents.md
+│   │   │   ├── components/
+│   │   │   │   └── component.html
+│   │   │   ├── pages/
+│   │   │   │   ├── page.html
+│   │   │   │   ├── mobile.html / .css
+│   │   │   │   └── mini-program.html / .css
+│   │   │   └── rules/
+│   │   │       ├── dev-spec.md
+│   │   │       └── mobile-frame-spec.md
+│   │   └── start-script/     # 启动脚本模板
 │   ├── skills/               # Kimi Skill 文档
-│   └── agents.md             # 本文件
+│   ├── agents.md             # 本文件
+│   └── readme.md
 │
-├── start.cmd                 # Windows 双击启动脚本（init/update 生成）
-├── start.ps1                 # PowerShell 启动脚本
-├── start.sh                  # Linux/mac 启动脚本
-└── projects/                 # 项目存放目录（与 axhost-make/ 平级）
-    ├── .projects.json        # 项目元数据表（id / name / createdAt / lastModified）
-    ├── 184bdd45/             # 项目 A（8 位 hash 目录名）
+├── package.json              # workspace 级 npm 脚本（init 生成）
+├── start.cmd                 # Windows 双击启动
+├── start.ps1                 # PowerShell 启动
+├── start.sh                  # Linux/mac 启动
+└── projects/                 # 项目存放目录
+    ├── .projects.json        # 项目元数据表
+    ├── 184bdd45/             # 项目 A（8 位 hash）
     │   ├── prototype/
     │   ├── rules/
+    │   ├── changelog/
+    │   ├── memory/
+    │   ├── wiki/
     │   └── ...
-    └── a1b2c3d4/             # 项目 B（8 位 hash 目录名）
+    └── a1b2c3d4/             # 项目 B
         └── ...
 ```
 
@@ -130,7 +177,7 @@ workspace/
    ```
 3. **然后执行 update** 同步到外层宿主项目：
    ```bash
-   node axhost-make/bin/axhost-make.js update
+   node axhost-make/bin/axhost-make.js update --all
    ```
 4. 刷新浏览器 `http://127.0.0.1:3820` 验证效果（默认打开项目管理首页）；如需进入开发模式，点击项目卡片打开；如需验证 preview 模式，直接访问：
    ```
@@ -143,7 +190,7 @@ workspace/
 2. **杀死旧进程并重启 serve**。
 3. 浏览器中验证 API 行为。
 
-### 修改 CLI（init / update）
+### 修改 CLI（init / update / add-*）
 
 1. 修改 `axhost-make/bin/` 中的脚本。
 2. 如果是 `init.js` 或 `update.js`，修改后建议手动运行一次对应命令验证逻辑。
@@ -210,4 +257,4 @@ workspace/
 
 ## 提示
 
-如果你在上下文中已经读取了本文件和 `axhost-make/` 下的相关源码，可直接基于已有上下文和用户的最新 Prompt 开始修改。每次改完核心代码后，**别忘了执行 `update`**。
+如果你在上下文中已经读取了本文件和 `axhost-make/` 下的相关源码，可直接基于已有上下文和用户的最新 Prompt 开始修改。每次改完核心代码后，**别忘了执行 `update --all`**。

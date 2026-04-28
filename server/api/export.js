@@ -76,7 +76,7 @@ async function copyPageOrComponent(srcDir, destDir, relativePath) {
 function filterTree(nodes, selectedPaths) {
   const result = [];
   for (const node of nodes) {
-    if (node.type === 'page' || node.type === 'component') {
+    if (node.type === 'page' || node.type === 'component' || node.type === 'spec') {
       if (selectedPaths.includes(node.path)) {
         result.push(node);
       }

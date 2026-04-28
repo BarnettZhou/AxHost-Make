@@ -30,6 +30,10 @@
   const exportPreviewUrl = document.getElementById('export-preview-url');
   const createRemoteModal = document.getElementById('export-create-remote-modal');
   const newRemoteProjectName = document.getElementById('export-new-remote-project-name');
+  const needsPasswordCheckbox = document.getElementById('export-needs-password');
+  const passwordField = document.getElementById('export-password-field');
+  const remotePasswordInput = document.getElementById('export-remote-password');
+  const btnRandomPassword = document.getElementById('export-btn-random-password');
   const btnCancelCreateRemote = document.getElementById('export-btn-cancel-create-remote');
   const btnConfirmCreateRemote = document.getElementById('export-btn-confirm-create-remote');
   const createRemoteError = document.getElementById('export-create-remote-error');
@@ -49,8 +53,15 @@
   function open() {
     treeData = { pages: [], components: [] };
     expandedPaths = new Set();
+    checkedPaths = new Set();
+    selectAll = true;
+    if (selectAllCheckbox) selectAllCheckbox.checked = true;
+    treeContainer.classList.add('all-selected');
     loadDefaultInfo();
-    loadTree(currentTab);
+    loadTree(currentTab).then(() => {
+      const otherTab = currentTab === 'pages' ? 'components' : 'pages';
+      preloadTree(otherTab);
+    });
     modal.classList.add('open');
   }
   function close() {
@@ -156,6 +167,24 @@
     }
   }
 
+  async function preloadTree(type) {
+    if (treeData[type] && treeData[type].length > 0) {
+      if (selectAll) {
+        collectAllPaths(treeData[type], type === 'pages' ? 'page' : 'component', checkedPaths);
+      }
+      return;
+    }
+    try {
+      const res = await window.apiClient.getScan(type);
+      if (res.code === 0) {
+        treeData[type] = res.data || [];
+        if (selectAll) {
+          collectAllPaths(treeData[type], type === 'pages' ? 'page' : 'component', checkedPaths);
+        }
+      }
+    } catch (e) {}
+  }
+
   function renderTree(type) {
     const nodes = treeData[type] || [];
     treeContainer.innerHTML = '';
@@ -253,6 +282,15 @@
   }
 
   // ===== Host Project Logic =====
+  function generateRandomPassword() {
+    const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let pwd = '';
+    for (let i = 0; i < 6; i++) {
+      pwd += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return pwd;
+  }
+
   function updatePreviewUrl() {
     if (!exportPreviewUrlField || !exportPreviewUrl) return;
     const baseUrl = localStorage.getItem('axhost-server-url');
@@ -327,12 +365,16 @@
         const div = document.createElement('div');
         div.className = 'host-project-dropdown-item';
         div.textContent = p.name || p.object_id || p.id || '';
-        div.addEventListener('click', () => {
+        div.addEventListener('click', async () => {
           selectedHostProject = { id: p.object_id || p.id, name: p.name };
+          currentSettingsLink = { remoteProjectId: p.object_id || p.id, remoteProjectName: p.name };
           hostProjectSearch.value = p.name || '';
           hostProjectDropdown.classList.remove('open');
           hostProjectHint.textContent = '';
-          updatePreviewUrl();
+          renderHostProjectState();
+          try {
+            await window.apiClient.postSettings({ link: currentSettingsLink });
+          } catch (e) {}
         });
         hostProjectDropdown.appendChild(div);
       });
@@ -363,9 +405,25 @@
   }
 
   if (btnUnlinkProject) {
-    btnUnlinkProject.addEventListener('click', () => {
+    btnUnlinkProject.addEventListener('click', async () => {
       currentSettingsLink = null;
       renderHostProjectState();
+      try {
+        await window.apiClient.postSettings({ link: null });
+      } catch (e) {}
+    });
+  }
+
+  if (needsPasswordCheckbox && passwordField) {
+    needsPasswordCheckbox.addEventListener('change', (e) => {
+      passwordField.style.display = e.target.checked ? '' : 'none';
+      if (!e.target.checked && remotePasswordInput) remotePasswordInput.value = '';
+    });
+  }
+
+  if (btnRandomPassword && remotePasswordInput) {
+    btnRandomPassword.addEventListener('click', () => {
+      remotePasswordInput.value = generateRandomPassword();
     });
   }
 
@@ -373,6 +431,9 @@
     btnCreateRemoteProject.addEventListener('click', () => {
       createRemoteModal.classList.add('active');
       newRemoteProjectName.value = '';
+      if (needsPasswordCheckbox) needsPasswordCheckbox.checked = false;
+      if (passwordField) passwordField.style.display = 'none';
+      if (remotePasswordInput) remotePasswordInput.value = '';
       createRemoteError.textContent = '';
       setTimeout(() => newRemoteProjectName.focus(), 50);
     });
@@ -417,7 +478,11 @@
             path: '/api/projects',
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
-            body: { name }
+            body: {
+              name,
+              is_public: !(needsPasswordCheckbox && needsPasswordCheckbox.checked),
+              view_password: (needsPasswordCheckbox && needsPasswordCheckbox.checked) ? (remotePasswordInput ? remotePasswordInput.value.trim() : '') : undefined
+            }
           })
         });
         const data = await res.json();
@@ -428,6 +493,10 @@
           renderHostProjectState();
           createRemoteModal.classList.remove('active');
           window.showToast('项目创建成功并已关联', 'success');
+          // 保存关联到 settings
+          try {
+            await window.apiClient.postSettings({ link: currentSettingsLink });
+          } catch (e) {}
           hostProjectList = await fetchHostProjects();
         } else {
           createRemoteError.textContent = data.message || '创建失败';

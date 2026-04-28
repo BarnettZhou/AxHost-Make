@@ -127,7 +127,7 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
 
   const tplPath = kind === 'page'
     ? path.join(TEMPLATE_ROOT, `pages/${templateName}.html`)
-    : path.resolve(__dirname, '../../templates/components/component.html');
+    : path.resolve(__dirname, '../../templates/project/components/component.html');
 
   const tplHtml = await fs.readFile(tplPath, 'utf-8');
   await fs.writeFile(path.join(targetDir, 'index.html'), applyTemplate(tplHtml, vars), 'utf-8');

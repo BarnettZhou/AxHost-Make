@@ -119,6 +119,9 @@
   function renderTree() {
     const nodes = map[activeType] || [];
     treeRoot.innerHTML = '';
+    if (activeType === 'wiki') {
+      return;
+    }
     if (nodes.length === 0) {
       treeRoot.innerHTML = '<div class="empty">No ' + activeType + ' found.</div>';
       return;
