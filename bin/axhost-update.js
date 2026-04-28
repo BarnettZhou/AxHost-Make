@@ -28,7 +28,7 @@ async function scanDirs(dir) {
 
 async function ensurePageResources(projectRoot) {
   let created = 0;
-  for (const type of ['pages', 'components']) {
+  for (const type of ['pages', 'components', 'flowcharts']) {
     const baseDir = path.join(projectRoot, 'prototype', type);
     if (!await exists(baseDir)) continue;
     const dirs = await scanDirs(baseDir);

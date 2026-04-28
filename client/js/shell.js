@@ -673,7 +673,7 @@
 
   function loadPage(type, pagePath) {
     exitRuleMode();
-    const tab = type === 'component' ? 'components' : 'pages';
+    const tab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
     const url = `${prototypeBase}/${tab}/${pagePath}/index.html`;
     previewFrame.src = url;
     const info = window.__axhostProjectInfo || {};
@@ -1145,7 +1145,7 @@
     if (e.data && e.data.type === 'axhost-navigate') {
       const { path, tab } = e.data;
       if (path && window.shell.loadPage) {
-        const type = tab === 'pages' ? 'page' : tab === 'components' ? 'component' : (tab || 'page');
+        const type = tab === 'pages' ? 'page' : tab === 'components' ? 'component' : tab === 'flowcharts' ? 'flowchart' : (tab || 'page');
         window.shell.loadPage(type, path);
       }
     }

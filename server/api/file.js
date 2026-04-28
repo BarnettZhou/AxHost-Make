@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-const ALLOWED_WRITE_EXTS = new Set(['.html', '.md', '.css', '.js', '.json', '.txt']);
+const ALLOWED_WRITE_EXTS = new Set(['.html', '.md', '.css', '.js', '.json', '.txt', '.mmd']);
 
 function isSafePath(projectRoot, inputPath) {
   if (inputPath.includes('..')) return false;

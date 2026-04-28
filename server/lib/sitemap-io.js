@@ -8,7 +8,7 @@ async function readSitemap(projectRoot) {
     const jsonPart = content.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
     return JSON.parse(jsonPart);
   } catch (e) {
-    return { name: 'Prototype', pages: [], components: [] };
+    return { name: 'Prototype', pages: [], components: [], flowcharts: [] };
   }
 }
 

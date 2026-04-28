@@ -19,7 +19,7 @@
 
   function findFirstPage(nodes) {
     for (const n of nodes) {
-      if (n.type === 'page' || n.type === 'component' || n.type === 'spec') return n;
+      if (n.type === 'page' || n.type === 'component' || n.type === 'flowchart' || n.type === 'spec') return n;
       if (n.children) {
         const f = findFirstPage(n.children);
         if (f) return f;
@@ -52,6 +52,7 @@
 
   function getNodeTypeForTab(node) {
     if (node.type === 'component') return 'component';
+    if (node.type === 'flowchart') return 'flowchart';
     if (node.type === 'spec') return 'spec';
     return 'page';
   }
@@ -61,7 +62,7 @@
     if (!iframe) return;
     try {
       const url = iframe.contentWindow.location.href;
-      const match = url.match(/\/(pages|components|specs)\/([a-f0-9]{8})(?:\/|$)/);
+      const match = url.match(/\/(pages|components|flowcharts)\/([a-f0-9]{8})(?:\/|$)/);
       if (!match) return;
       const tab = match[1];
       const nodePath = match[2];
@@ -102,7 +103,7 @@
       document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
 
       const targetType = targetLi.dataset.type;
-      const isContainer = targetType === 'dir' || targetType === 'page' || targetType === 'component';
+      const isContainer = targetType === 'dir' || targetType === 'page' || targetType === 'component' || targetType === 'flowchart';
       const canMoveInto = isContainer && !isAncestor(draggedItem, targetLi);
 
       const rect = targetLi.getBoundingClientRect();
@@ -262,6 +263,8 @@
       icon = createTreeIcon('page');
     } else if (node.type === 'component') {
       icon = createTreeIcon('figma-component');
+    } else if (node.type === 'flowchart') {
+      icon = createTreeIcon('split-turn-down-right');
     } else if (node.type === 'spec') {
       icon = createTreeIcon('doc-detail');
     }
@@ -343,7 +346,7 @@
         if (node.id) location.hash = '#' + node.id;
         loadTree(currentTab);
         if (window.shell && window.shell.loadPage) {
-          window.shell.loadPage(type === 'components' ? 'component' : 'page', node.path);
+          window.shell.loadPage(type === 'components' ? 'component' : type === 'flowcharts' ? 'flowchart' : 'page', node.path);
         }
         // clear active rule item highlight
         document.querySelectorAll('.rules-item.active').forEach(el => el.classList.remove('active'));
@@ -365,7 +368,7 @@
     const parts = parentPath.split('/');
     let nodes = treeData;
     for (const part of parts) {
-      const dir = nodes.find(n => n.id === part && (n.type === 'dir' || n.type === 'page' || n.type === 'component'));
+      const dir = nodes.find(n => n.id === part && (n.type === 'dir' || n.type === 'page' || n.type === 'component' || n.type === 'flowchart'));
       if (!dir) return [];
       nodes = dir.children || [];
     }
@@ -379,13 +382,14 @@
 
   function showRootContextMenu(e) {
     if (currentTab === 'wiki') return;
+    const pageLabel = currentTab === 'components' ? '新建组件' : currentTab === 'flowcharts' ? '新建流程图' : '新建页面';
     const items = [
-      { label: currentTab === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
+      { label: pageLabel, action: 'create_page' },
       { label: '新建目录', action: 'create_folder' }
     ];
     renderMenu(e, items, (action) => {
       if (action === 'create_page') {
-        const kind = currentTab === 'components' ? 'component' : 'page';
+        const kind = currentTab === 'components' ? 'component' : currentTab === 'flowcharts' ? 'flowchart' : 'page';
         handleCreate('', kind);
       } else if (action === 'create_folder') {
         handleCreate('', 'folder');
@@ -395,8 +399,9 @@
 
   function showDirContextMenu(e, node, type) {
     if (currentTab === 'wiki') return;
+    const pageLabel = type === 'components' ? '新建组件' : type === 'flowcharts' ? '新建流程图' : '新建页面';
     const items = [
-      { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
+      { label: pageLabel, action: 'create_page' },
       { label: '新建目录', action: 'create_folder' },
       { divider: true },
       { label: '复制路径', action: 'copy_path' },
@@ -406,7 +411,7 @@
     ];
     renderMenu(e, items, (action) => {
       if (action === 'create_page') {
-        const kind = type === 'components' ? 'component' : 'page';
+        const kind = type === 'components' ? 'component' : type === 'flowcharts' ? 'flowchart' : 'page';
         handleCreate(node.path, kind);
       } else if (action === 'create_folder') {
         handleCreate(node.path, 'folder');
@@ -422,19 +427,22 @@
 
   function showPageContextMenu(e, node, type) {
     if (currentTab === 'wiki') return;
+    const pageLabel = type === 'components' ? '新建组件' : type === 'flowcharts' ? '新建流程图' : '新建页面';
+    const copyLabel = type === 'components' ? '复制组件' : type === 'flowcharts' ? '复制流程图' : '复制页面';
+    const deleteLabel = type === 'components' ? '删除组件' : type === 'flowcharts' ? '删除流程图' : '删除页面';
     const items = [
-      { label: type === 'components' ? '新建组件' : '新建页面', action: 'create_page' },
+      { label: pageLabel, action: 'create_page' },
       { label: '新建子目录', action: 'create_subfolder' },
-      { label: type === 'components' ? '复制组件' : '复制页面', action: 'copy_page' },
+      { label: copyLabel, action: 'copy_page' },
       { divider: true },
       { label: '复制路径', action: 'copy_path' },
       { label: '重命名', action: 'rename' },
       { divider: true },
-      { label: type === 'components' ? '删除组件' : '删除页面', action: 'delete', danger: true }
+      { label: deleteLabel, action: 'delete', danger: true }
     ];
     renderMenu(e, items, (action) => {
       if (action === 'create_page') {
-        const kind = type === 'components' ? 'component' : 'page';
+        const kind = type === 'components' ? 'component' : type === 'flowcharts' ? 'flowchart' : 'page';
         handleCreate(node.path, kind);
       } else if (action === 'create_subfolder') {
         handleCreate(node.path, 'folder');
@@ -571,7 +579,7 @@
   }
 
   async function handleCreate(parentPath, kind) {
-    const labelMap = { page: '页面', component: '组件', folder: '目录' };
+    const labelMap = { page: '页面', component: '组件', flowchart: '流程图', folder: '目录' };
     let name, template = 'default';
     if (kind === 'page') {
       const result = await showCreatePagePrompt('请输入页面名称');
@@ -597,7 +605,7 @@
         expandedPaths.add(parentPath);
       }
       await loadTree(currentTab);
-      window.showToast(kind === 'folder' ? '目录创建成功' : (kind === 'component' ? '组件创建成功' : '页面创建成功'), 'success');
+      window.showToast(kind === 'folder' ? '目录创建成功' : (kind === 'component' ? '组件创建成功' : kind === 'flowchart' ? '流程图创建成功' : '页面创建成功'), 'success');
     } catch (err) {
       console.error('Create error:', err);
       window.showToast('创建失败: ' + err.message, 'error');
@@ -673,7 +681,7 @@
 
     const msg = hasChildren
       ? `是否删除 "${displayName}" 及其下的所有页面/组件？`
-      : `是否删除${type === 'components' ? '组件' : '页面'} "${displayName}"？`;
+      : `是否删除${type === 'components' ? '组件' : type === 'flowcharts' ? '流程图' : '页面'} "${displayName}"？`;
     const ok = await window.showConfirm('删除确认', msg);
     if (!ok) return;
     try {
@@ -701,7 +709,7 @@
     const node = findNodeById(treeData, hashId);
     if (!node) return;
     const type = getNodeTypeForTab(node);
-    const tab = type === 'component' ? 'components' : 'pages';
+    const tab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
     if (currentTab !== tab) {
       currentTab = tab;
       renderTabs();

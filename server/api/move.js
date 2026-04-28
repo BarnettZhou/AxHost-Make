@@ -75,7 +75,8 @@ async function handleMove(req, res, projectRoot) {
 
       const sourceName = path.basename(sourceAbs);
       const targetName = path.basename(targetAbs);
-      const tab = type || (resolvedSource.includes('components') ? 'components' : 'pages');
+      function getTab(p) { return p.includes('flowcharts') ? 'flowcharts' : p.includes('components') ? 'components' : 'pages'; }
+      const tab = type || getTab(resolvedSource);
       const sitemap = await readSitemap(projectRoot);
       const tree = sitemap[tab] || [];
 

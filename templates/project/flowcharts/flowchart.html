@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_NAME}}</title>
+  <link rel="stylesheet" href="resources/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script src="../../resources/js/icons.js"></script>
+</head>
+<body>
+  <div id="app">
+    <div class="toolbar" id="toolbar">
+      <span class="toolbar-title">{{PAGE_NAME}}</span>
+      <div class="toolbar-actions">
+        <button id="edit-btn" class="toolbar-btn primary" title="编辑">编辑</button>
+        <button id="refresh-btn" class="toolbar-btn" title="刷新">刷新</button>
+      </div>
+    </div>
+    <div class="main" id="main">
+      <div class="editor-pane" id="editor-pane">
+        <div class="pane-label">Mermaid 源码</div>
+        <textarea id="editor" spellcheck="false" readonly></textarea>
+      </div>
+      <div class="preview-pane" id="preview-pane">
+        <div class="pane-label">预览</div>
+        <div class="preview-floatbar" id="preview-floatbar">
+          <button id="btn-zoom-in" title="放大"><iconpark-icon icon-id="plus" size="12" color="currentColor"></iconpark-icon></button>
+          <button id="btn-zoom-out" title="缩小"><iconpark-icon icon-id="minus" size="12" color="currentColor"></iconpark-icon></button>
+          <button id="btn-pan" title="抓手"><iconpark-icon icon-id="palm" size="12" color="currentColor"></iconpark-icon></button>
+        </div>
+        <div id="preview">
+          <div id="preview-content"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+
+    const editor = document.getElementById('editor');
+    const preview = document.getElementById('preview');
+    const previewContent = document.getElementById('preview-content');
+    const editBtn = document.getElementById('edit-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const toolbar = document.getElementById('toolbar');
+    const editorPane = document.getElementById('editor-pane');
+    const previewPane = document.getElementById('preview-pane');
+    const previewLabel = previewPane.querySelector('.pane-label');
+    const floatbar = document.getElementById('preview-floatbar');
+    const btnZoomIn = document.getElementById('btn-zoom-in');
+    const btnZoomOut = document.getElementById('btn-zoom-out');
+    const btnPan = document.getElementById('btn-pan');
+
+    let isEditing = false;
+    let zoom = 1;
+    let panning = false;
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0, scrollLeft: 0, scrollTop: 0 };
+
+    function isPreviewMode() {
+      try {
+        if (window.parent !== window) {
+          return window.parent.document.body.classList.contains('preview-mode');
+        }
+      } catch (e) {}
+      return true;
+    }
+
+    const previewMode = isPreviewMode();
+
+    if (previewMode) {
+      toolbar.style.display = 'none';
+      editorPane.style.display = 'none';
+      previewPane.style.flex = '1';
+      previewPane.style.border = 'none';
+      if (previewLabel) previewLabel.style.display = 'none';
+      if (floatbar) floatbar.style.top = '8px';
+    }
+
+    async function render(source) {
+      previewContent.innerHTML = '';
+      const text = (source || '').trim();
+      if (!text) {
+        previewContent.innerHTML = '<div class="info-msg">Mermaid 源码为空</div>';
+        applyZoom();
+        return;
+      }
+      const id = 'm-' + Math.random().toString(36).slice(2, 10);
+      try {
+        const { svg } = await mermaid.render(id, text);
+        previewContent.innerHTML = svg;
+        const svgEl = previewContent.querySelector('svg');
+        if (svgEl) svgEl.style.maxWidth = '100%';
+      } catch (err) {
+        previewContent.innerHTML = '<div class="error-msg">' + err.message.replace(/</g, '&lt;') + '</div>';
+      }
+      applyZoom();
+    }
+
+    function applyZoom() {
+      previewContent.style.transform = 'scale(' + zoom + ')';
+      previewContent.style.transformOrigin = 'top left';
+    }
+
+    btnZoomIn.addEventListener('click', () => {
+      zoom = Math.min(3, zoom + 0.2);
+      applyZoom();
+    });
+
+    btnZoomOut.addEventListener('click', () => {
+      zoom = Math.max(0.3, zoom - 0.2);
+      applyZoom();
+    });
+
+    btnPan.addEventListener('click', () => {
+      panning = !panning;
+      btnPan.classList.toggle('active', panning);
+      preview.style.cursor = panning ? 'grab' : '';
+    });
+
+    preview.addEventListener('mousedown', (e) => {
+      if (!panning) return;
+      if (e.target.closest('.preview-floatbar')) return;
+      e.preventDefault();
+      isDragging = true;
+      preview.style.cursor = 'grabbing';
+      dragStart = {
+        x: e.clientX,
+        y: e.clientY,
+        scrollLeft: preview.scrollLeft,
+        scrollTop: preview.scrollTop
+      };
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStart.x;
+      const dy = e.clientY - dragStart.y;
+      preview.scrollLeft = dragStart.scrollLeft - dx;
+      preview.scrollTop = dragStart.scrollTop - dy;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      if (panning) preview.style.cursor = 'grab';
+    });
+
+    function getApiBase() {
+      const m = location.pathname.match(/^\/projects\/([^/]+)\//);
+      return m ? '?project=' + m[1] : '';
+    }
+
+    function getFilePath() {
+      return location.pathname.replace(/^\//, '').replace(/index\.html$/, 'diagram.mmd');
+    }
+
+    async function loadSource() {
+      try {
+        const res = await fetch('diagram.mmd');
+        if (res.ok) {
+          const source = await res.text();
+          editor.value = source;
+          render(source);
+          return;
+        }
+      } catch (e) {}
+      editor.value = 'graph TD\n    A[开始] --> B[结束]';
+      render(editor.value);
+    }
+
+    function setEditing(editing) {
+      isEditing = editing;
+      if (editing) {
+        editor.removeAttribute('readonly');
+        editor.focus();
+        editBtn.textContent = '保存';
+        editBtn.classList.add('primary');
+      } else {
+        editor.setAttribute('readonly', 'true');
+        editBtn.textContent = '编辑';
+        editBtn.classList.remove('primary');
+      }
+    }
+
+    let renderTimer;
+    editor.addEventListener('input', () => {
+      clearTimeout(renderTimer);
+      renderTimer = setTimeout(() => render(editor.value), 300);
+    });
+
+    editBtn.addEventListener('click', async () => {
+      if (!isEditing) {
+        setEditing(true);
+        return;
+      }
+
+      editBtn.disabled = true;
+      const originalText = editBtn.textContent;
+      editBtn.textContent = '保存中...';
+      try {
+        const res = await fetch('/api/file' + getApiBase(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: getFilePath(), content: editor.value })
+        });
+        if (res.ok) {
+          editBtn.textContent = '已保存';
+          setTimeout(() => {
+            setEditing(false);
+            editBtn.disabled = false;
+          }, 800);
+        } else {
+          throw new Error('Save failed');
+        }
+      } catch (err) {
+        editBtn.textContent = '保存失败';
+        setTimeout(() => {
+          editBtn.textContent = originalText;
+          editBtn.disabled = false;
+        }, 1500);
+      }
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      loadSource();
+    });
+
+    loadSource();
+  </script>
+</body>
+</html>

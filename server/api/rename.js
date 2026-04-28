@@ -54,7 +54,7 @@ async function handleRename(req, res, projectRoot) {
       } catch {}
 
       // Update sitemap
-      const tab = targetPath.includes('components') ? 'components' : 'pages';
+      const tab = targetPath.includes('flowcharts') ? 'flowcharts' : targetPath.includes('components') ? 'components' : 'pages';
       const sitemap = await readSitemap(projectRoot);
       const tree = sitemap[tab] || [];
       const id = path.basename(absPath);

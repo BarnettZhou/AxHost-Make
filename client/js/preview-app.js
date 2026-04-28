@@ -32,7 +32,7 @@
     });
   }
 
-  const map = window.__axhostSitemap || { name: 'Prototype', pages: [], components: [] };
+  const map = window.__axhostSitemap || { name: 'Prototype', pages: [], components: [], flowcharts: [] };
   if (projectNameEl) projectNameEl.textContent = map.name || 'Prototype';
   document.title = map.name || 'Prototype';
 
@@ -46,10 +46,10 @@
     activeDocIndex = 0;
     const base = basePath + type + '/' + pagePath + '/docs/';
 
-    const list = (window.__axhostSitemap || {})[type === 'components' ? 'components' : 'pages'] || [];
+    const list = (window.__axhostSitemap || {})[type] || [];
     function findNode(nodes, targetPath) {
       for (const n of nodes) {
-        if ((n.type === 'page' || n.type === 'component') && n.path === targetPath) return n;
+        if ((n.type === 'page' || n.type === 'component' || n.type === 'flowchart') && n.path === targetPath) return n;
         if (n.children) {
           const found = findNode(n.children, targetPath);
           if (found) return found;
@@ -165,6 +165,11 @@
       icon.setAttribute('size', '12');
       icon.setAttribute('color', 'currentColor');
       icon.setAttribute('icon-id', 'figma-component');
+    } else if (node.type === 'flowchart') {
+      icon = document.createElement('iconpark-icon');
+      icon.setAttribute('size', '12');
+      icon.setAttribute('color', 'currentColor');
+      icon.setAttribute('icon-id', 'split-turn-down-right');
     }
 
     const text = document.createElement('span');
@@ -217,7 +222,7 @@
           location.hash = expectedHash;
         } else {
           // hash 未变化（如点击当前已选中页面），直接触发加载
-          const prefix = type === 'components' ? 'components' : 'pages';
+          const prefix = type;
           preview.src = basePath + prefix + '/' + node.path + '/index.html';
           loadDocs(type, node.path);
         }
@@ -229,7 +234,7 @@
 
   function findFirst(nodes) {
     for (const n of nodes) {
-      if (n.type === 'page' || n.type === 'component') return n;
+      if (n.type === 'page' || n.type === 'component' || n.type === 'flowchart') return n;
       if (n.children) {
         const f = findFirst(n.children);
         if (f) return f;
@@ -261,7 +266,9 @@
   }
 
   function getNodeTypeForTab(node) {
-    return node.type === 'component' ? 'component' : 'page';
+    if (node.type === 'component') return 'component';
+    if (node.type === 'flowchart') return 'flowchart';
+    return 'page';
   }
 
   function initResizers() {
@@ -302,11 +309,11 @@
   window.addEventListener('message', (e) => {
     if (e.data && e.data.type === 'axhost-navigate') {
       const { path, tab } = e.data;
-      const allNodes = [...(map.pages || []), ...(map.components || [])];
+      const allNodes = [...(map.pages || []), ...(map.components || []), ...(map.flowcharts || [])];
       const node = findNodeById(allNodes, path);
       if (!node) return;
       const type = getNodeTypeForTab(node);
-      const targetTab = type === 'component' ? 'components' : 'pages';
+      const targetTab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
       if (activeType !== targetTab) {
         activeType = targetTab;
         renderTabs();
@@ -320,18 +327,18 @@
   });
 
   const hashId = location.hash ? location.hash.slice(1) : '';
-  const allNodes = [...(map.pages || []), ...(map.components || [])];
+  const allNodes = [...(map.pages || []), ...(map.components || []), ...(map.flowcharts || [])];
   const hashNode = hashId ? findNodeById(allNodes, hashId) : null;
-  const target = hashNode || findFirst(map.pages) || findFirst(map.components);
+  const target = hashNode || findFirst(map.pages) || findFirst(map.components) || findFirst(map.flowcharts);
   if (target) {
     activePath = target.path;
     if (hashNode) {
-      activeType = getNodeTypeForTab(target) === 'component' ? 'components' : 'pages';
+      activeType = getNodeTypeForTab(target) === 'component' ? 'components' : getNodeTypeForTab(target) === 'flowchart' ? 'flowcharts' : 'pages';
     }
     renderTabs();
     expandAncestors(target.path);
     renderTree();
-    const prefix = activeType === 'components' ? 'components' : 'pages';
+    const prefix = activeType;
     preview.src = basePath + prefix + '/' + target.path + '/index.html';
     loadDocs(activeType, target.path);
   } else {
@@ -342,11 +349,11 @@
   window.addEventListener('hashchange', () => {
     const id = location.hash ? location.hash.slice(1) : '';
     if (!id) return;
-    const allNodes = [...(map.pages || []), ...(map.components || [])];
+    const allNodes = [...(map.pages || []), ...(map.components || []), ...(map.flowcharts || [])];
     const node = findNodeById(allNodes, id);
     if (!node) return;
     const type = getNodeTypeForTab(node);
-    const tab = type === 'component' ? 'components' : 'pages';
+    const tab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
     if (activeType !== tab) {
       activeType = tab;
       renderTabs();

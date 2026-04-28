@@ -48,7 +48,7 @@ async function regenerateSitemap(projectRoot) {
 
   // Scan physical directories
   const physicalIds = new Set();
-  for (const tab of ['pages', 'components']) {
+  for (const tab of ['pages', 'components', 'flowcharts']) {
     const tabPath = path.join(projectRoot, 'prototype', tab);
     const entries = await fs.readdir(tabPath, { withFileTypes: true }).catch(() => []);
     for (const e of entries) {
@@ -79,9 +79,10 @@ async function regenerateSitemap(projectRoot) {
 
   sitemap.pages = prune(sitemap.pages || []);
   sitemap.components = prune(sitemap.components || []);
+  sitemap.flowcharts = prune(sitemap.flowcharts || []);
 
   // Discover new physical dirs not in sitemap
-  for (const tab of ['pages', 'components']) {
+  for (const tab of ['pages', 'components', 'flowcharts']) {
     const tabPath = path.join(projectRoot, 'prototype', tab);
     const entries = await fs.readdir(tabPath, { withFileTypes: true }).catch(() => []);
     for (const e of entries) {
@@ -99,7 +100,8 @@ async function regenerateSitemap(projectRoot) {
       if (!isInTree(sitemap[tab] || [])) {
         const meta = await readMeta(path.join(tabPath, id), id);
         const hasIndex = await exists(path.join(tabPath, id, 'index.html'));
-        const nodeType = tab === 'pages' ? 'page' : 'component';
+        const nodeTypeMap = { pages: 'page', components: 'component', flowcharts: 'flowchart' };
+        const nodeType = nodeTypeMap[tab] || 'page';
         const kind = meta.kind || (hasIndex ? nodeType : 'dir');
         const docs = kind !== 'dir' ? await readDocs(path.join(tabPath, id)) : [];
         const node = {
@@ -149,6 +151,7 @@ async function regenerateSitemap(projectRoot) {
   }
   buildFlatMap(sitemap.pages || [], 'pages');
   buildFlatMap(sitemap.components || [], 'components');
+  buildFlatMap(sitemap.flowcharts || [], 'flowcharts');
   sitemap._map = flatMap;
   sitemap.name = existingName;
   sitemap.generatedBy = 'axhost-make';

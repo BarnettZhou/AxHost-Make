@@ -73,15 +73,19 @@ async function handleScan(req, res, projectRoot) {
     const pages = sitemap.pages || [];
     const components = sitemap.components || [];
 
+    const flowcharts = sitemap.flowcharts || [];
+
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     if (type === 'pages') {
       res.end(JSON.stringify({ code: 0, data: pages }));
     } else if (type === 'components') {
       res.end(JSON.stringify({ code: 0, data: components }));
+    } else if (type === 'flowcharts') {
+      res.end(JSON.stringify({ code: 0, data: flowcharts }));
     } else if (type === 'wiki') {
       res.end(JSON.stringify({ code: 0, data: [] }));
     } else {
-      res.end(JSON.stringify({ code: 0, data: { pages, components } }));
+      res.end(JSON.stringify({ code: 0, data: { pages, components, flowcharts } }));
     }
   } catch (err) {
     res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });

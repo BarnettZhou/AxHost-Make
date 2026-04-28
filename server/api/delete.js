@@ -46,7 +46,7 @@ async function handleDelete(req, res, projectRoot) {
 
       const tabPath = path.dirname(absPath);
       const id = path.basename(absPath);
-      const tab = tabPath.endsWith('components') ? 'components' : 'pages';
+      const tab = tabPath.endsWith('flowcharts') ? 'flowcharts' : tabPath.endsWith('components') ? 'components' : 'pages';
 
       // 1. Remove from sitemap (cascade: remove node and all descendants)
       const sitemap = await readSitemap(projectRoot);

@@ -38,6 +38,7 @@ async function collectExistingIds(projectRoot) {
   }
   await scan(path.join(projectRoot, 'prototype/pages'));
   await scan(path.join(projectRoot, 'prototype/components'));
+  await scan(path.join(projectRoot, 'prototype/flowcharts'));
   return ids;
 }
 
@@ -131,7 +132,7 @@ async function handleCopy(req, res, projectRoot) {
   req.on('end', async () => {
     try {
       const { sourcePath, type } = JSON.parse(body || '{}');
-      if (!sourcePath || !type || !['pages', 'components'].includes(type)) {
+      if (!sourcePath || !type || !['pages', 'components', 'flowcharts'].includes(type)) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 400, message: 'Invalid parameters' }));
         return;
