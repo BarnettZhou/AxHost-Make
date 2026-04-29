@@ -430,6 +430,7 @@
     const pageLabel = type === 'components' ? '新建组件' : type === 'flowcharts' ? '新建流程图' : '新建页面';
     const copyLabel = type === 'components' ? '复制组件' : type === 'flowcharts' ? '复制流程图' : '复制页面';
     const deleteLabel = type === 'components' ? '删除组件' : type === 'flowcharts' ? '删除流程图' : '删除页面';
+    const propLabel = type === 'components' ? '组件属性' : type === 'flowcharts' ? '流程图属性' : '页面属性';
     const items = [
       { label: pageLabel, action: 'create_page' },
       { label: '新建子目录', action: 'create_subfolder' },
@@ -437,6 +438,7 @@
       { divider: true },
       { label: '复制路径', action: 'copy_path' },
       { label: '重命名', action: 'rename' },
+      { label: propLabel, action: 'properties' },
       { divider: true },
       { label: deleteLabel, action: 'delete', danger: true }
     ];
@@ -452,11 +454,117 @@
         navigator.clipboard.writeText(`prototype/${type}/${node.path}`);
       } else if (action === 'rename') {
         handleRename(node.path, type, false);
+      } else if (action === 'properties') {
+        showNodeProperties(node, type);
       } else if (action === 'delete') {
         const hasChildren = node.children && node.children.length > 0;
         handleDelete(node.path, type, hasChildren);
       }
     });
+  }
+
+  function showNodeProperties(node, type) {
+    let modal = document.getElementById('axhost-node-properties-modal');
+    const isPage = type === 'pages';
+    const labelMap = { default: '默认页面', mobile: '手机页面', 'mini-program': '小程序' };
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'axhost-node-properties-modal';
+      modal.className = 'add-doc-modal';
+      modal.innerHTML = `
+        <div class="add-doc-modal-overlay"></div>
+        <div class="add-doc-modal-content" style="width:360px;">
+          <h4 id="prop-modal-title">属性</h4>
+          <div style="margin-bottom:12px;">
+            <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;">名称</label>
+            <div id="prop-modal-name" style="font-size:14px;color:var(--text-main);padding:8px 10px;background:var(--bg-body);border-radius:4px;border:1px solid var(--border-color);"></div>
+          </div>
+          <div id="prop-modal-type-wrap" style="margin-bottom:12px;display:none;">
+            <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;">页面类型</label>
+            <div style="position:relative;">
+              <button id="prop-modal-type-trigger" style="width:100%;text-align:left;padding:6px 10px;font-size:14px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
+                <span id="prop-modal-type-label">默认页面</span>
+                <iconpark-icon icon-id="down" size="12" color="var(--text-muted)"></iconpark-icon>
+              </button>
+              <div id="prop-modal-type-dropdown" class="editor-dropdown" style="width:100%;top:calc(100% + 4px);left:0;" data-selected-value="default">
+                <div class="editor-dropdown-item" data-value="default">默认页面</div>
+                <div class="editor-dropdown-item" data-value="mobile">手机页面</div>
+                <div class="editor-dropdown-item" data-value="mini-program">小程序</div>
+              </div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;">项目内位置</label>
+            <div id="prop-modal-path" style="font-size:13px;color:var(--text-main);padding:8px 10px;background:var(--bg-body);border-radius:4px;border:1px solid var(--border-color);font-family:monospace;word-break:break-all;"></div>
+          </div>
+          <div class="add-doc-modal-actions">
+            <button class="prop-modal-save primary" style="display:none;">保存</button>
+            <button class="prop-modal-close">关闭</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      modal.querySelector('.prop-modal-close').addEventListener('click', () => {
+        modal.classList.remove('open');
+      });
+      modal.querySelector('.add-doc-modal-overlay').addEventListener('click', () => {
+        modal.classList.remove('open');
+      });
+
+      const trigger = modal.querySelector('#prop-modal-type-trigger');
+      const dropdown = modal.querySelector('#prop-modal-type-dropdown');
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        dropdown.classList.toggle('open');
+      });
+      dropdown.querySelectorAll('.editor-dropdown-item').forEach(item => {
+        item.addEventListener('click', () => {
+          modal.querySelector('#prop-modal-type-label').textContent = item.textContent;
+          dropdown.dataset.selectedValue = item.dataset.value;
+          dropdown.classList.remove('open');
+        });
+      });
+      document.addEventListener('click', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
+          dropdown.classList.remove('open');
+        }
+      });
+    }
+    const titleMap = { pages: '页面属性', components: '组件属性', flowcharts: '流程图属性' };
+    modal.querySelector('#prop-modal-title').textContent = titleMap[type] || '属性';
+    modal.querySelector('#prop-modal-name').textContent = node.name || '';
+    modal.querySelector('#prop-modal-path').textContent = `prototype/${type}/${node.path}`;
+
+    const typeWrap = modal.querySelector('#prop-modal-type-wrap');
+    const dropdown = modal.querySelector('#prop-modal-type-dropdown');
+    const saveBtn = modal.querySelector('.prop-modal-save');
+    if (isPage) {
+      typeWrap.style.display = 'block';
+      saveBtn.style.display = 'inline-block';
+      const currentVal = node.page_type || 'default';
+      modal.querySelector('#prop-modal-type-label').textContent = labelMap[currentVal];
+      dropdown.dataset.selectedValue = currentVal;
+      saveBtn.onclick = async () => {
+        const newType = dropdown.dataset.selectedValue || 'default';
+        try {
+          await window.apiClient.postPageType({
+            path: `prototype/${type}/${node.path}`,
+            pageType: newType
+          });
+          node.page_type = newType;
+          modal.classList.remove('open');
+          window.showToast('保存成功', 'success');
+        } catch (e) {
+          window.showToast('保存失败：' + e.message, 'error');
+        }
+      };
+    } else {
+      typeWrap.style.display = 'none';
+      saveBtn.style.display = 'none';
+      dropdown.classList.remove('open');
+    }
+
+    modal.classList.add('open');
   }
 
   function renderMenu(event, items, onSelect) {
@@ -654,9 +762,12 @@
 
   async function handleCopy(nodePath, type) {
     try {
-      await window.apiClient.postCopy({ sourcePath: nodePath, type });
+      const result = await window.apiClient.postCopy({ sourcePath: nodePath, type });
       await loadTree(currentTab);
       window.showToast('复制成功', 'success');
+      if (result && result.data && result.data.id) {
+        location.hash = '#' + result.data.id;
+      }
     } catch (err) {
       console.error('Copy error:', err);
       window.showToast('复制失败: ' + err.message, 'error');

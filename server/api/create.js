@@ -120,6 +120,7 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   await fs.mkdir(targetDir, { recursive: true });
 
   const meta = { name, kind };
+  if (kind === 'page') meta.page_type = template || 'default';
   if (parentId) meta.parentId = parentId;
   await writeMeta(targetDir, meta);
 
@@ -171,14 +172,16 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   // Update sitemap
   const sitemap = await readSitemap(projectRoot);
   const docs = ['readme.md'];
-  addNodeToSitemap(sitemap, tab, parentId, {
+  const nodeData = {
     id: hash,
     name,
     path: hash,
     type: kind,
     parentId,
     docs
-  });
+  };
+  if (kind === 'page') nodeData.page_type = template || 'default';
+  addNodeToSitemap(sitemap, tab, parentId, nodeData);
   await writeSitemap(projectRoot, sitemap);
 
   // Ensure mermaid.min.js exists for flowchart projects

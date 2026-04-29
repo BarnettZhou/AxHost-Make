@@ -112,6 +112,9 @@ async function regenerateSitemap(projectRoot) {
           parentId: meta.parentId || null,
           docs
         };
+        if (nodeType === 'page') {
+          node.page_type = meta.page_type || 'default';
+        }
 
         if (!node.parentId) {
           sitemap[tab].push(node);

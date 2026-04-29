@@ -46,6 +46,10 @@
       method: 'POST',
       body: JSON.stringify(data)
     }),
+    postPageType: (data) => request('/api/page-type', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     postDelete: (data) => request('/api/delete', {
       method: 'POST',
       body: JSON.stringify(data)

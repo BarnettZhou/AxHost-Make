@@ -10,6 +10,7 @@ const { handleScan } = require('./api/scan.js');
 const { handleFileGet, handleFilePost } = require('./api/file.js');
 const { handleCreate } = require('./api/create.js');
 const { handleRename } = require('./api/rename.js');
+const { handlePageType } = require('./api/page-type.js');
 const { handleDelete } = require('./api/delete.js');
 const { handleSettingsGet, handleSettingsPost } = require('./api/settings.js');
 const { handleDocsGet } = require('./api/docs.js');
@@ -123,6 +124,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/rename' && req.method === 'POST') {
         return handleRename(req, res, projectRoot);
+      }
+      if (urlPath === '/api/page-type' && req.method === 'POST') {
+        return handlePageType(req, res, projectRoot);
       }
       if (urlPath === '/api/delete' && req.method === 'POST') {
         return handleDelete(req, res, projectRoot);
