@@ -383,6 +383,7 @@ cat "$FILE_PATH"
 - CSS 优先使用内嵌 `<style>` 或页面私有 `resources/css/style.css`。
 - JavaScript 优先使用内嵌 `<script>` 或页面私有 `resources/js/main.js`。
 - 保持中文文案，注释也使用中文。
+- **容器元素必须添加 id**：编写 HTML 时，若某个 `div`、`section`、`article`、`nav`、`aside`、`header`、`footer` 等元素是一个**独立组件/区块的容器**（如导航栏、表格区域、表单、卡片列表、弹窗、侧边栏等），**务必为其添加一个有意义的 `id`**。这让 LLM 在后续迭代中通过 `id` 快速精准定位目标元素，避免大面积搜索和误改无关 DOM。
 
 ### 5. 修改后验证清单
 
