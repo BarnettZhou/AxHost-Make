@@ -113,7 +113,9 @@ node axhost-make/bin/axhost-make.js update --all
 ```
 
 - 将最新的 `prototype/index.html` 模板、CSS（`shell.css`）、JS（`marked.min.js`）同步到项目的 `prototype/` 下。
+- 同步 `prototype/resources/flowchart/` 等全局公共资源。
 - 重新生成 `prototype/sitemap.js`，同时**保留已设置的项目名称**。
+- **条件同步 `mermaid.min.js`**：扫描项目是否存在 `flowcharts/` 目录，有则复制 `mermaid.min.js`，无则自动清理，避免无 flowchart 的项目冗余引入。
 - 适用于 `axhost-make` 框架升级后，修复或更新独立入口和样式。
 
 ### add-page / add-component / add-folder / add-doc — 快速创建
@@ -200,6 +202,7 @@ workspace/                 # 工作空间根目录（与 axhost-make/ 平级）
 │       ├── prototype/     # 原型文件根目录
 │       │   ├── pages/     # 页面原型（目录名为 8 位 hash）
 │       │   ├── components/# 组件原型（目录名为 8 位 hash）
+│       │   ├── flowcharts/# 流程图（目录名为 8 位 hash，thin wrapper 结构）
 │       │   ├── resources/ # 公共资源（js/css/图片等）
 │       │   ├── sitemap.js # 站点地图
 │       │   ├── index.html # 独立入口
@@ -227,6 +230,27 @@ pages/a1b2c3d4/
 └── docs/
     └── readme.md
 ```
+
+**flowchart**（流程图，thin wrapper 结构）：
+
+```
+flowcharts/f1a2b3c4/
+├── .axhost-meta.json    # { "name": "用户注册流程", "parentId": null, "kind": "flowchart" }
+├── index.html           # thin wrapper，引用公共资源
+└── diagram.mmd          # Mermaid 源码
+```
+
+flowchart 的 `index.html` 是标准化 thin wrapper，**不要内联 CSS/JS**。统一引用全局公共资源：
+
+```html
+<link rel="stylesheet" href="../../resources/flowchart/flowchart.css">
+<script src="../../resources/js/mermaid.min.js"></script>
+<script src="../../resources/js/icons.js"></script>
+<!-- ... -->
+<script src="../../resources/flowchart/flowchart.js"></script>
+```
+
+流程图的渲染、编辑、缩放、缩略图等交互逻辑全部由 `resources/flowchart/flowchart.js` 提供。Agent 只需要修改 `diagram.mmd` 中的 Mermaid 源码即可。
 
 **dir**（逻辑分组，无物理目录）：
 
@@ -286,6 +310,7 @@ cat "$FILE_PATH"
 
 - **页面私有资源**：`prototype/pages/{hash}/resources/js/xxx.js`
 - **全局共享资源**：`prototype/resources/js/xxx.js`
+- **flowchart 公共资源**：`prototype/resources/flowchart/flowchart.css`、`prototype/resources/flowchart/flowchart.js`
 
 示例：
 
@@ -295,6 +320,10 @@ cat "$FILE_PATH"
 
 <!-- 页面内引用全局资源（从 pages/{hash}/index.html 向上回退到 prototype 根目录） -->
 <script src="../resources/js/marked.min.js"></script>
+
+<!-- flowchart 引用公共资源（从 flowcharts/{hash}/index.html 向上回退两级） -->
+<link rel="stylesheet" href="../../resources/flowchart/flowchart.css">
+<script src="../../resources/flowchart/flowchart.js"></script>
 ```
 
 > **⚠️ 线上托管路径警告**：项目最终可能部署在子目录（如 `/projects/2026xxx/`）中。**禁止**在页面内部使用以 `/prototype/` 开头的绝对路径引用图片、脚本或样式表，否则浏览器会从域名根目录查找资源，导致 404。所有页面级引用全局共享资源时，必须使用相对于当前 HTML 文件的相对路径（如 `../../../resources/images/xxx.png`）。
