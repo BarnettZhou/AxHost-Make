@@ -20,6 +20,7 @@
   const btnTouchEmulation = document.getElementById('btn-touch-emulation');
   const btnToggleRightBar = document.getElementById('btn-toggle-right-bar');
   const btnPreview = document.getElementById('btn-preview');
+  const btnRefreshPreview = document.getElementById('btn-refresh-preview');
   const btnSettings = document.getElementById('btn-settings');
   const settingsModal = document.getElementById('settings-modal');
   const settingsClose = document.getElementById('settings-close');
@@ -67,6 +68,16 @@
   if (btnPreview) {
     btnPreview.addEventListener('click', () => {
       window.open(`${prototypeBase}/index.html`, '_blank');
+    });
+  }
+  if (btnRefreshPreview) {
+    btnRefreshPreview.addEventListener('click', () => {
+      const doc = previewFrame.contentDocument;
+      if (doc && doc.location) {
+        doc.location.reload();
+      } else {
+        previewFrame.src = previewFrame.src;
+      }
     });
   }
 
