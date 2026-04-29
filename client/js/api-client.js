@@ -75,6 +75,10 @@
     postOpenEditor: (data) => request('/api/open-editor', {
       method: 'POST',
       body: JSON.stringify(data)
+    }),
+    postOpenTerminal: () => request('/api/terminal/open', {
+      method: 'POST',
+      body: JSON.stringify({})
     })
   };
 })();

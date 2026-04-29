@@ -89,6 +89,20 @@
     editorDropdown.querySelectorAll('.editor-dropdown-item').forEach(item => {
       item.addEventListener('click', async () => {
         editorDropdown.classList.remove('open');
+        const action = item.dataset.action;
+        if (action === 'terminal') {
+          try {
+            const res = await window.apiClient.postOpenTerminal();
+            if (res.code === 0) {
+              window.showToast('已打开命令行窗口', 'success');
+            } else {
+              window.showToast(res.message || '打开失败', 'error');
+            }
+          } catch (err) {
+            window.showToast(err.message, 'error');
+          }
+          return;
+        }
         const editor = item.dataset.editor;
         try {
           const res = await window.apiClient.postOpenEditor({ editor });

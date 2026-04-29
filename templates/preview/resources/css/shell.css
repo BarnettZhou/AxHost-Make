@@ -1774,3 +1774,8 @@ body.dark .doc-tab.active {
 .editor-dropdown-item:hover {
   background: var(--bg-hover);
 }
+.editor-dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
