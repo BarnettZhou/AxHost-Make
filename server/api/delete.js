@@ -93,6 +93,27 @@ async function handleDelete(req, res, projectRoot) {
         }
       }
 
+      // 3. Clean up mermaid.min.js if no flowcharts remain
+      async function hasFlowcharts(root) {
+        const flowchartsDir = path.join(root, 'prototype', 'flowcharts');
+        const stat = await fs.stat(flowchartsDir).catch(() => null);
+        if (!stat || !stat.isDirectory()) return false;
+        const entries = await fs.readdir(flowchartsDir, { withFileTypes: true }).catch(() => []);
+        for (const e of entries) {
+          if (!e.isDirectory()) continue;
+          const metaPath = path.join(flowchartsDir, e.name, '.axhost-meta.json');
+          try {
+            const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+            if (meta.kind === 'flowchart') return true;
+          } catch (e) {}
+        }
+        return false;
+      }
+      if (!await hasFlowcharts(projectRoot)) {
+        const mermaidPath = path.join(projectRoot, 'prototype/resources/js/mermaid.min.js');
+        try { await fs.unlink(mermaidPath); } catch (e) {}
+      }
+
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0 }));
     } catch (err) {

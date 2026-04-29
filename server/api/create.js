@@ -146,13 +146,6 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   const jsPath = path.join(targetDir, 'resources', 'js', 'main.js');
 
   if (kind === 'flowchart') {
-    const tplCssPath = path.join(TEMPLATE_ROOT, 'flowcharts', 'flowchart.css');
-    try {
-      const cssContent = await fs.readFile(tplCssPath, 'utf-8');
-      await fs.writeFile(cssPath, cssContent, 'utf-8');
-    } catch {
-      await fs.writeFile(cssPath, '', 'utf-8');
-    }
     const tplMmdPath = path.join(TEMPLATE_ROOT, 'flowcharts', 'flowchart.mmd');
     try {
       const mmdContent = await fs.readFile(tplMmdPath, 'utf-8');
@@ -187,6 +180,16 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
     docs
   });
   await writeSitemap(projectRoot, sitemap);
+
+  // Ensure mermaid.min.js exists for flowchart projects
+  if (kind === 'flowchart') {
+    const mermaidSrc = path.resolve(__dirname, '../../templates/project/resources/js/mermaid.min.js');
+    const mermaidDest = path.join(projectRoot, 'prototype/resources/js/mermaid.min.js');
+    try {
+      await fs.mkdir(path.dirname(mermaidDest), { recursive: true });
+      await fs.copyFile(mermaidSrc, mermaidDest);
+    } catch (e) {}
+  }
 
   return { id: hash, name, path: hash, kind };
 }

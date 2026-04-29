@@ -84,6 +84,34 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated prototype/resources/js/marked.min.js');
   }
 
+  // Copy mermaid.min.js only if project has flowcharts
+  async function hasFlowcharts(root) {
+    const flowchartsDir = path.join(root, 'prototype', 'flowcharts');
+    if (!await exists(flowchartsDir)) return false;
+    const entries = await fs.readdir(flowchartsDir, { withFileTypes: true }).catch(() => []);
+    for (const e of entries) {
+      if (!e.isDirectory()) continue;
+      const metaPath = path.join(flowchartsDir, e.name, '.axhost-meta.json');
+      try {
+        const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+        if (meta.kind === 'flowchart') return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+  const mermaidSrc = path.join(projectTplRoot, 'resources/js/mermaid.min.js');
+  const mermaidDest = path.join(projectRoot, 'prototype/resources/js/mermaid.min.js');
+  if (await hasFlowcharts(projectRoot)) {
+    if (await exists(mermaidSrc)) {
+      await fs.mkdir(path.dirname(mermaidDest), { recursive: true });
+      await fs.copyFile(mermaidSrc, mermaidDest);
+      console.log('  - Updated prototype/resources/js/mermaid.min.js');
+    }
+  } else if (await exists(mermaidDest)) {
+    await fs.unlink(mermaidDest);
+    console.log('  - Removed prototype/resources/js/mermaid.min.js (no flowcharts)');
+  }
+
   // Copy icons.js
   const iconsSrc = path.resolve(__dirname, '../client/js/icons.js');
   const iconsDest = path.join(projectRoot, 'prototype/resources/js/icons.js');
@@ -142,6 +170,29 @@ async function updateSingleProject(projectRoot) {
         console.log(`  - Updated rules/${file}`);
       }
     }
+  }
+
+  // Copy project resources (e.g. flowchart viewer)
+  const resourcesSrcDir = path.join(projectTplRoot, 'resources');
+  const resourcesDestDir = path.join(projectRoot, 'prototype', 'resources');
+  async function copyDir(src, dest) {
+    const entries = await fs.readdir(src, { withFileTypes: true }).catch(() => []);
+    for (const entry of entries) {
+      if (entry.name === 'mermaid.min.js') continue;
+      const srcPath = path.join(src, entry.name);
+      const destPath = path.join(dest, entry.name);
+      if (entry.isDirectory()) {
+        await fs.mkdir(destPath, { recursive: true });
+        await copyDir(srcPath, destPath);
+      } else {
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+        await fs.copyFile(srcPath, destPath);
+      }
+    }
+  }
+  if (await exists(resourcesSrcDir)) {
+    await copyDir(resourcesSrcDir, resourcesDestDir);
+    console.log('  - Updated prototype/resources/');
   }
 
   // Ensure missing page resources

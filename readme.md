@@ -286,7 +286,17 @@ workspace/                    # 工作空间目录
 
 - **后端**：Node.js 内置 `http` + `fs/promises`，**零外部 npm 依赖**
 - **前端**：原生 HTML5 / CSS3 / ES6
-- **Markdown 渲染**：[marked.js](https://marked.js.org/)
+- **Markdown 渲染**：[marked.js](https://marked.js.org/)（MIT License）
+- **流程图渲染**：[Mermaid.js](https://mermaid.js.org/)（MIT License）
+
+---
+
+## 第三方许可证
+
+本框架使用了以下开源库，均遵循 MIT 许可：
+
+- **marked.js** — © Christopher Jeffrey et al.，[MIT License](https://github.com/markedjs/marked/blob/master/LICENSE.md)
+- **Mermaid.js** — © Knut Sveidqvist et al.，[MIT License](https://github.com/mermaid-js/mermaid/blob/develop/LICENSE)
 
 ---
 
