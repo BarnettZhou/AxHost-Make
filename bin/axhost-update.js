@@ -155,23 +155,6 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated agents.md');
   }
 
-  // Copy rules/*.md
-  const rulesSrcDir = path.join(projectTplRoot, 'rules');
-  const rulesDestDir = path.join(projectRoot, 'rules');
-  if (await exists(rulesSrcDir)) {
-    const ruleFiles = await fs.readdir(rulesSrcDir).catch(() => []);
-    for (const file of ruleFiles) {
-      const src = path.join(rulesSrcDir, file);
-      const dest = path.join(rulesDestDir, file);
-      const stat = await fs.stat(src).catch(() => null);
-      if (stat && stat.isFile()) {
-        await fs.mkdir(rulesDestDir, { recursive: true });
-        await fs.copyFile(src, dest);
-        console.log(`  - Updated rules/${file}`);
-      }
-    }
-  }
-
   // Copy project resources (e.g. flowchart viewer)
   const resourcesSrcDir = path.join(projectTplRoot, 'resources');
   const resourcesDestDir = path.join(projectRoot, 'prototype', 'resources');
