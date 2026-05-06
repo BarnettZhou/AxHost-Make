@@ -35,7 +35,66 @@
 
 > **说明**：`ax-component` 类名不是强制要求，但建议用作标记，方便 LLM 在复用时快速识别组件本体。
 
-#### 2.2 资源引用分层
+#### 2.2 组件 CSS/JS 纯净原则
+
+组件的 `resources/css/style.css` 和 `resources/js/main.js` **只能包含组件功能本身**的样式和逻辑，**严禁**写入以下演示专用内容：
+
+| 禁止写入组件 CSS/JS 的内容 | 原因 | 应该放在哪里 |
+|---|---|---|
+| `* { margin:0; padding:0; box-sizing:border-box }` | 全局重置，会污染引用页面的所有元素 | `index.html` 内联 `<style>` |
+| `html, body { ... }` | 页面级样式，会覆盖引用页面的 body 背景色和布局 | `index.html` 内联 `<style>` |
+| `.component-wrapper { ... }` | 手机壳演示容器，引用页面有自己的壳（`.phone`） | `index.html` 内联 `<style>` |
+| `.demo-title`、`.demo-desc` 等 | 演示说明文字 | `index.html` 内联 `<style>` |
+| 组件 demo 自动初始化代码 | 引用页面需要自己控制初始化时机和参数 | `index.html` 内联 `<script>` |
+
+**正确示例**：
+
+```
+components/xxx/
+├── index.html              ← 演示页（含内联 <style> 和 <script>）
+├── resources/
+│   ├── css/style.css       ← 仅组件功能样式（弹窗、列表、按钮等）
+│   └── js/main.js          ← 仅组件逻辑（AxComponents.Xxx = {...}）
+└── docs/readme.md
+```
+
+组件 CSS 文件应该从第一个组件类名开始，组件 JS 文件以 IIFE 收尾，不含演示初始化：
+
+```css
+/* ✅ 正确：resources/css/style.css —— 纯组件样式 */
+.date-picker-trigger { ... }
+.date-picker-mask { ... }
+.date-picker-popup { ... }
+```
+
+```js
+// ✅ 正确：resources/js/main.js —— 纯组件逻辑，不含 auto-init
+(function() {
+  'use strict';
+  window.AxComponents = window.AxComponents || {};
+  window.AxComponents.DatePicker = {
+    init: function(container, options) { ... }
+  };
+})();
+```
+
+```html
+<!-- ✅ 正确：index.html —— 演示专属样式和初始化放在内联 -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { ... }
+  .component-wrapper { ... }
+  .demo-title { ... }
+</style>
+<script>
+  // 演示模式自动初始化
+  AxComponents.DatePicker.init(document.getElementById('datePickerDemo'), { ... });
+</script>
+```
+
+> **原则**：假设一个 page 引用了组件的 CSS/JS，它应该只获得弹窗/选择器等**功能**，而不会被篡改背景色、不会多出一个手机壳、不会自动弹出 demo。
+
+#### 2.3 资源引用分层
 
 | 资源类型 | 放置位置 | 引用方式 |
 |---------|---------|---------|
@@ -46,7 +105,7 @@
 - 如果某个功能（如 Toast）可能在多个组件/页面中使用，**必须**将其 CSS/JS 提取到 `prototype/resources/` 下。
 - 组件自身独有的样式和逻辑，保留在组件的 `resources/` 目录下。
 
-#### 2.3 组件初始化函数化
+#### 2.4 组件初始化函数化
 
 组件的 JS 应该暴露一个**可重复调用的初始化函数**，而不是在页面加载时立即执行。这样 page 可以按需初始化。
 
@@ -64,12 +123,9 @@ window.AxComponents.Toast = {
     // 公共 API
   }
 };
-
-// 组件独立预览时自动初始化（演示模式）
-if (document.querySelector('.demo-controls')) {
-  window.AxComponents.Toast.init(document.getElementById('toast-container'));
-}
 ```
+
+> **注意**：组件 JS 文件**不应**包含自动初始化代码。演示模式的初始化放在 `index.html` 的内联 `<script>` 中（见 2.2 节）。
 
 ### 3. 页面复用组件原则（创建 page 时遵循）
 
