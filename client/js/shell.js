@@ -205,7 +205,9 @@
   }
 
   function onTouchCursorMove(e) {
+    if (!e.target) return;
     const doc = e.target.ownerDocument;
+    if (!doc) return;
     const cursor = doc.getElementById('axhost-touch-cursor');
     if (cursor) {
       cursor.style.left = e.clientX + 'px';
@@ -215,7 +217,9 @@
   }
 
   function onTouchCursorLeave(e) {
+    if (!e.target) return;
     const doc = e.target.ownerDocument;
+    if (!doc) return;
     const cursor = doc.getElementById('axhost-touch-cursor');
     if (cursor) cursor.classList.remove('visible');
   }
