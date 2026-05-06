@@ -280,6 +280,13 @@ body.dark .tree-container {
   gap: 4px;
   padding: 4px 8px;
   cursor: pointer;
+  overflow: hidden;
+}
+.tree-item > .tree-label > span:last-child {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 .tree-item > .tree-label:hover {
   background: var(--bg-hover);
