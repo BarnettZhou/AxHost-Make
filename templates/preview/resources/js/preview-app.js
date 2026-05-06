@@ -25,6 +25,7 @@
   btnDocs.addEventListener('click', () => {
     docsPanel.classList.toggle('hidden');
     if (docsResizer) docsResizer.classList.toggle('hidden');
+    btnDocs.classList.toggle('active', !docsPanel.classList.contains('hidden'));
   });
   if (btnToggleNav) {
     btnToggleNav.addEventListener('click', () => {

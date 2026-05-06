@@ -20,6 +20,9 @@
       `- **项目绝对路径**: ${projectInfo.projectAbsolutePath || ''}`,
       `- **页面相对路径**: ${pageRelativePath || ''}`,
       `- **页面绝对路径**: ${pageAbsolutePath || ''}`,
+      '- **页面文档路径**: 页面路径/docs',
+      '- **js文件路径**: 页面路径/resources/js',
+      '- **css文件路径**: 页面路径/resources/css',
       '',
       '---',
       '',
@@ -31,7 +34,8 @@
       '',
       '# Output Instruction',
       '',
-      '请直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。'
+      '请根据用户指示决定是否阅读页面文档。',
+      '直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。'
     ].join('\n');
   }
 

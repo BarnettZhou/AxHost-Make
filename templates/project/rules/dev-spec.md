@@ -148,6 +148,7 @@ if (document.querySelector('.demo-controls')) {
 ```js
 AxComponents.Filter.init(document.getElementById('myFilter'));
 ```
+```
 
 ### 5. 公共资源清单
 

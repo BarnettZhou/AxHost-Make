@@ -555,6 +555,15 @@ body.dark #prompt-box:focus-within {
   background: #0958d9;
   border-color: #0958d9;
 }
+#btn-toggle-docs.active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+#btn-toggle-docs.active:hover {
+  background: #0958d9;
+  border-color: #0958d9;
+}
 #panel-right-bar .right-bar-header .prompt-context {
   color: var(--text-muted);
   font-size: 12px;

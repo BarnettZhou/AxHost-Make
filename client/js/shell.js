@@ -143,6 +143,7 @@
     window.__axhostState.docsVisible = !window.__axhostState.docsVisible;
     panelDocs.classList.toggle('hidden', !window.__axhostState.docsVisible);
     if (docsResizer) docsResizer.classList.toggle('hidden', !window.__axhostState.docsVisible);
+    btnToggleDocs.classList.toggle('active', window.__axhostState.docsVisible);
   });
 
   // Touch emulation — drag to scroll like mobile finger touch
@@ -721,6 +722,7 @@
     if (btnInspect) btnInspect.classList.add('disabled');
     if (btnToggleDocs) {
       btnToggleDocs.classList.add('disabled');
+      btnToggleDocs.classList.remove('active');
       window.__axhostState.docsVisible = false;
       panelDocs.classList.add('hidden');
     }
@@ -736,7 +738,10 @@
 
   function exitRuleMode() {
     if (btnInspect) btnInspect.classList.remove('disabled');
-    if (btnToggleDocs) btnToggleDocs.classList.remove('disabled');
+    if (btnToggleDocs) {
+      btnToggleDocs.classList.remove('disabled');
+      btnToggleDocs.classList.toggle('active', window.__axhostState.docsVisible);
+    }
     if (iframeWrapper) iframeWrapper.classList.remove('hidden');
     if (ruleViewer) ruleViewer.classList.add('hidden');
   }

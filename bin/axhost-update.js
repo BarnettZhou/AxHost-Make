@@ -155,6 +155,14 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated agents.md');
   }
 
+  // Copy CLAUDE.md
+  const claudeSrc = path.join(projectTplRoot, 'CLAUDE.md');
+  const claudeDest = path.join(projectRoot, 'CLAUDE.md');
+  if (await exists(claudeSrc)) {
+    await fs.copyFile(claudeSrc, claudeDest);
+    console.log('  - Updated CLAUDE.md');
+  }
+
   // Copy project resources (e.g. flowchart viewer)
   const resourcesSrcDir = path.join(projectTplRoot, 'resources');
   const resourcesDestDir = path.join(projectRoot, 'prototype', 'resources');

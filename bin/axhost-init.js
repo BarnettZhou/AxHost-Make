@@ -61,6 +61,14 @@ async function init(projectRoot) {
     }
   }
 
+  const claudePath = path.join(projectRoot, 'CLAUDE.md');
+  if (!await exists(claudePath)) {
+    const claudeTpl = path.join(projectTplRoot, 'CLAUDE.md');
+    if (await exists(claudeTpl)) {
+      await fs.copyFile(claudeTpl, claudePath);
+    }
+  }
+
   const readmePath = path.join(projectRoot, 'readme.md');
   if (!await exists(readmePath)) {
     await fs.writeFile(
