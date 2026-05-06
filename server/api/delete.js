@@ -84,12 +84,16 @@ async function handleDelete(req, res, projectRoot) {
       }
       await writeSitemap(projectRoot, sitemap);
 
-      // 2. Remove physical directories (skip dir nodes that have no physical dir)
+      // 2. Remove physical files/directories (skip nodes that have no physical entry)
       for (const delId of idsToDelete) {
         const delPath = path.join(tabPath, delId);
         const delStat = await fs.stat(delPath).catch(() => null);
-        if (delStat && delStat.isDirectory()) {
-          await fs.rm(delPath, { recursive: true, force: true });
+        if (delStat) {
+          if (delStat.isDirectory()) {
+            await fs.rm(delPath, { recursive: true, force: true });
+          } else {
+            await fs.unlink(delPath);
+          }
         }
       }
 
