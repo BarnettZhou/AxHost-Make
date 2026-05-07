@@ -541,13 +541,13 @@
     }
 
     if (currentMode === 'local') {
-      await doExport(selectedPages, selectedComponents);
+      await doExport(selectedPages, selectedComponents, selectedFlowcharts);
     } else {
-      await doPublish(selectedPages, selectedComponents);
+      await doPublish(selectedPages, selectedComponents, selectedFlowcharts);
     }
   });
 
-  async function doExport(selectedPages, selectedComponents) {
+  async function doExport(selectedPages, selectedComponents, selectedFlowcharts) {
     const projectName = projectNameInput.value.trim();
     const targetDir = targetDirInput.value.trim();
 
@@ -584,7 +584,7 @@
     }
   }
 
-  async function doPublish(selectedPages, selectedComponents) {
+  async function doPublish(selectedPages, selectedComponents, selectedFlowcharts) {
     if (!selectedHostProject || !selectedHostProject.id) {
       window.showToast('请先选择或创建托管项目', 'error');
       return;
