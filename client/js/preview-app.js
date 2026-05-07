@@ -655,7 +655,7 @@
   }
 
   // Keyboard shortcuts
-  document.addEventListener('keydown', (e) => {
+  function onShortcutKeyDown(e) {
     const key = e.key.toLowerCase();
     if (!['t', 'd', 'n'].includes(key)) return;
     const tag = e.target && e.target.tagName;
@@ -668,5 +668,61 @@
     } else if (key === 'n' && btnToggleNav) {
       btnToggleNav.click();
     }
+  }
+
+  document.addEventListener('keydown', onShortcutKeyDown);
+
+  // Also bind to iframe document so shortcuts work when iframe has focus
+  preview.addEventListener('load', () => {
+    try {
+      const doc = preview.contentDocument;
+      if (doc) {
+        doc.removeEventListener('keydown', onShortcutKeyDown);
+        doc.addEventListener('keydown', onShortcutKeyDown);
+      }
+    } catch (e) {}
   });
+
+  // Shortcuts modal
+  const btnShortcuts = document.getElementById('btn-shortcuts');
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  const btnCloseShortcuts = document.getElementById('btn-close-shortcuts');
+  const shortcutsBody = document.getElementById('shortcuts-body');
+  if (btnShortcuts && shortcutsModal && shortcutsBody) {
+    shortcutsBody.innerHTML = `
+      <div class="shortcuts-section">
+        <h4>通用快捷键</h4>
+        <div class="shortcuts-row"><kbd>T</kbd><span>触控模拟</span></div>
+        <div class="shortcuts-row"><kbd>D</kbd><span>文档面板</span></div>
+        <div class="shortcuts-row"><kbd>N</kbd><span>导航栏</span></div>
+      </div>
+      <div class="shortcuts-section shell-only">
+        <h4>开发模式专属</h4>
+        <div class="shortcuts-row"><kbd>I</kbd><span>抓取元素</span></div>
+      </div>
+      <div class="shortcuts-section shell-only">
+        <h4>Prompt Box 自动补全</h4>
+        <div class="shortcuts-row"><kbd>↑</kbd><kbd>↓</kbd><span>切换选项</span></div>
+        <div class="shortcuts-row"><kbd>Enter</kbd><span>确认选择</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>关闭下拉框</span></div>
+      </div>
+      <div class="shortcuts-section shell-only">
+        <h4>抓取元素模式</h4>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>退出抓取</span></div>
+      </div>
+    `;
+    // Hide shell-only shortcuts in preview mode
+    shortcutsBody.querySelectorAll('.shell-only').forEach(el => el.style.display = 'none');
+    btnShortcuts.addEventListener('click', () => {
+      shortcutsModal.classList.add('active');
+    });
+    if (btnCloseShortcuts) {
+      btnCloseShortcuts.addEventListener('click', () => {
+        shortcutsModal.classList.remove('active');
+      });
+    }
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) shortcutsModal.classList.remove('active');
+    });
+  }
 })();

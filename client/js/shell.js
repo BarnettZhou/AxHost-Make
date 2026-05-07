@@ -1243,6 +1243,47 @@
     });
   }
 
+  // Shortcuts modal
+  const btnShortcuts = document.getElementById('btn-shortcuts');
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  const btnCloseShortcuts = document.getElementById('btn-close-shortcuts');
+  const shortcutsBody = document.getElementById('shortcuts-body');
+  if (btnShortcuts && shortcutsModal && shortcutsBody) {
+    shortcutsBody.innerHTML = `
+      <div class="shortcuts-section">
+        <h4>通用快捷键</h4>
+        <div class="shortcuts-row"><kbd>T</kbd><span>触控模拟</span></div>
+        <div class="shortcuts-row"><kbd>D</kbd><span>文档面板</span></div>
+        <div class="shortcuts-row"><kbd>N</kbd><span>导航栏</span></div>
+      </div>
+      <div class="shortcuts-section shell-only">
+        <h4>开发模式专属</h4>
+        <div class="shortcuts-row"><kbd>I</kbd><span>抓取元素</span></div>
+      </div>
+      <div class="shortcuts-section shell-only">
+        <h4>Prompt Box 自动补全</h4>
+        <div class="shortcuts-row"><kbd>↑</kbd><kbd>↓</kbd><span>切换选项</span></div>
+        <div class="shortcuts-row"><kbd>Enter</kbd><span>确认选择</span></div>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>关闭下拉框</span></div>
+      </div>
+      <div class="shortcuts-section shell-only">
+        <h4>抓取元素模式</h4>
+        <div class="shortcuts-row"><kbd>Esc</kbd><span>退出抓取</span></div>
+      </div>
+    `;
+    btnShortcuts.addEventListener('click', () => {
+      shortcutsModal.classList.add('active');
+    });
+    if (btnCloseShortcuts) {
+      btnCloseShortcuts.addEventListener('click', () => {
+        shortcutsModal.classList.remove('active');
+      });
+    }
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) shortcutsModal.classList.remove('active');
+    });
+  }
+
   // Initialize
   window.addEventListener('DOMContentLoaded', () => {
     if (window.treeNav && window.treeNav.init) {

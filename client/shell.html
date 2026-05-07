@@ -39,6 +39,7 @@
         </div>
         <button id="btn-touch-emulation" title="触控模拟"><iconpark-icon icon-id="click-tap" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-toggle-docs" title="Toggle Docs"><iconpark-icon icon-id="document-folder" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-shortcuts" title="快捷键"><iconpark-icon icon-id="keyboard-one" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-theme" title="Toggle Theme"><iconpark-icon icon-id="moon" size="14" color="currentColor"></iconpark-icon></button>
       </div>
     </header>
@@ -158,6 +159,17 @@
       <div class="modal-actions">
         <button class="btn-secondary" id="btn-cancel-delete-rule">取消</button>
         <button class="btn-primary" id="btn-confirm-delete-rule">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快捷键说明弹窗 -->
+  <div class="modal-overlay" id="shortcuts-modal">
+    <div class="modal-content" style="width:480px;">
+      <div class="modal-title">快捷键</div>
+      <div class="modal-body" id="shortcuts-body"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="btn-close-shortcuts">关闭</button>
       </div>
     </div>
   </div>

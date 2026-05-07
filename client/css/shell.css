@@ -386,8 +386,10 @@ body.dark .tree-item > .tree-label.active {
 .rule-viewer-content blockquote {
   border-left: 4px solid var(--accent);
   margin: 12px 0;
-  padding-left: 12px;
+  padding: 12px;
   color: var(--text-muted);
+  background: var(--bg-hover);
+  border-radius: 4px;
 }
 .iframe-wrapper {
   flex: 1;
@@ -735,6 +737,42 @@ body.dark .doc-tab.active {
 }
 .doc-content li > ul, .doc-content li > ol {
   margin: 4px 0;
+}
+.doc-content blockquote {
+  border-left: 4px solid var(--accent);
+  margin: 12px 0;
+  padding: 12px;
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  border-radius: 4px;
+}
+
+/* Markdown tables */
+.doc-content table,
+.rule-viewer-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+.doc-content th, .doc-content td,
+.rule-viewer-content th, .rule-viewer-content td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+.doc-content th,
+.rule-viewer-content th {
+  background: var(--bg-hover);
+  font-weight: 600;
+}
+.doc-content tr:nth-child(even),
+.rule-viewer-content tr:nth-child(even) {
+  background: rgba(0,0,0,0.02);
+}
+body.dark .doc-content tr:nth-child(even),
+body.dark .rule-viewer-content tr:nth-child(even) {
+  background: rgba(255,255,255,0.02);
 }
 .doc-editor {
   width: 100%;
@@ -1854,4 +1892,41 @@ body.dark .empty {
 }
 body.dark .prompt-autocomplete {
   box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+/* Shortcuts modal */
+.shortcuts-section {
+  margin-bottom: 16px;
+}
+.shortcuts-section:last-child {
+  margin-bottom: 0;
+}
+.shortcuts-section h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+.shortcuts-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.shortcuts-row kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: Consolas, monospace;
+  font-size: 12px;
+  color: var(--text-main);
+  box-shadow: 0 1px 0 var(--border);
 }
