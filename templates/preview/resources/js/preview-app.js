@@ -268,6 +268,17 @@
     }
   }
 
+  function expandAll(nodes) {
+    for (const node of nodes) {
+      if (node.type === 'dir') {
+        expandedPaths.add(node.path);
+      }
+      if (node.children && node.children.length) {
+        expandAll(node.children);
+      }
+    }
+  }
+
   function getNodeTypeForTab(node) {
     if (node.type === 'component') return 'component';
     if (node.type === 'flowchart') return 'flowchart';
@@ -340,12 +351,18 @@
     }
     renderTabs();
     expandAncestors(target.path);
+    expandAll(map.pages || []);
+    expandAll(map.components || []);
+    expandAll(map.flowcharts || []);
     renderTree();
     const prefix = activeType;
     preview.src = basePath + prefix + '/' + target.path + '/index.html';
     loadDocs(activeType, target.path);
   } else {
     renderTabs();
+    expandAll(map.pages || []);
+    expandAll(map.components || []);
+    expandAll(map.flowcharts || []);
     renderTree();
   }
 

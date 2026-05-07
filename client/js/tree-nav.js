@@ -162,6 +162,19 @@
     });
   }
 
+  const tabLoaded = new Set();
+
+  function expandAll(nodes) {
+    for (const node of nodes) {
+      if (node.type === 'dir') {
+        expandedPaths.add(node.path);
+      }
+      if (node.children && node.children.length) {
+        expandAll(node.children);
+      }
+    }
+  }
+
   async function loadTree(type) {
     if (type === 'wiki') {
       treeData = [];
@@ -172,6 +185,10 @@
       const res = await window.apiClient.getScan(type);
       if (res.code !== 0) return;
       treeData = res.data || [];
+      if (!tabLoaded.has(type)) {
+        expandAll(treeData);
+        tabLoaded.add(type);
+      }
       treeRoot.innerHTML = '';
       const ul = document.createElement('ul');
       ul.className = 'tree-list';

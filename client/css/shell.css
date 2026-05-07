@@ -1812,3 +1812,46 @@ body.dark .doc-tab.active {
 body.dark .empty {
   color: #666;
 }
+
+/* Prompt autocomplete */
+.prompt-autocomplete {
+  position: fixed;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 1000;
+  min-width: 200px;
+  display: none;
+  font-size: 13px;
+}
+.prompt-autocomplete.open {
+  display: block;
+}
+.prompt-ac-item {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.prompt-ac-item:last-child {
+  border-bottom: none;
+}
+.prompt-ac-item.active,
+.prompt-ac-item:hover {
+  background: var(--bg-hover);
+}
+.prompt-ac-name {
+  font-size: 13px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+.prompt-ac-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+body.dark .prompt-autocomplete {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
