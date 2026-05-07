@@ -232,6 +232,7 @@ cat "$FILE_PATH"
 | 规则文件 | 概述 | 必读场景 |
 |---------|------|---------|
 | `../../axhost-make/rules/dev-spec.md` | 图标加载规范（`icon-loader.js` 实现、CDN 选择）、页面跳转规范（`postMessage` 导航） | 所有原型开发 |
+| `../../axhost-make/rules/components-spec.md` | 组件设计原则、页面复用组件原则、组件文档要求 | 创建/复用组件 |
 | `../../axhost-make/rules/mobile-frame-spec.md` | 手机容器规格（`375×812`）、Class 命名、小程序外壳（状态栏 / 导航栏 / Home Indicator） | 手机端 / 小程序原型 |
 
 ### 2. 项目自定义规则（本项目 `rules/`）
