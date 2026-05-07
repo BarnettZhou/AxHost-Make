@@ -29,23 +29,6 @@ https://raw.githubusercontent.com/BarnettZhou/AxHost-Make/refs/heads/master/inst
 
 发送 Prompt 后等待安装完成即可。
 
-### 方式二：通过 Web UI 创建（推荐）
-
-1. 克隆核心代码到任意位置：
-   ```bash
-   git clone https://github.com/BarnettZhou/AxHost-Make.git axhost-make
-   ```
-
-2. 进入你期望的**工作空间目录**（该目录下将存放多个项目子目录）：
-   ```bash
-   mkdir -p ~/workspace && cd ~/workspace
-   node /path/to/axhost-make/bin/axhost-make.js serve
-   ```
-
-3. 打开 `http://localhost:3820`，在项目管理首页点击 **「新建原型项目」** 即可创建并自动打开项目。
-
-> **提示**：你也可以直接在单个项目目录内运行 `serve`，框架会自动识别其父目录为工作空间。
-
 ### 方式二：通过 CLI 初始化工作空间
 
 新建一个空目录作为项目目录，在该目录下执行命令初始化空间，例如：
