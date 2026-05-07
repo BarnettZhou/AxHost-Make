@@ -147,7 +147,7 @@ async function handleMove(req, res, projectRoot) {
       const targetMeta = await readMeta(targetAbs);
       const targetHasIndex = await exists(path.join(targetAbs, 'index.html'));
       const targetKind = targetMeta.kind || (targetHasIndex ? 'page' : 'dir');
-      if (targetKind !== 'dir') {
+      if (targetKind !== 'dir' && targetKind !== 'page' && targetKind !== 'component' && targetKind !== 'flowchart') {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 400, message: 'Target is not a directory' }));
         return;
