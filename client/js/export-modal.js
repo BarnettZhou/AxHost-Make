@@ -40,7 +40,7 @@
 
   let currentTab = 'pages';
   let currentMode = 'local';
-  let treeData = { pages: [], components: [] };
+  let treeData = { pages: [], components: [], flowcharts: [] };
   let expandedPaths = new Set();
   let checkedPaths = new Set();
   let selectAll = true;
@@ -59,8 +59,10 @@
     treeContainer.classList.add('all-selected');
     loadDefaultInfo();
     loadTree(currentTab).then(() => {
-      const otherTab = currentTab === 'pages' ? 'components' : 'pages';
-      preloadTree(otherTab);
+      const tabs = ['pages', 'components', 'flowcharts'];
+      for (const t of tabs) {
+        if (t !== currentTab) preloadTree(t);
+      }
     });
     modal.classList.add('open');
   }
@@ -146,9 +148,10 @@
 
   // Load tree data
   async function loadTree(type) {
+    const targetType = type === 'pages' ? 'page' : type === 'components' ? 'component' : 'flowchart';
     if (treeData[type] && treeData[type].length > 0) {
       if (selectAll) {
-        collectAllPaths(treeData[type], type === 'pages' ? 'page' : 'component', checkedPaths);
+        collectAllPaths(treeData[type], targetType, checkedPaths);
       }
       renderTree(type);
       return;
@@ -158,7 +161,7 @@
       if (res.code === 0) {
         treeData[type] = res.data || [];
         if (selectAll) {
-          collectAllPaths(treeData[type], type === 'pages' ? 'page' : 'component', checkedPaths);
+          collectAllPaths(treeData[type], targetType, checkedPaths);
         }
         renderTree(type);
       }
@@ -168,9 +171,10 @@
   }
 
   async function preloadTree(type) {
+    const targetType = type === 'pages' ? 'page' : type === 'components' ? 'component' : 'flowchart';
     if (treeData[type] && treeData[type].length > 0) {
       if (selectAll) {
-        collectAllPaths(treeData[type], type === 'pages' ? 'page' : 'component', checkedPaths);
+        collectAllPaths(treeData[type], targetType, checkedPaths);
       }
       return;
     }
@@ -179,7 +183,7 @@
       if (res.code === 0) {
         treeData[type] = res.data || [];
         if (selectAll) {
-          collectAllPaths(treeData[type], type === 'pages' ? 'page' : 'component', checkedPaths);
+          collectAllPaths(treeData[type], targetType, checkedPaths);
         }
       }
     } catch (e) {}
@@ -514,21 +518,25 @@
   btnConfirm.addEventListener('click', async () => {
     const selectedPages = [];
     const selectedComponents = [];
+    const selectedFlowcharts = [];
 
     if (selectAll) {
       collectAllPaths(treeData.pages, 'page', selectedPages);
       collectAllPaths(treeData.components, 'component', selectedComponents);
+      collectAllPaths(treeData.flowcharts, 'flowchart', selectedFlowcharts);
     } else {
       for (const path of checkedPaths) {
         const inPages = findNodeByPath(treeData.pages, path);
         const inComponents = findNodeByPath(treeData.components, path);
+        const inFlowcharts = findNodeByPath(treeData.flowcharts, path);
         if (inPages && inPages.type === 'page') selectedPages.push(path);
         if (inComponents && inComponents.type === 'component') selectedComponents.push(path);
+        if (inFlowcharts && inFlowcharts.type === 'flowchart') selectedFlowcharts.push(path);
       }
     }
 
-    if (selectedPages.length === 0 && selectedComponents.length === 0) {
-      window.showToast('请至少选择一个页面或组件', 'error');
+    if (selectedPages.length === 0 && selectedComponents.length === 0 && selectedFlowcharts.length === 0) {
+      window.showToast('请至少选择一个页面、组件或流程图', 'error');
       return;
     }
 
@@ -559,7 +567,8 @@
         projectName,
         targetDir,
         selectedPages,
-        selectedComponents
+        selectedComponents,
+        selectedFlowcharts
       });
       if (res.code === 0) {
         window.showToast('导出成功: ' + res.data.exportPath, 'success');
@@ -607,7 +616,8 @@
           token,
           remoteProjectId: selectedHostProject.id,
           selectedPages,
-          selectedComponents
+          selectedComponents,
+          selectedFlowcharts
         })
       });
       const data = await res.json();

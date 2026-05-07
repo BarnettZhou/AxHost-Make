@@ -1210,6 +1210,39 @@
   }
   applyZoom();
 
+  // Keyboard shortcuts
+  function onShortcutKeyDown(e) {
+    const key = e.key.toLowerCase();
+    if (!['i', 't', 'd', 'n'].includes(key)) return;
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+    e.preventDefault();
+    if (key === 'i' && btnInspect && !btnInspect.classList.contains('disabled')) {
+      btnInspect.click();
+    } else if (key === 't' && btnTouchEmulation) {
+      btnTouchEmulation.click();
+    } else if (key === 'd' && btnToggleDocs) {
+      btnToggleDocs.click();
+    } else if (key === 'n' && btnToggleNav) {
+      btnToggleNav.click();
+    }
+  }
+
+  document.addEventListener('keydown', onShortcutKeyDown);
+
+  // Also bind to iframe document so shortcuts work when iframe has focus
+  if (previewFrame) {
+    previewFrame.addEventListener('load', () => {
+      try {
+        const doc = previewFrame.contentDocument;
+        if (doc) {
+          doc.removeEventListener('keydown', onShortcutKeyDown);
+          doc.addEventListener('keydown', onShortcutKeyDown);
+        }
+      } catch (e) {}
+    });
+  }
+
   // Initialize
   window.addEventListener('DOMContentLoaded', () => {
     if (window.treeNav && window.treeNav.init) {

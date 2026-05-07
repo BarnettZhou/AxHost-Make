@@ -124,7 +124,9 @@
       return;
     }
     if (nodes.length === 0) {
-      treeRoot.innerHTML = '<div class="empty">No ' + activeType + ' found.</div>';
+      const typeMap = { pages: '页面', components: '组件', flowcharts: '流程图' };
+      const label = typeMap[activeType] || activeType;
+      treeRoot.innerHTML = '<div class="empty"><iconpark-icon icon-id="inbox" size="32" color="#bbb"></iconpark-icon><span>暂无' + label + '</span></div>';
       return;
     }
     const ul = document.createElement('ul');
@@ -634,4 +636,20 @@
       if (touchEmulationActive) attachTouchEmulation();
     });
   }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
+    if (!['t', 'd', 'n'].includes(key)) return;
+    const tag = e.target && e.target.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+    e.preventDefault();
+    if (key === 't' && btnTouchEmulation) {
+      btnTouchEmulation.click();
+    } else if (key === 'd' && btnDocs) {
+      btnDocs.click();
+    } else if (key === 'n' && btnToggleNav) {
+      btnToggleNav.click();
+    }
+  });
 })();

@@ -101,7 +101,7 @@ function buildFlatMap(nodes, tab, map) {
   }
 }
 
-async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selectedComponents) {
+async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selectedComponents, selectedFlowcharts) {
   const srcSitemapPath = path.join(srcPrototypeDir, 'sitemap.js');
   if (!await exists(srcSitemapPath)) return;
 
@@ -118,15 +118,18 @@ async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selecte
 
   const filteredPages = filterTree(sitemap.pages || [], selectedPages);
   const filteredComponents = filterTree(sitemap.components || [], selectedComponents);
+  const filteredFlowcharts = filterTree(sitemap.flowcharts || [], selectedFlowcharts || []);
 
   const flatMap = {};
   buildFlatMap(filteredPages, 'pages', flatMap);
   buildFlatMap(filteredComponents, 'components', flatMap);
+  buildFlatMap(filteredFlowcharts, 'flowcharts', flatMap);
 
   const newSitemap = {
     name: sitemap.name || 'Prototype',
     pages: filteredPages,
     components: filteredComponents,
+    flowcharts: filteredFlowcharts,
     _map: flatMap,
     generatedBy: 'axhost-make'
   };
@@ -140,7 +143,7 @@ async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selecte
 
 }
 
-async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents) {
+async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents, selectedFlowcharts) {
   await fs.mkdir(exportDir, { recursive: true });
 
   const srcResources = path.join(srcPrototypeDir, 'resources');
@@ -157,7 +160,7 @@ async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selec
     }
   }
 
-  await rewriteSitemap(srcPrototypeDir, exportDir, selectedPages || [], selectedComponents || []);
+  await rewriteSitemap(srcPrototypeDir, exportDir, selectedPages || [], selectedComponents || [], selectedFlowcharts || []);
 
   const pagesDir = path.join(srcPrototypeDir, 'pages');
   const destPagesDir = path.join(exportDir, 'pages');
@@ -170,6 +173,12 @@ async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selec
   for (const compPath of (selectedComponents || [])) {
     await copyPageOrComponent(componentsDir, destComponentsDir, compPath);
   }
+
+  const flowchartsDir = path.join(srcPrototypeDir, 'flowcharts');
+  const destFlowchartsDir = path.join(exportDir, 'flowcharts');
+  for (const flowPath of (selectedFlowcharts || [])) {
+    await copyPageOrComponent(flowchartsDir, destFlowchartsDir, flowPath);
+  }
 }
 
 async function handleExportPost(req, res, workspaceRoot) {
@@ -177,7 +186,7 @@ async function handleExportPost(req, res, workspaceRoot) {
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { projectName, targetDir, selectedPages, selectedComponents } = JSON.parse(body || '{}');
+      const { projectName, targetDir, selectedPages, selectedComponents, selectedFlowcharts } = JSON.parse(body || '{}');
 
       if (!projectName || !targetDir) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -197,7 +206,7 @@ async function handleExportPost(req, res, workspaceRoot) {
       const srcPrototypeDir = path.join(srcProjectDir, 'prototype');
       const exportDir = path.join(targetDir, projectName);
 
-      await prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents);
+      await prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents, selectedFlowcharts);
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { exportPath: exportDir } }));
@@ -213,7 +222,7 @@ async function handleExportPublish(req, res, workspaceRoot) {
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { serverUrl, token, remoteProjectId, selectedPages, selectedComponents } = JSON.parse(body || '{}');
+      const { serverUrl, token, remoteProjectId, selectedPages, selectedComponents, selectedFlowcharts } = JSON.parse(body || '{}');
 
       if (!serverUrl || !token || !remoteProjectId) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -239,7 +248,7 @@ async function handleExportPublish(req, res, workspaceRoot) {
       await fs.mkdir(cacheDir, { recursive: true });
 
       // 2. Copy files
-      await prepareExportDir(srcPrototypeDir, cacheDir, selectedPages, selectedComponents);
+      await prepareExportDir(srcPrototypeDir, cacheDir, selectedPages, selectedComponents, selectedFlowcharts);
 
       // 3. Pack to zip using tar (bsdtar supports zip on Windows 10+)
       try { await fs.rm(zipPath, { force: true }); } catch (e) {}
