@@ -194,7 +194,6 @@
         }
         return null;
       }
-      if (/\s/.test(ch)) return null;
     }
     return null;
   }
