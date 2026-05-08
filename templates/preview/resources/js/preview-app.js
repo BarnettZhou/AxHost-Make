@@ -102,7 +102,7 @@
       return;
     }
     const html = renderMarkdown(currentDocs[activeDocIndex].content);
-    docContent.innerHTML = html;
+    docContent.innerHTML = `<div class="doc-view">${html}</div>`;
   }
 
   function renderTabs() {
@@ -270,10 +270,8 @@
 
   function expandAll(nodes) {
     for (const node of nodes) {
-      if (node.type === 'dir') {
-        expandedPaths.add(node.path);
-      }
       if (node.children && node.children.length) {
+        expandedPaths.add(node.path);
         expandAll(node.children);
       }
     }

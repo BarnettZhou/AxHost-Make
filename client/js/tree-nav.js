@@ -166,10 +166,8 @@
 
   function expandAll(nodes) {
     for (const node of nodes) {
-      if (node.type === 'dir') {
-        expandedPaths.add(node.path);
-      }
       if (node.children && node.children.length) {
+        expandedPaths.add(node.path);
         expandAll(node.children);
       }
     }

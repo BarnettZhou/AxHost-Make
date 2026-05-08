@@ -75,6 +75,15 @@ html, body {
 #shell-header button:hover {
   background: var(--bg-hover);
 }
+#btn-inspect.active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+#btn-inspect.active:hover {
+  background: #0958d9;
+  border-color: #0958d9;
+}
 .zoom-control {
   display: flex;
   align-items: center;
@@ -640,7 +649,7 @@ body.dark #prompt-box:focus-within {
 #panel-docs {
   width: 360px;
   min-width: 260px;
-  max-width: 50vw;
+  max-width: 1200px;
   overflow: auto;
   background: var(--bg-panel);
   display: flex;
@@ -680,6 +689,20 @@ body.dark #prompt-box:focus-within {
   justify-content: center;
   flex-shrink: 0;
 }
+.doc-tab-sort {
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.doc-tab-sort:hover {
+  color: var(--accent);
+}
 .doc-tab-add:hover {
   color: var(--accent);
 }
@@ -709,7 +732,6 @@ body.dark .doc-tab.active {
 .doc-content {
   flex: 1;
   overflow: auto;
-  padding: 12px;
   line-height: 1.6;
 }
 .doc-content h1, .doc-content h2, .doc-content h3 {
@@ -777,7 +799,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 .doc-editor {
   width: 100%;
   height: 100%;
-  background: var(--bg-body);
+  background: #f9f9f9;
   color: var(--text-main);
   border: 1px solid var(--border);
   padding: 10px;
@@ -806,6 +828,136 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .doc-actions button:hover {
   background: var(--bg-hover);
+}
+.doc-actions button.hidden {
+  display: none;
+}
+#btn-doc-preview.active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+.doc-content.split {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+}
+.doc-view {
+  padding: 12px;
+}
+.doc-editor-wrap {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+}
+.doc-editor-wrap .doc-editor {
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+}
+.doc-preview {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+  background: var(--bg-panel);
+  padding: 12px;
+}
+
+.doc-sort-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1003;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.doc-sort-modal.open {
+  display: flex;
+}
+.doc-sort-modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+}
+.doc-sort-modal-content {
+  position: relative;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 320px;
+  max-width: 90vw;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  max-height: 70vh;
+}
+.doc-sort-modal-content h4 {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 15px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-sort-list {
+  padding: 8px 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+.doc-sort-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--bg-body);
+  border: 1px solid transparent;
+  margin-bottom: 4px;
+}
+.doc-sort-item:last-child {
+  margin-bottom: 0;
+}
+.doc-sort-item:hover {
+  background: var(--bg-hover);
+}
+.doc-sort-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+.doc-sort-item.drop-before {
+  border-top: 2px solid var(--accent);
+}
+.doc-sort-item.drop-after {
+  border-bottom: 2px solid var(--accent);
+}
+.doc-sort-actions {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  justify-content: flex-end;
+}
+.doc-sort-actions button {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.doc-sort-actions button.primary {
+  background: #1677ff;
+  border-color: #1677ff;
+  color: #fff;
+}
+.doc-sort-actions button:hover {
+  background: var(--bg-hover);
+}
+.doc-sort-actions button.primary:hover {
+  background: #4096ff;
 }
 
 .settings-modal {
@@ -1694,12 +1846,6 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   border-color: #0958d9;
 }
 #shell-header button.disabled,
-#panel-right-bar .right-bar-header #btn-inspect.disabled {
-  opacity: 0.4;
-  pointer-events: none;
-  cursor: not-allowed;
-}
-
 .inspector-popup {
   position: absolute;
   z-index: 999999;
