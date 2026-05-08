@@ -29,6 +29,7 @@
         </div>
         <button id="btn-export" title="导出"><iconpark-icon icon-id="upload" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-settings" title="Settings"><iconpark-icon icon-id="setting-two" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-inspect" title="抓取元素"><iconpark-icon icon-id="magic" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-toggle-right-bar" title="Toggle Right Bar"><iconpark-icon icon-id="right-bar" size="14" color="currentColor"></iconpark-icon></button>
       </div>
       <div class="header-right">
@@ -78,7 +79,6 @@
       <div class="resizer resizer-v" data-target="panel-right-bar" data-dir="v" data-invert="true" id="right-bar-resizer"></div>
       <aside id="panel-right-bar">
         <div class="right-bar-header">
-          <button id="btn-inspect" title="抓取元素"><iconpark-icon icon-id="magic" size="14" color="currentColor"></iconpark-icon></button>
           <span id="prompt-context" class="prompt-context"></span>
         </div>
         <div class="right-bar-body">
@@ -97,6 +97,9 @@
       <aside id="panel-docs" class="hidden">
         <div class="doc-tabs" id="doc-tabs">
           <div class="doc-tabs-scroll" id="doc-tabs-scroll"></div>
+          <button class="doc-tab-sort" id="btn-doc-sort" title="排序文档">
+            <iconpark-icon icon-id="sort-three" size="12" color="currentColor"></iconpark-icon>
+          </button>
           <button class="doc-tab-add" id="btn-doc-add" title="添加文档">
             <iconpark-icon icon-id="add-one" size="12" color="currentColor"></iconpark-icon>
           </button>

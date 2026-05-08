@@ -1,5 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
+const { addToOrder } = require('../lib/order.js');
 
 const ALLOWED_WRITE_EXTS = new Set(['.html', '.md', '.css', '.js', '.json', '.txt', '.mmd']);
 
@@ -48,6 +49,11 @@ async function handleFilePost(req, res, projectRoot) {
       const filePath = path.resolve(projectRoot, filePathInput);
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, content, 'utf-8');
+      const dir = path.dirname(filePath);
+      const fileName = path.basename(filePath);
+      if (path.basename(dir) === 'docs' && ext === '.md') {
+        await addToOrder(dir, fileName);
+      }
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, message: 'saved' }));
     } catch (err) {

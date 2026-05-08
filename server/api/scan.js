@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { readSitemap } = require('../lib/sitemap-io.js');
+const { ensureOrder } = require('../lib/order.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -19,7 +20,8 @@ async function readDocs(absPath) {
   const docsDir = path.join(absPath, 'docs');
   if (!await exists(docsDir)) return [];
   const entries = await fs.readdir(docsDir, { withFileTypes: true }).catch(() => []);
-  return entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name).sort();
+  const files = entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name);
+  return await ensureOrder(docsDir, files);
 }
 
 async function scanFlat(tabPath, nodeType) {

@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
+const { renameInOrder } = require('../lib/order.js');
 
 function updateNodeName(nodes, id, newName) {
   for (const n of nodes) {
@@ -63,6 +64,13 @@ async function handleRename(req, res, projectRoot) {
         sitemap._map[id].name = newName;
       }
       await writeSitemap(projectRoot, sitemap);
+
+      // Sync docs order if renaming a .md file inside docs/
+      const oldName = path.basename(absPath);
+      const parentDir = path.dirname(absPath);
+      if (path.basename(parentDir) === 'docs' && oldName.endsWith('.md')) {
+        await renameInOrder(parentDir, oldName, newName);
+      }
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { path: targetPath } }));

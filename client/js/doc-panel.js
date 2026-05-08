@@ -4,6 +4,7 @@
   const btnEdit = document.getElementById('btn-doc-edit');
   const btnSave = document.getElementById('btn-doc-save');
   const btnAdd = document.getElementById('btn-doc-add');
+  const btnSort = document.getElementById('btn-doc-sort');
 
   let currentDocs = [];
   let activeDocIndex = 0;
@@ -23,7 +24,7 @@
     const docs = [];
     try {
       const res = await window.apiClient.getDocs(`${base}/docs`);
-      const names = (res.code === 0 ? res.data : []).sort();
+      const names = res.code === 0 ? res.data : [];
       for (const name of names) {
         try {
           const content = await window.apiClient.getFile(`${base}/docs/${name}`);
@@ -183,8 +184,7 @@
       const content = buildDocContent(rawName);
       await window.apiClient.postFile(docPath, content);
       currentDocs.push({ name, path: docPath, content });
-      currentDocs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
-      activeDocIndex = currentDocs.findIndex(d => d.name === name);
+      activeDocIndex = currentDocs.length - 1;
       isEditMode = false;
       renderTabs();
       renderContent();
@@ -227,7 +227,6 @@
       await window.apiClient.postRename({ oldPath, newName });
       doc.name = newName;
       doc.path = newPath;
-      currentDocs.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
       activeDocIndex = currentDocs.findIndex(d => d.name === newName);
       isEditMode = false;
       renderTabs();
@@ -253,6 +252,130 @@
       openModal(addModal, '');
     });
   }
+
+  /* ========== Sort Modal ========== */
+  const sortModal = document.createElement('div');
+  sortModal.className = 'doc-sort-modal';
+  sortModal.id = 'doc-sort-modal';
+  sortModal.innerHTML = `
+    <div class="doc-sort-modal-overlay"></div>
+    <div class="doc-sort-modal-content">
+      <h4>排序文档</h4>
+      <div class="doc-sort-list" id="doc-sort-list"></div>
+      <div class="doc-sort-actions">
+        <button class="doc-modal-cancel" id="btn-sort-cancel">取消</button>
+        <button class="doc-modal-confirm primary" id="btn-sort-confirm">确定</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(sortModal);
+
+  const sortListEl = document.getElementById('doc-sort-list');
+  let sortDocs = [];
+  let draggedIndex = null;
+
+  function renderSortList(docs) {
+    sortListEl.innerHTML = '';
+    docs.forEach((doc, idx) => {
+      const item = document.createElement('div');
+      item.className = 'doc-sort-item';
+      item.draggable = true;
+      item.dataset.index = idx;
+      item.innerHTML = `<iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon><span>${doc.name}</span>`;
+
+      item.addEventListener('dragstart', (e) => {
+        draggedIndex = idx;
+        item.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      item.addEventListener('dragend', () => {
+        draggedIndex = null;
+        item.classList.remove('dragging');
+        sortListEl.querySelectorAll('.doc-sort-item').forEach(el => {
+          el.classList.remove('drop-before', 'drop-after');
+        });
+      });
+
+      sortListEl.appendChild(item);
+    });
+  }
+
+  sortListEl.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    const target = e.target.closest('.doc-sort-item');
+    if (!target) return;
+
+    const targetIdx = parseInt(target.dataset.index, 10);
+    if (targetIdx === draggedIndex) return;
+
+    sortListEl.querySelectorAll('.doc-sort-item').forEach(el => {
+      el.classList.remove('drop-before', 'drop-after');
+    });
+
+    const rect = target.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    target.classList.add(e.clientY < midY ? 'drop-before' : 'drop-after');
+  });
+
+  sortListEl.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    const target = e.target.closest('.doc-sort-item');
+    if (!target) return;
+
+    const targetIdx = parseInt(target.dataset.index, 10);
+    if (targetIdx === draggedIndex) return;
+
+    const rect = target.getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    let toIdx = targetIdx;
+    if (e.clientY > midY) toIdx++;
+    if (draggedIndex < toIdx) toIdx--;
+
+    const [moved] = sortDocs.splice(draggedIndex, 1);
+    sortDocs.splice(toIdx, 0, moved);
+    renderSortList(sortDocs);
+  });
+
+  function openSortModal() {
+    if (!currentType || !currentPath) {
+      window.showToast('请先选择一个页面', 'error');
+      return;
+    }
+    if (currentDocs.length === 0) {
+      window.showToast('暂无文档可排序', 'error');
+      return;
+    }
+    sortDocs = currentDocs.map(d => ({ name: d.name }));
+    renderSortList(sortDocs);
+    sortModal.classList.add('open');
+  }
+
+  function closeSortModal() {
+    sortModal.classList.remove('open');
+  }
+
+  if (btnSort) {
+    btnSort.addEventListener('click', openSortModal);
+  }
+
+  document.getElementById('btn-sort-cancel').addEventListener('click', closeSortModal);
+  document.getElementById('btn-sort-confirm').addEventListener('click', async () => {
+    const base = `prototype/${currentType}s/${currentPath}/docs`;
+    const order = sortDocs.map(d => d.name);
+    try {
+      await window.apiClient.postDocsReorder({ path: base, order });
+      await load(currentType, currentPath);
+      closeSortModal();
+      window.showToast('排序已保存', 'success');
+    } catch (err) {
+      window.showToast('保存失败: ' + err.message, 'error');
+    }
+  });
+
+  sortModal.querySelector('.doc-sort-modal-overlay').addEventListener('click', closeSortModal);
 
   /* ========== Context Menu ========== */
   function showDocContextMenu(event, doc, idx) {

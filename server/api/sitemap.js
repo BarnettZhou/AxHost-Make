@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { scanFlat } = require('./scan.js');
+const { ensureOrder } = require('../lib/order.js');
 
 async function readSitemap(projectRoot) {
   const sitemapPath = path.join(projectRoot, 'prototype', 'sitemap.js');
@@ -39,7 +40,8 @@ async function readDocs(absPath) {
   const docsDir = path.join(absPath, 'docs');
   if (!await exists(docsDir)) return [];
   const entries = await fs.readdir(docsDir, { withFileTypes: true }).catch(() => []);
-  return entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name).sort();
+  const files = entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name);
+  return await ensureOrder(docsDir, files);
 }
 
 async function regenerateSitemap(projectRoot) {

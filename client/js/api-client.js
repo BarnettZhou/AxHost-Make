@@ -60,6 +60,10 @@
       body: JSON.stringify(data)
     }),
     getDocs: (path) => request(`/api/docs?path=${encodeURIComponent(path)}`),
+    postDocsReorder: (data) => request('/api/docs/reorder', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     postReorder: (data) => request('/api/sitemap/reorder', {
       method: 'POST',
       body: JSON.stringify(data)

@@ -13,7 +13,7 @@ const { handleRename } = require('./api/rename.js');
 const { handlePageType } = require('./api/page-type.js');
 const { handleDelete } = require('./api/delete.js');
 const { handleSettingsGet, handleSettingsPost } = require('./api/settings.js');
-const { handleDocsGet } = require('./api/docs.js');
+const { handleDocsGet, handleDocsReorder } = require('./api/docs.js');
 const { handleReorder } = require('./api/reorder.js');
 const { handleMove } = require('./api/move.js');
 const { handleCopy } = require('./api/copy.js');
@@ -139,6 +139,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/docs' && req.method === 'GET') {
         return handleDocsGet(req, res, projectRoot);
+      }
+      if (urlPath === '/api/docs/reorder' && req.method === 'POST') {
+        return handleDocsReorder(req, res, projectRoot);
       }
       if (urlPath === '/api/sitemap/reorder' && req.method === 'POST') {
         return handleReorder(req, res, projectRoot);

@@ -1,6 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
+const { removeFromOrder } = require('../lib/order.js');
 
 function removeNodeFromTree(nodes, id) {
   for (let i = 0; i < nodes.length; i++) {
@@ -95,6 +96,13 @@ async function handleDelete(req, res, projectRoot) {
             await fs.unlink(delPath);
           }
         }
+      }
+
+      // 3. Sync docs order if deleting a single .md file inside docs/
+      const targetName = path.basename(absPath);
+      const targetDir = path.dirname(absPath);
+      if (path.basename(targetDir) === 'docs' && targetName.endsWith('.md')) {
+        await removeFromOrder(targetDir, targetName);
       }
 
       // 3. Clean up mermaid.min.js if no flowcharts remain
