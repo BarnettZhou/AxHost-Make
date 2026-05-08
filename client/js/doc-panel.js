@@ -1,8 +1,9 @@
 (function () {
   const docTabs = document.getElementById('doc-tabs-scroll');
   const docContent = document.getElementById('doc-content');
-  const btnEdit = document.getElementById('btn-doc-edit');
-  const btnSave = document.getElementById('btn-doc-save');
+  const btnDocAction = document.getElementById('btn-doc-action');
+  const btnDocPreview = document.getElementById('btn-doc-preview');
+  let isPreviewMode = true;
   const btnAdd = document.getElementById('btn-doc-add');
   const btnSort = document.getElementById('btn-doc-sort');
 
@@ -40,7 +41,9 @@
 
     if (token !== loadToken) return;
     currentDocs = docs;
+    isPreviewMode = true;
     renderTabs();
+    updateActionButtons();
     renderContent();
   }
 
@@ -62,6 +65,7 @@
         activeDocIndex = idx;
         isEditMode = false;
         renderTabs();
+        updateActionButtons();
         renderContent();
       };
       tab.addEventListener('contextmenu', (e) => {
@@ -79,40 +83,90 @@
       return;
     }
     if (isEditMode) {
-      const textarea = document.createElement('textarea');
-      textarea.className = 'doc-editor';
-      textarea.value = currentDocs[activeDocIndex].content;
       docContent.innerHTML = '';
-      docContent.appendChild(textarea);
+      if (isPreviewMode) {
+        docContent.classList.add('split');
+        const editorWrap = document.createElement('div');
+        editorWrap.className = 'doc-editor-wrap';
+        const textarea = document.createElement('textarea');
+        textarea.className = 'doc-editor';
+        textarea.value = currentDocs[activeDocIndex].content;
+        editorWrap.appendChild(textarea);
+        docContent.appendChild(editorWrap);
+
+        const previewWrap = document.createElement('div');
+        previewWrap.className = 'doc-preview doc-content';
+        previewWrap.innerHTML = window.mdRenderer.renderMarkdown(currentDocs[activeDocIndex].content);
+        docContent.appendChild(previewWrap);
+
+        textarea.addEventListener('input', () => {
+          previewWrap.innerHTML = window.mdRenderer.renderMarkdown(textarea.value);
+        });
+      } else {
+        docContent.classList.remove('split');
+        const textarea = document.createElement('textarea');
+        textarea.className = 'doc-editor';
+        textarea.value = currentDocs[activeDocIndex].content;
+        docContent.appendChild(textarea);
+      }
     } else {
+      docContent.classList.remove('split');
       const html = window.mdRenderer.renderMarkdown(currentDocs[activeDocIndex].content);
-      docContent.innerHTML = html;
+      docContent.innerHTML = `<div class="doc-view">${html}</div>`;
     }
   }
 
-  if (btnEdit) {
-    btnEdit.addEventListener('click', () => {
+  function updateActionButtons() {
+    if (btnDocAction) btnDocAction.textContent = isEditMode ? '保存' : '编辑';
+    if (btnDocPreview) btnDocPreview.classList.toggle('hidden', !isEditMode);
+    if (btnDocPreview) btnDocPreview.classList.toggle('active', isEditMode && isPreviewMode);
+  }
+
+  if (btnDocAction) {
+    btnDocAction.addEventListener('click', async () => {
       if (currentDocs.length === 0) return;
-      isEditMode = !isEditMode;
-      renderContent();
+      if (isEditMode) {
+        const textarea = docContent.querySelector('.doc-editor');
+        if (!textarea) return;
+        const content = textarea.value;
+        const doc = currentDocs[activeDocIndex];
+        try {
+          await window.apiClient.postFile(doc.path, content);
+          doc.content = content;
+          isEditMode = false;
+          updateActionButtons();
+          renderContent();
+          window.showToast('保存成功', 'success');
+        } catch (err) {
+          window.showToast('保存失败: ' + err.message, 'error');
+        }
+      } else {
+        isEditMode = true;
+        updateActionButtons();
+        renderContent();
+      }
     });
   }
 
-  if (btnSave) {
-    btnSave.addEventListener('click', async () => {
-      if (!isEditMode || currentDocs.length === 0) return;
-      const textarea = document.querySelector('.doc-editor');
-      if (!textarea) return;
-      const content = textarea.value;
-      const doc = currentDocs[activeDocIndex];
-      try {
-        await window.apiClient.postFile(doc.path, content);
-        doc.content = content;
-        isEditMode = false;
-        renderContent();
-        window.showToast('保存成功', 'success');
-      } catch (err) {
-        window.showToast('保存失败: ' + err.message, 'error');
+  if (btnDocPreview) {
+    btnDocPreview.addEventListener('click', () => {
+      isPreviewMode = !isPreviewMode;
+      const textarea = docContent.querySelector('.doc-editor');
+      let currentContent = '';
+      let selectionStart = 0;
+      let selectionEnd = 0;
+      if (textarea) {
+        currentContent = textarea.value;
+        selectionStart = textarea.selectionStart;
+        selectionEnd = textarea.selectionEnd;
+      }
+      updateActionButtons();
+      renderContent();
+      const newTextarea = docContent.querySelector('.doc-editor');
+      if (newTextarea && currentContent) {
+        newTextarea.value = currentContent;
+        newTextarea.focus();
+        newTextarea.setSelectionRange(selectionStart, selectionEnd);
       }
     });
   }
@@ -386,6 +440,26 @@
     menu.style.top = event.clientY + 'px';
     menu.id = 'doc-tab-context-menu';
 
+    // Edit submenu
+    const editItem = document.createElement('div');
+    editItem.className = 'context-menu-item';
+    editItem.textContent = '编辑';
+    const subMenu = document.createElement('div');
+    subMenu.className = 'context-menu-submenu';
+    ['vscode', 'cursor', 'trae'].forEach(editor => {
+      const sub = document.createElement('div');
+      sub.className = 'context-menu-item';
+      const nameMap = { vscode: 'VS Code', cursor: 'Cursor', trae: 'Trae' };
+      sub.textContent = `使用 ${nameMap[editor]} 打开`;
+      sub.onclick = () => {
+        removeDocContextMenu();
+        openDocInEditor(editor, doc.path);
+      };
+      subMenu.appendChild(sub);
+    });
+    editItem.appendChild(subMenu);
+    menu.appendChild(editItem);
+
     const renameItem = document.createElement('div');
     renameItem.className = 'context-menu-item';
     renameItem.textContent = '重命名';
@@ -414,6 +488,7 @@
         }
         isEditMode = false;
         renderTabs();
+        updateActionButtons();
         renderContent();
       } catch (err) {
         alert('删除失败: ' + err.message);
@@ -426,6 +501,20 @@
     setTimeout(() => {
       document.addEventListener('click', removeDocContextMenu, { once: true });
     }, 0);
+  }
+
+  async function openDocInEditor(editor, filePath) {
+    try {
+      const res = await window.apiClient.postOpenEditor({ editor, filePath });
+      if (res.code === 0) {
+        const nameMap = { vscode: 'VS Code', cursor: 'Cursor', trae: 'Trae' };
+        window.showToast(`已在 ${nameMap[editor]} 中打开`, 'success');
+      } else {
+        window.showToast(res.message || '打开失败', 'error');
+      }
+    } catch (err) {
+      window.showToast(err.message, 'error');
+    }
   }
 
   function removeDocContextMenu() {

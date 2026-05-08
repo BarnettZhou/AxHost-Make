@@ -649,7 +649,7 @@ body.dark #prompt-box:focus-within {
 #panel-docs {
   width: 360px;
   min-width: 260px;
-  max-width: 50vw;
+  max-width: 1200px;
   overflow: auto;
   background: var(--bg-panel);
   display: flex;
@@ -732,7 +732,6 @@ body.dark .doc-tab.active {
 .doc-content {
   flex: 1;
   overflow: auto;
-  padding: 12px;
   line-height: 1.6;
 }
 .doc-content h1, .doc-content h2, .doc-content h3 {
@@ -800,7 +799,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 .doc-editor {
   width: 100%;
   height: 100%;
-  background: var(--bg-body);
+  background: #f9f9f9;
   color: var(--text-main);
   border: 1px solid var(--border);
   padding: 10px;
@@ -829,6 +828,40 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .doc-actions button:hover {
   background: var(--bg-hover);
+}
+.doc-actions button.hidden {
+  display: none;
+}
+#btn-doc-preview.active {
+  background: #1677ff;
+  color: #fff;
+  border-color: #1677ff;
+}
+.doc-content.split {
+  display: flex;
+  flex-direction: row;
+  gap: 0;
+}
+.doc-view {
+  padding: 12px;
+}
+.doc-editor-wrap {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-width: 0;
+}
+.doc-editor-wrap .doc-editor {
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+}
+.doc-preview {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+  background: var(--bg-panel);
+  padding: 12px;
 }
 
 .doc-sort-modal {

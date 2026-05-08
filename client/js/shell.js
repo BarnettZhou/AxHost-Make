@@ -1026,7 +1026,7 @@
         const startPos = isVertical ? e.clientX : e.clientY;
         const startSize = isVertical ? target.offsetWidth : target.offsetHeight;
         const minSize = isVertical ? 180 : 80;
-        let maxSize = isVertical ? (targetId === 'panel-docs' ? window.innerWidth * 0.5 : 400) : 300;
+        let maxSize = isVertical ? (targetId === 'panel-docs' ? 1200 : 400) : 300;
         if (targetId === 'panel-nav-top') {
           const panelNav = document.getElementById('panel-nav');
           maxSize = panelNav ? panelNav.offsetHeight - 80 - 5 : 300;
