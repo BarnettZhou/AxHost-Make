@@ -66,13 +66,7 @@ Agent 在引入图标时，应参考对应 CDN 的官方文档，选择最符合
 **正确做法**：通过 `postMessage` 通知父页面统一导航。
 
 ```js
-function navigateTo(targetHash, tab = 'pages') {
-  // 开发模式和预览模式均通过 postMessage 通知父页面统一导航
-  window.parent.postMessage({ type: 'axhost-navigate', path: targetHash, tab }, '*');
-}
-
-// 使用示例：从登录页跳转到首页
-navigateTo('313becb1', 'pages');
+window.parent.postMessage({ type: 'axhost-navigate', path: '313becb1', tab: 'pages' }, '*');
 ```
 
 > `targetHash` 为目标页面的 8 位 hash 目录名（如 `313becb1`），`tab` 可选值为 `pages` 或 `components`。
