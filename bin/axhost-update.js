@@ -147,12 +147,12 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated prototype/icon.svg');
   }
 
-  // Copy agents.md
-  const agentsSrc = path.join(projectTplRoot, 'agents.md');
-  const agentsDest = path.join(projectRoot, 'agents.md');
+  // Copy AGENTS.md
+  const agentsSrc = path.join(projectTplRoot, 'AGENTS.md');
+  const agentsDest = path.join(projectRoot, 'AGENTS.md');
   if (await exists(agentsSrc)) {
     await fs.copyFile(agentsSrc, agentsDest);
-    console.log('  - Updated agents.md');
+    console.log('  - Updated AGENTS.md');
   }
 
   // Copy CLAUDE.md

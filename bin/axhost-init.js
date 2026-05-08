@@ -47,9 +47,9 @@ async function init(projectRoot) {
     await fs.writeFile(protoStartPath, tpl, 'utf-8');
   }
 
-  const agentsPath = path.join(projectRoot, 'agents.md');
+  const agentsPath = path.join(projectRoot, 'AGENTS.md');
   if (!await exists(agentsPath)) {
-    const agentsTpl = path.join(projectTplRoot, 'agents.md');
+    const agentsTpl = path.join(projectTplRoot, 'AGENTS.md');
     if (await exists(agentsTpl)) {
       await fs.copyFile(agentsTpl, agentsPath);
     } else {
@@ -127,7 +127,7 @@ async function init(projectRoot) {
   console.log('  - prototype/resources/js/icons.js');
   console.log('  - prototype/resources/js/preview-app.js');
   console.log('  - prototype/resources/css/shell.css');
-  console.log('  - agents.md (if not exists)');
+  console.log('  - AGENTS.md (if not exists)');
   console.log('  - readme.md (if not exists)');
 }
 

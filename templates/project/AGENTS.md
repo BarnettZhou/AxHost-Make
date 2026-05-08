@@ -212,6 +212,27 @@ cat "$FILE_PATH"
 
 ---
 
+## 跨项目参考代码
+
+当用户要求参考其他项目的代码时（例如提供了项目 hash 和页面路径），请以当前项目目录（即本 `agents.md` 所在目录）为起点，通过相对路径访问目标项目：
+
+```
+../{project_hash}/{page_path}
+```
+
+**示例**：
+
+假设当前项目位于 `projects/8d55f3fc/`，用户要求参考 `projects/a1b2c3d4/prototype/pages/b2c3d4e5/index.html` 的实现：
+
+```bash
+# 从当前项目根目录出发，向上回退到 projects/，再进入目标项目
+cat ../a1b2c3d4/prototype/pages/b2c3d4e5/index.html
+```
+
+> **注意**：跨项目参考时仅做读取，**不要修改**其他项目下的任何文件。
+
+---
+
 ## 规则体系（Rules）
 
 本项目存在**两层规则来源**，Agent 在开发原型时需按需查阅：
