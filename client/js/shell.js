@@ -1213,7 +1213,7 @@
   // Keyboard shortcuts
   function onShortcutKeyDown(e) {
     const key = e.key.toLowerCase();
-    if (!['i', 't', 'd', 'n'].includes(key)) return;
+    if (!['i', 't', 'd', 'n', ']'].includes(key)) return;
     const tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
     e.preventDefault();
@@ -1225,6 +1225,8 @@
       btnToggleDocs.click();
     } else if (key === 'n' && btnToggleNav) {
       btnToggleNav.click();
+    } else if (key === ']' && btnToggleRightBar) {
+      btnToggleRightBar.click();
     }
   }
 
@@ -1255,6 +1257,7 @@
         <div class="shortcuts-row"><kbd>T</kbd><span>触控模拟</span></div>
         <div class="shortcuts-row"><kbd>D</kbd><span>文档面板</span></div>
         <div class="shortcuts-row"><kbd>N</kbd><span>导航栏</span></div>
+        <div class="shortcuts-row"><kbd>]</kbd><span>右侧面板</span></div>
       </div>
       <div class="shortcuts-section shell-only">
         <h4>开发模式专属</h4>
