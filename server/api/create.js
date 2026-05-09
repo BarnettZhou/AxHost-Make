@@ -121,6 +121,7 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
 
   const meta = { name, kind };
   if (kind === 'page') meta.page_type = template || 'default';
+  if (kind === 'component') meta.page_type = template || 'default';
   if (parentId) meta.parentId = parentId;
   await writeMeta(targetDir, meta);
 
@@ -132,9 +133,9 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   } else if (kind === 'page') {
     templateName = template === 'default' ? 'page' : template;
     tplPath = path.join(TEMPLATE_ROOT, `pages/${templateName}.html`);
-  } else {
-    templateName = 'component';
-    tplPath = path.resolve(__dirname, '../../templates/project/components/component.html');
+  } else if (kind === 'component') {
+    templateName = template === 'mobile' ? 'component-mobile' : 'component';
+    tplPath = path.join(TEMPLATE_ROOT, 'components', `${templateName}.html`);
   }
 
   const tplHtml = await fs.readFile(tplPath, 'utf-8');
@@ -181,6 +182,7 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
     docs
   };
   if (kind === 'page') nodeData.page_type = template || 'default';
+  if (kind === 'component') nodeData.page_type = template || 'default';
   addNodeToSitemap(sitemap, tab, parentId, nodeData);
   await writeSitemap(projectRoot, sitemap);
 

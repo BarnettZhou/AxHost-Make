@@ -78,6 +78,15 @@ async function init(projectRoot) {
     );
   }
 
+  // Copy rules/design.md template
+  const designMdPath = path.join(projectRoot, 'rules', 'design.md');
+  if (!await exists(designMdPath)) {
+    const designTpl = path.join(projectTplRoot, 'rules', 'design.md');
+    if (await exists(designTpl)) {
+      await fs.copyFile(designTpl, designMdPath);
+    }
+  }
+
   // Copy marked.min.js to prototype resources
   const markedSrc = path.resolve(__dirname, '../client/assets/marked.min.js');
   const markedDest = path.join(projectRoot, 'prototype/resources/js/marked.min.js');

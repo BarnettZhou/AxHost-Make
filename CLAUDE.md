@@ -92,7 +92,7 @@ After editing `bin/`: test by running the command directly.
 Use `<iconpark-icon icon-id="xxx" size="14" color="currentColor"></iconpark-icon>`. The loader is at `client/js/icons.js` (dev mode) or `resources/js/icons.js` (standalone). When updating the CDN URL, modify `client/js/icons.js` and run `update --all`.
 
 ### Scope boundaries
-- Only modify files within `axhost-make/` (bin/, client/, server/, templates/, skills/, rules/)
+- Only modify files within `axhost-make/` (bin/, client/, server/, templates/, skills/, system-rules/)
 - Never modify files outside `axhost-make/` without explicit user permission
 - Never commit user project files (`prototype/`, `projects/`) into this repo
 
@@ -104,7 +104,7 @@ This is a standalone Git repo. Commits should target `axhost-make/` directory. N
 
 ## Agent guidance for generated projects
 
-The `rules/` directory contains specifications that guide AI agents when developing prototype pages and components within **user projects** (not this framework):
+The `system-rules/` directory contains specifications that guide AI agents when developing prototype pages and components within **user projects** (not this framework):
 
 - `dev-spec.md` — icon loading, page navigation via postMessage, resource paths
 - `components-spec.md` — component design principles, Web Components pattern, CSS/JS separation, page reuse conventions

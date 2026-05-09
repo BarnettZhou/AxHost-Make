@@ -22,7 +22,7 @@
 | 页面私有 JS/CSS | `pages/{hash}/resources/` | `resources/js/xxx.js` |
 | 组件私有 JS/CSS | `components/{hash}/resources/` | `resources/js/xxx.js`（组件内） |
 | 项目公共资源 | `prototype/resources/` | `../../resources/js/xxx.js`（从 pages 下引用） |
-| 框架系统规则 | `../../axhost-make/rules/` | 只读，禁止修改 |
+| 框架系统规则 | `../../axhost-make/system-rules/` | 只读，禁止修改 |
 
 目录名为 8 位 hash（人类不可读），用 CLI 获取映射，**禁止**手动 `ls prototype/pages/` 猜测结构。
 
@@ -46,9 +46,9 @@ flowchart/{hash}/
 
 | 场景 | 文件 |
 |------|------|
-| **所有原型开发** | `../../axhost-make/rules/dev-spec.md` |
-| **创建/复用组件** | `../../axhost-make/rules/components-spec.md` |
-| **手机端/小程序原型** | `../../axhost-make/rules/mobile-frame-spec.md` |
+| **所有原型开发** | `../../axhost-make/system-rules/dev-spec.md` |
+| **创建/复用组件** | `../../axhost-make/system-rules/components-spec.md` |
+| **手机端/小程序原型** | `../../axhost-make/system-rules/mobile-frame-spec.md` |
 | 项目自定义规则 | 本项目 `rules/*.md`（如存在） |
 
 ## 样式与脚本

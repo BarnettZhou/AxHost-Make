@@ -163,6 +163,14 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated CLAUDE.md');
   }
 
+  // Copy rules/design.md if not exists (user-maintained, don't overwrite)
+  const designMdSrc = path.join(projectTplRoot, 'rules', 'design.md');
+  const designMdDest = path.join(projectRoot, 'rules', 'design.md');
+  if (await exists(designMdSrc) && !await exists(designMdDest)) {
+    await fs.copyFile(designMdSrc, designMdDest);
+    console.log('  - Created rules/design.md');
+  }
+
   // Copy project resources (e.g. flowchart viewer)
   const resourcesSrcDir = path.join(projectTplRoot, 'resources');
   const resourcesDestDir = path.join(projectRoot, 'prototype', 'resources');

@@ -701,11 +701,99 @@
     });
   }
 
+  async function showCreateComponentPrompt(title) {
+    return new Promise((resolve) => {
+      let modal = document.getElementById('axhost-create-component-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'axhost-create-component-modal';
+        modal.className = 'add-doc-modal';
+        modal.innerHTML = `
+          <div class="add-doc-modal-overlay"></div>
+          <div class="add-doc-modal-content">
+            <h4>${title}</h4>
+            <div class="page-type-cards">
+              <div class="page-type-card active" data-value="default">
+                <div class="page-type-icon"><iconpark-icon icon-id="browser" size="24"></iconpark-icon></div>
+                <span>默认页面</span>
+              </div>
+              <div class="page-type-card" data-value="mobile">
+                <div class="page-type-icon"><iconpark-icon icon-id="iphone" size="24"></iconpark-icon></div>
+                <span>手机页面</span>
+              </div>
+            </div>
+            <input type="text" class="create-page-name-input" placeholder="请输入组件名称">
+            <div class="add-doc-modal-actions">
+              <button class="create-page-cancel">取消</button>
+              <button class="create-page-confirm primary">确认</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+      modal.querySelector('h4').textContent = title || '新建组件';
+      const input = modal.querySelector('.create-page-name-input');
+      input.value = '';
+      const cards = modal.querySelectorAll('.page-type-card');
+      cards.forEach(c => {
+        c.classList.toggle('active', c.dataset.value === 'default');
+        c.onclick = () => {
+          cards.forEach(x => x.classList.remove('active'));
+          c.classList.add('active');
+        };
+      });
+      modal.classList.add('open');
+      setTimeout(() => input.focus(), 0);
+
+      const btnOk = modal.querySelector('.create-page-confirm');
+      const btnCancel = modal.querySelector('.create-page-cancel');
+      const overlay = modal.querySelector('.add-doc-modal-overlay');
+
+      function cleanup() {
+        modal.classList.remove('open');
+        btnOk.onclick = null;
+        btnCancel.onclick = null;
+        overlay.onclick = null;
+        input.onkeydown = null;
+        cards.forEach(c => c.onclick = null);
+      }
+
+      function submit() {
+        const name = input.value.trim();
+        if (!name) {
+          window.showToast('名称不能为空', 'error');
+          return;
+        }
+        const selected = modal.querySelector('.page-type-card.active');
+        cleanup();
+        resolve({ name, template: selected ? selected.dataset.value : 'default' });
+      }
+
+      function cancel() {
+        cleanup();
+        resolve(null);
+      }
+
+      btnOk.onclick = submit;
+      btnCancel.onclick = cancel;
+      overlay.onclick = cancel;
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') submit();
+        else if (e.key === 'Escape') cancel();
+      };
+    });
+  }
+
   async function handleCreate(parentPath, kind) {
     const labelMap = { page: '页面', component: '组件', flowchart: '流程图', folder: '目录' };
     let name, template = 'default';
     if (kind === 'page') {
       const result = await showCreatePagePrompt('请输入页面名称');
+      if (!result) return;
+      name = result.name;
+      template = result.template;
+    } else if (kind === 'component') {
+      const result = await showCreateComponentPrompt('请输入组件名称');
       if (!result) return;
       name = result.name;
       template = result.template;

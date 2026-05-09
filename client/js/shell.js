@@ -879,6 +879,16 @@
     menu.style.left = e.clientX + 'px';
     menu.style.top = e.clientY + 'px';
 
+    // Copy path
+    const copyPathItem = document.createElement('div');
+    copyPathItem.className = 'context-menu-item';
+    copyPathItem.textContent = '复制路径';
+    copyPathItem.onclick = () => {
+      removeRulesContextMenu();
+      navigator.clipboard.writeText(`rules/${fileName}`);
+    };
+    menu.appendChild(copyPathItem);
+
     // Edit submenu
     const editItem = document.createElement('div');
     editItem.className = 'context-menu-item';

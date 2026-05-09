@@ -13,7 +13,7 @@
       : `http://${location.host}/prototype`;
     const isComponent = pageType === 'component';
     const outputInstruction = isComponent
-      ? '请根据用户指示决定是否阅读页面文档。\n直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。\n当前正在开发/修改组件（component），请确保已阅读并理解框架内的 rules/components-spec.md 文档（项目目录/../../axhost-make/rules/components-spec.md）'
+      ? '请根据用户指示决定是否阅读页面文档。\n直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。\n当前正在开发/修改组件（component），请确保已阅读并理解框架内的 system-rules/components-spec.md 文档（项目目录/../../axhost-make/system-rules/components-spec.md）'
       : '请根据用户指示决定是否阅读页面文档。\n直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。';
     return [
       '# Current Page',

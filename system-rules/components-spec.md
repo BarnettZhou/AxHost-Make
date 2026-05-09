@@ -8,29 +8,72 @@
 - **独立预览**：通过开发模式左侧目录树打开，展示完整效果和交互。
 - **被页面复用**：组件的 CSS/JS 可被 `prototype/pages/` 下的页面引用。
 
-## 2. 组件设计原则
+## 2. 模板选择
 
-### 2.1 分离「组件本体」与「演示外壳」
+创建组件时提供两种模板：
 
-组件的 `index.html` 应清晰区分核心 DOM 和演示代码：
+| 模板 | 使用场景 | 对应文件 |
+|------|---------|---------|
+| 默认 | 桌面端组件，居中 `demo-container` 上中下三区结构 | `templates/project/components/component.html` |
+| 手机 | 手机端组件，手机外壳 + 右侧控制面板 | `templates/project/components/component-mobile.html` |
+
+两种模板的演示外壳 CSS 均内联在 `<style>` 中，`resources/css/style.css` 保持空白，由 Agent 填充组件本身样式。
+
+> **开发前检查**：创建组件前，必须先查阅项目 `rules/design.md`，了解已有的公共样式、配色方案和可复用组件，优先引用而非重写。
+
+## 3. 组件设计原则
+
+### 3.1 分离「组件本体」与「演示外壳」
+
+组件的 `index.html` 应清晰区分核心 DOM 和演示代码。
+
+**默认模板结构**（`demo-container` 1200×720 max，页面背景 `#ebe7f3`）：
 
 ```html
 <body>
-  <!-- ========== 组件本体（可被 page 复用）========== -->
-  <div class="ax-component" id="toast-container">
-    <!-- 组件真正的 HTML 结构 -->
+  <div class="demo-container">
+    <div class="demo-header">
+      <h2>组件名称</h2>            <!-- 演示：标题 -->
+    </div>
+    <div class="demo-body">
+      <!-- ========== 组件本体（可被 page 复用）========== -->
+      <div class="ax-component">
+        <!-- 组件真正的 HTML 结构 -->
+      </div>
+    </div>
+    <div class="demo-footer demo-controls">
+      <!-- 演示：触发按钮 -->
+    </div>
   </div>
+</body>
+```
 
-  <!-- ========== 演示外壳（仅用于独立预览）========== -->
-  <div class="demo-controls">
-    <button onclick="showToast()">触发 Toast</button>
+**手机模板结构**（手机外壳 375×812 + 右侧控制面板 280×812，页面背景 `#ebe7f3`）：
+
+```html
+<body>
+  <div class="phone">               <!-- 手机外壳（状态栏 + 内容 + Home Indicator）-->
+    <div class="phone-content">
+      <div class="ax-component">
+        <!-- 组件真正的 HTML 结构 -->
+      </div>
+    </div>
+  </div>
+  <div class="control-panel">       <!-- 右侧控制面板 -->
+    <div class="control-panel-header">
+      <h2>组件名称</h2>            <!-- 演示：标题 -->
+    </div>
+    <div class="control-panel-body demo-controls">
+      <!-- 演示：触发按钮 -->
+    </div>
   </div>
 </body>
 ```
 
 `ax-component` 类名用于标记可复用核心 DOM，方便 LLM 快速识别。
+`demo-controls` 类名用于标记演示交互区域，Agent 添加触发按钮时应放在此处。
 
-### 2.2 CSS/JS 纯净原则
+### 3.2 CSS/JS 纯净原则
 
 组件 `resources/css/style.css` 和 `resources/js/main.js` **只能包含组件功能本身**的样式和逻辑，**严禁**写入以下内容：
 
@@ -63,7 +106,7 @@
 
 演示专属样式和初始化代码放在 `index.html` 的内联 `<style>` 和 `<script>` 中。
 
-### 2.3 资源引用分层
+### 3.3 资源引用分层
 
 | 资源类型 | 放置位置 | 引用方式 |
 |---------|---------|---------|
@@ -72,7 +115,7 @@
 
 如果某个功能可能在多个组件/页面中使用，**必须**将其提取到 `prototype/resources/` 下。
 
-### 2.4 组件化方案
+### 3.4 组件化方案
 
 #### 方案 A：Web Components（推荐）
 
@@ -108,13 +151,13 @@ window.AxComponents.DatePicker = {
 
 组件 JS **不应**包含自动初始化代码。演示初始化放在 `index.html` 内联 `<script>` 中。
 
-## 3. 页面复用组件
+## 4. 页面复用组件
 
-### 3.1 复用优先于重写
+### 4.1 复用优先于重写
 
 创建新 page 前，**必须**检查 `prototype/components/` 下是否已有功能相似的组件。通过 `prototype/sitemap.js` 的 components 列表了解已有组件。
 
-### 3.2 复用方式
+### 4.2 复用方式
 
 | 组件类型 | 复用方式 |
 |---------|---------|
@@ -122,7 +165,7 @@ window.AxComponents.DatePicker = {
 | Web Components | 引用组件 JS + 使用自定义标签 `<ax-xxx>` |
 | UI 片段类（弹窗、筛选器等） | 引用组件 CSS + 从组件 `index.html` 提取 `.ax-component` 片段 |
 
-### 3.3 引用路径
+### 4.3 引用路径
 
 page 位于 `pages/{hash}/`，component 位于 `components/{hash}/`：
 
@@ -135,7 +178,7 @@ page 位于 `pages/{hash}/`，component 位于 `components/{hash}/`：
 <link rel="stylesheet" href="../../resources/css/toast.css">
 ```
 
-### 3.4 Web Components 复用流程
+### 4.4 Web Components 复用流程
 
 1. 在 page 中添加 `<script src="../../components/{hash}/resources/js/main.js"></script>`
 2. 在需要的位置插入 `<ax-xxx></ax-xxx>`
@@ -144,14 +187,14 @@ page 位于 `pages/{hash}/`，component 位于 `components/{hash}/`：
 
 > Web Components 使用 light DOM，页面级 CSS 直接生效。组件内部避免使用可能冲突的全局 ID。
 
-### 3.5 函数式组件复用流程
+### 4.5 函数式组件复用流程
 
 1. 从组件 `index.html` 提取 `.ax-component` 片段（排除 `.demo-controls`）
 2. 修正资源路径为相对于 page 的路径
 3. 在 page 的 JS 中调用组件暴露的 `init()` 函数
 4. 传给 `init()` 的容器必须是空容器（`init()` 会接管 innerHTML）
 
-## 4. 组件文档
+## 5. 组件文档
 
 每个组件的 `docs/readme.md` 应包含「复用指南」章节，说明：
 - 可复用资源（CSS/JS 文件路径）
@@ -159,6 +202,6 @@ page 位于 `pages/{hash}/`，component 位于 `components/{hash}/`：
 - 页面引入和调用方式
 - 是否依赖项目公共资源或页面级 CSS
 
-## 5. 公共资源清单
+## 6. 公共资源清单
 
 项目应在 `rules/resources.md` 中维护公共资源清单。当某功能在多个组件/页面中出现时，提取到 `prototype/resources/` 并更新清单。Agent 创建新 page/component 前应查阅清单，优先引用已有资源。

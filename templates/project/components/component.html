@@ -4,12 +4,68 @@
   <meta charset="UTF-8">
   <title>{{PAGE_NAME}} Component</title>
   <link rel="stylesheet" href="resources/css/style.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #ebe7f3; }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .demo-container {
+      width: 100%;
+      max-width: 1200px;
+      max-height: 720px;
+      height: 100%;
+      background: #fff;
+      border-radius: 0;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .demo-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      flex-shrink: 0;
+    }
+    .demo-header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin: 0;
+    }
+    .demo-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      overflow: auto;
+    }
+    .demo-footer {
+      padding: 16px 24px;
+      border-top: 1px solid #f0f0f0;
+      flex-shrink: 0;
+      min-height: 60px;
+    }
+  </style>
 </head>
 <body>
-  <div class="component-wrapper">
-    <!-- 组件内容区域 -->
-    <h2>{{PAGE_NAME}}</h2>
-    <p>请在 docs/readme.md 中描述组件规格，然后使用 Prompt 驱动 Agent 生成代码。</p>
+  <!-- ========== 演示外壳（仅用于独立预览）========== -->
+  <div class="demo-container">
+    <div class="demo-header">
+      <h2>{{PAGE_NAME}}</h2>
+    </div>
+    <div class="demo-body">
+      <!-- ========== 组件本体（可被 page 复用）========== -->
+      <div class="ax-component">
+        <!-- 组件真正的 HTML 结构 -->
+      </div>
+    </div>
+    <div class="demo-footer demo-controls">
+      <!-- 触发组件效果的按钮放置区域 -->
+    </div>
   </div>
   <script src="resources/js/main.js"></script>
 </body>
