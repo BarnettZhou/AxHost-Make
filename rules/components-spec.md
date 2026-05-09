@@ -103,23 +103,48 @@ components/xxx/
 - 如果某个功能（如 Toast）可能在多个组件/页面中使用，**必须**将其 CSS/JS 提取到 `prototype/resources/` 下。
 - 组件自身独有的样式和逻辑，保留在组件的 `resources/` 目录下。
 
-### 2.4 组件初始化函数化
+### 2.4 组件化方案选择
 
-组件的 JS 应该暴露一个**可重复调用的初始化函数**，而不是在页面加载时立即执行。这样 page 可以按需初始化。
+根据组件复杂度，选择合适的实现方式：
+
+#### 方案 A：Web Components（推荐）
+
+使用浏览器原生 Custom Elements API，**不需要 build**，支持声明式标签 `<ax-xxx>`。
 
 **推荐写法**：
 
 ```js
 // components/xx/resources/js/main.js
-window.AxComponents = window.AxComponents || {};
-window.AxComponents.Toast = {
-  init: function(container) {
-    // 在 container 内初始化组件
-    // 返回组件实例或控制接口
-  },
-  show: function(message) {
-    // 公共 API
+class AxToolbarRow1 extends HTMLElement {
+  connectedCallback() {
+    this.innerHTML = `
+      <div class="toolbar-wrap">...</div>
+    `;
+    this.initInteractions();
   }
+  initInteractions() {
+    // 使用 this.querySelector() 绑定事件，避免全局 ID 冲突
+    const btn = this.querySelector('.my-btn');
+    btn.addEventListener('click', () => { ... });
+  }
+}
+customElements.define('ax-toolbar-row1', AxToolbarRow1);
+```
+
+**关键原则**：
+- 采用 **light DOM** 模式（不使用 Shadow DOM），页面级 CSS 完全透传生效
+- 事件绑定使用 `this.querySelector()`，避免与页面其他元素 ID 冲突
+- 交互逻辑自包含在组件类中，页面无需额外初始化代码
+- 通用功能（如横向滚动按钮）也内聚在组件内部
+
+#### 方案 B：函数式初始化（备选）
+
+对于简单 UI 片段或需要精细控制初始化时机的场景，暴露 `init()` 函数。
+
+```js
+window.AxComponents = window.AxComponents || {};
+window.AxComponents.DatePicker = {
+  init: function(container, options) { ... }
 };
 ```
 
@@ -142,6 +167,7 @@ window.AxComponents.Toast = {
 | 组件类型 | 复用方式 | 示例 |
 |---------|---------|------|
 | **全局工具类**（Toast、Loading 等） | 引用公共资源 | `<script src="../../resources/js/toast.js">` |
+| **Web Components**（toolbar、卡片等 UI 区块） | 引用组件 JS + 使用自定义标签 | `<script src="../../components/xx/resources/js/main.js"></script>` + `<ax-toolbar-row1></ax-toolbar-row1>` |
 | **UI 片段类**（弹窗、筛选器、表单等） | 引用组件资源 + copy HTML 结构 | 引用 `components/xx/resources/css/style.css`，从组件 `index.html` 中提取 `.ax-component` 片段 |
 | **布局框架类**（页面通用结构） | 以已有 page 为蓝本复制修改 | 参考同项目下已有的模板页面 |
 
@@ -165,48 +191,79 @@ window.AxComponents.Toast = {
 
 当 page 需要用到某个组件时，Agent 应按以下步骤操作：
 
+#### 方式一：Web Components 组件（推荐）
+
+1. **读取组件源码**：打开 `components/xx/index.html` 和 `components/xx/resources/js/main.js`。
+2. **引入组件脚本**：在 page 的 `index.html` 中添加 `<script src="../../components/xx/resources/js/main.js"></script>`。
+3. **使用自定义标签**：在需要的位置插入 `<ax-xxx></ax-xxx>`。
+4. **确保样式生效**：由于采用 light DOM，组件依赖页面级 CSS。检查 page 的 CSS 中是否已包含组件所需的样式类。
+5. **控制组件显隐（如需要）**：通过 `document.getElementById('xxx').style.display` 或组件暴露的属性控制。
+
+> **⚠️ 注意：Web Components 使用 light DOM**
+>
+> 组件通过 `this.innerHTML = ...` 渲染内容到 light DOM 中，页面级 CSS 直接生效，无需额外引入组件样式文件。
+>
+> 但这也意味着：
+> - 组件**不**自带样式隔离，依赖页面提供必要的 CSS 类。
+> - 组件内部的 ID 在页面全局命名空间中，应避免与页面其他元素 ID 冲突（组件内部推荐使用 `this.querySelector('.class')` 而非 `document.getElementById`）。
+
+#### 方式二：函数式组件（传统方式）
+
 1. **读取组件源码**：打开 `components/xx/index.html` 和 `components/xx/resources/` 下的文件。
 2. **提取可复用片段**：从 `index.html` 的 `<body>` 中提取 `.ax-component` 部分（排除 `.demo-controls` 等演示代码）。
-3. **修正路径**：将组件内部相对路径（如 `resources/css/style.css`）修正为相对于 page 的路径（如 `../../components/xx/resources/css/style.css`）。
+3. **修正路径**：将组件内部相对路径修正为相对于 page 的路径。
 4. **初始化为 page 场景**：在 page 的 `main.js` 中调用组件暴露的 `init()` 函数，传入 page 内的实际容器。
 5. **补充文档**：如果复用过程中发现组件缺少必要的 API 或结构不通用，先修改组件（提升其通用性），再完成 page。
 
 > **⚠️ 注意：`init()` 会接管容器的 innerHTML**
 >
-> 大部分组件的 `init(container, options)` 会通过 `container.innerHTML = ...` 渲染自身 DOM。这意味着**容器内原有的 HTML 会被销毁**。
->
-> 因此：
-> - 传给 `init()` 的容器必须是**空容器**（或 page 不关心其内容被覆盖）。
-> - 如果 page 需要在容器内放置自定义 HTML（如触发按钮），**不能**将同一个容器传给 `init()`。应创建独立的空容器承载组件，自定义 HTML 放在另一个容器中，通过事件绑定连接两者。
->
-> 示例——错误做法：
-> ```js
-> // ❌ 容器内已放置自定义按钮，init() 会将其覆盖
-> container.innerHTML = '<button id="myBtn">点击</button>';
-> AxComponents.PopupPicker.init(container, { ... }); // myBtn 被销毁！
-> ```
->
-> 示例——正确做法：
-> ```js
-> // ✅ 自定义按钮留在 filterItem 中，独立容器承载组件
-> var filterItem = document.getElementById('filterItem');
-> filterItem.innerHTML = '<button id="myBtn">点击</button>';
-> var overlay = document.createElement('div');
-> document.querySelector('.phone').appendChild(overlay);
-> var picker = AxComponents.PopupPicker.init(overlay, { ... });
-> document.getElementById('myBtn').addEventListener('click', function() { picker.open(); });
-> ```
+> 传给 `init()` 的容器必须是**空容器**（或 page 不关心其内容被覆盖）。
 
 ## 4. 组件文档要求
 
 每个组件的 `docs/readme.md` 应包含「复用指南」章节，说明：
 
 - 该组件提供了哪些可复用资源（CSS/JS 文件路径）
-- 组件本体的 HTML 结构示例
-- 如何在 page 中初始化和调用
-- 是否依赖项目公共资源
+- 组件的功能说明和交互说明
+- 如何在 page 中引入和调用
+- 是否依赖项目公共资源或页面级 CSS
 
-示例：
+### Web Components 组件的复用指南示例
+
+```markdown
+## 复用指南
+
+### 1. 引入脚本
+
+在页面 HTML 的 `</body>` 前添加：
+
+```html
+<script src="../../components/97bc28e4/resources/js/main.js"></script>
+```
+
+路径需根据当前文件位置调整。例如从 `pages/xxx/index.html` 引入时为 `../../components/...`。
+
+### 2. 使用组件标签
+
+在需要放置组件的位置插入：
+
+```html
+<ax-toolbar-row1></ax-toolbar-row1>
+```
+
+### 3. 样式依赖
+
+组件采用 **light DOM** 模式（无 Shadow DOM），依赖页面级 CSS。请确保页面已引入组件所需的样式类。
+
+### 4. 交互说明
+
+| 元素 | 交互 |
+|------|------|
+| 按钮 A | 点击触发 xxx |
+| 按钮 B | 点击触发 yyy |
+```
+
+### 函数式组件的复用指南示例
 
 ```markdown
 ## 复用指南
@@ -219,9 +276,7 @@ window.AxComponents.Toast = {
 
 ```html
 <link rel="stylesheet" href="../../components/97bc28e4/resources/css/style.css">
-<div class="filter-popup" id="myFilter">
-  <!-- 组件结构 -->
-</div>
+<div class="filter-popup" id="myFilter"></div>
 <script src="../../components/97bc28e4/resources/js/main.js"></script>
 ```
 

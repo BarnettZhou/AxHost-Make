@@ -38,12 +38,13 @@
   - 分离「组件本体」与「演示外壳」，`ax-component` 标记可复用核心 DOM。
   - 组件 CSS/JS 纯净原则：严禁在组件资源中写入全局重置、页面级样式、演示容器或自动初始化代码。
   - 资源引用分层：项目级公共资源放 `prototype/resources/`，组件私有资源放组件 `resources/` 下。
-  - 组件初始化函数化：暴露可重复调用的 `init()`，由 page 按需初始化。
+  - 组件化方案选择：支持 **Web Components**（原生 Custom Elements，声明式标签 `<ax-xxx>`）和 **函数式初始化**（暴露 `init()` API）两种模式，根据组件复杂度灵活选择。
 
 - **页面复用组件原则**
   - 复用优先于重写：创建 page 前先检查已有组件。
-  - 明确复用方式：全局工具类引用公共资源，UI 片段类引用组件资源 + copy HTML 结构。
-  - 注意 `init()` 会接管容器 innerHTML，自定义内容应与组件容器分离。
+  - 明确复用方式：全局工具类引用公共资源，Web Components 引用组件 JS + 使用自定义标签，UI 片段类引用组件资源 + copy HTML 结构。
+  - Web Components 采用 light DOM（无 Shadow DOM），页面级 CSS 直接生效，组件内部使用 `this.querySelector()` 避免全局 ID 冲突。
+  - 函数式组件注意 `init()` 会接管容器 innerHTML，自定义内容应与组件容器分离。
 
 - **组件文档要求**
   - 每个组件的 `docs/readme.md` 应包含「复用指南」章节。
