@@ -21,7 +21,7 @@ const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
 const { handleProjectInfoGet } = require('./api/project-info.js');
 const { handleExportDefaultDir, handleExportPost, handleExportPublish } = require('./api/export.js');
 const { handleOpenEditor } = require('./api/open-editor.js');
-const { handleOpenTerminal } = require('./api/terminal.js');
+const { handleOpenTerminal, handleOpenWslTerminal } = require('./api/terminal.js');
 const { handleAxHostProxy } = require('./api/axhost-proxy.js');
 
 function createRouter(workspaceRoot) {
@@ -106,6 +106,9 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/terminal/open' && req.method === 'POST') {
         return handleOpenTerminal(req, res, workspaceRoot);
+      }
+      if (urlPath === '/api/terminal/open-wsl' && req.method === 'POST') {
+        return handleOpenWslTerminal(req, res, workspaceRoot);
       }
       if (urlPath === '/api/axhost-proxy' && req.method === 'POST') {
         return handleAxHostProxy(req, res);

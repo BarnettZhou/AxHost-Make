@@ -69,4 +69,50 @@ async function handleOpenTerminal(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleOpenTerminal };
+function winToWslPath(p) {
+  const m = p.match(/^([A-Za-z]):\\(.+)$/);
+  if (!m) return p.replace(/\\/g, '/');
+  return `/mnt/${m[1].toLowerCase()}/${m[2].replace(/\\/g, '/')}`;
+}
+
+async function handleOpenWslTerminal(req, res, workspaceRoot) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const projectId = url.searchParams.get('project');
+      if (!projectId) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'project is required' }));
+        return;
+      }
+
+      const projectPath = path.join(workspaceRoot, 'projects', projectId);
+      const wslPath = winToWslPath(projectPath);
+
+      try {
+        execSync('where wsl', { stdio: 'ignore', timeout: 3000 });
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: '未找到 wsl 命令，请确认 WSL 已安装' }));
+        return;
+      }
+
+      // 在 WSL 终端中打开项目目录
+      spawn('wsl.exe', ['--cd', wslPath], {
+        detached: true,
+        windowsHide: false
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 0, data: { projectPath, wslPath } }));
+
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 500, message: err.message }));
+    }
+  });
+}
+
+module.exports = { handleOpenTerminal, handleOpenWslTerminal };

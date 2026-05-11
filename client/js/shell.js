@@ -114,6 +114,19 @@
           }
           return;
         }
+        if (action === 'wsl-terminal') {
+          try {
+            const res = await window.apiClient.postOpenWslTerminal();
+            if (res.code === 0) {
+              window.showToast('已在 WSL 中打开目录', 'success');
+            } else {
+              window.showToast(res.message || '打开失败', 'error');
+            }
+          } catch (err) {
+            window.showToast(err.message, 'error');
+          }
+          return;
+        }
         const editor = item.dataset.editor;
         try {
           const res = await window.apiClient.postOpenEditor({ editor });

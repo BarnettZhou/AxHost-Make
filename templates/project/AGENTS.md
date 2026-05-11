@@ -15,6 +15,18 @@
 7. **精准修改**：只修改与需求相关的文件，不重构未涉及的部分。
 8. **Git 安全**：未经允许禁止 `git push`、`git reset`、`git rebase`。不跳过 hooks。禁止删除用户数据。
 
+## 目录规则
+
+**项目目录**
+
+- 即本项目所在的目录，也为本 AGENTS.md 文件所在的目录：`{workspace}/projects/{project_hash}/`
+- 你当前所需要修改的代码文件也位于项目目录下
+
+**框架目录**
+
+- 框架目录位于 `{workspace}/axhost-make/`，若以项目目录出发，相对位置位于 `../../axhost-make/`
+- 框架目录内为 axhost 前后端代码、必要的规则文件（axhost-make/system-rules/）等
+
 ## 路径速查
 
 | 资源类型 | 存放位置 | 页面内引用方式 |
@@ -43,6 +55,10 @@ flowchart/{hash}/
 - 页面级资源（仅该页面使用）→ 页面 `resources/` 下；跨页面共享 → `prototype/resources/` 下。
 
 ## 按需阅读
+
+**注意**
+
+- 本节内的相对路径以项目根目录为起点（即本 AGENTS.md 文件所在的目录）
 
 | 场景 | 文件 |
 |------|------|

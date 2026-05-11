@@ -87,6 +87,10 @@
     postOpenTerminal: () => request('/api/terminal/open', {
       method: 'POST',
       body: JSON.stringify({})
+    }),
+    postOpenWslTerminal: () => request('/api/terminal/open-wsl', {
+      method: 'POST',
+      body: JSON.stringify({})
     })
   };
 })();
