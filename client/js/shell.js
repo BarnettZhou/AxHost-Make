@@ -21,6 +21,7 @@
   const btnToggleRightBar = document.getElementById('btn-toggle-right-bar');
   const btnPreview = document.getElementById('btn-preview');
   const btnRefreshPreview = document.getElementById('btn-refresh-preview');
+  const btnOpenOnline = document.getElementById('btn-open-online');
   const btnSettings = document.getElementById('btn-settings');
   const settingsModal = document.getElementById('settings-modal');
   const settingsClose = document.getElementById('settings-close');
@@ -444,6 +445,7 @@
     } catch (e) {}
   }
   loadProjectInfo();
+  loadSettings();
 
   async function loadSettings() {
     try {
@@ -452,6 +454,7 @@
         projectNameInput.value = data.data.name || '';
         currentSettingsLink = data.data.link || null;
         renderHostProjectState();
+        updateOpenOnlineButton();
       }
     } catch (e) {}
     const projectIdEl = document.getElementById('settings-project-id');
@@ -472,6 +475,18 @@
       selectedHostProject = null;
     }
     hostProjectHint.textContent = '';
+  }
+
+  function updateOpenOnlineButton() {
+    if (!btnOpenOnline) return;
+    const baseUrl = localStorage.getItem('axhost-server-url');
+    if (currentSettingsLink && currentSettingsLink.remoteProjectId && baseUrl) {
+      btnOpenOnline.classList.remove('disabled');
+      btnOpenOnline.dataset.url = baseUrl.replace(/\/+$/, '') + '/projects/' + currentSettingsLink.remoteProjectId + '/index.html';
+    } else {
+      btnOpenOnline.classList.add('disabled');
+      delete btnOpenOnline.dataset.url;
+    }
   }
 
   async function fetchHostProjects() {
@@ -533,6 +548,14 @@
     hostProjectDropdown.classList.add('open');
   }
 
+  if (btnOpenOnline) {
+    btnOpenOnline.addEventListener('click', () => {
+      if (btnOpenOnline.dataset.url) {
+        window.open(btnOpenOnline.dataset.url, '_blank');
+      }
+    });
+  }
+
   if (btnSettings && settingsModal) {
     btnSettings.addEventListener('click', async () => {
       await loadSettings();
@@ -569,6 +592,7 @@
     btnUnlinkProject.addEventListener('click', async () => {
       currentSettingsLink = null;
       renderHostProjectState();
+      updateOpenOnlineButton();
       try {
         await window.apiClient.postSettings({ link: null });
       } catch (e) {}
@@ -697,6 +721,8 @@
       try {
         await window.apiClient.postSettings(payload);
         if (projectNameEl) projectNameEl.textContent = name;
+        currentSettingsLink = payload.link || null;
+        updateOpenOnlineButton();
         closeSettings();
         window.showToast('设置保存成功', 'success');
       } catch (err) {
