@@ -167,12 +167,14 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   try { await fs.access(jsPath); } catch { await fs.writeFile(jsPath, '', 'utf-8'); }
 
   const tplDoc = await fs.readFile(path.join(TEMPLATE_ROOT, 'docs', 'readme.md'), 'utf-8');
+  const tplNotes = await fs.readFile(path.join(TEMPLATE_ROOT, 'docs', 'notes.md'), 'utf-8');
   await fs.mkdir(path.join(targetDir, 'docs'), { recursive: true });
   await fs.writeFile(path.join(targetDir, 'docs', 'readme.md'), applyTemplate(tplDoc, vars), 'utf-8');
+  await fs.writeFile(path.join(targetDir, 'docs', 'notes.md'), applyTemplate(tplNotes, vars), 'utf-8');
 
   // Update sitemap
   const sitemap = await readSitemap(projectRoot);
-  const docs = ['readme.md'];
+  const docs = ['readme.md', 'notes.md'];
   const nodeData = {
     id: hash,
     name,
