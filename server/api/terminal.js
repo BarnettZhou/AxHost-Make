@@ -115,4 +115,62 @@ async function handleOpenWslTerminal(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleOpenTerminal, handleOpenWslTerminal };
+function isWsl() {
+  if (process.platform !== 'linux') return false;
+  try {
+    const fs = require('fs');
+    const v = fs.readFileSync('/proc/version', 'utf8').toLowerCase();
+    return v.includes('microsoft') || v.includes('wsl');
+  } catch { return false; }
+}
+
+function commandExists(cmd) {
+  try {
+    const check = process.platform === 'win32' ? `where ${cmd}` : `which ${cmd}`;
+    execSync(check, { stdio: 'ignore', timeout: 3000 });
+    return true;
+  } catch { return false; }
+}
+
+async function handleOpenTerminalWsl(req, res, workspaceRoot) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const projectId = url.searchParams.get('project');
+      if (!projectId) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'project is required' }));
+        return;
+      }
+
+      const projectPath = path.join(workspaceRoot, 'projects', projectId);
+
+      if (!isWsl()) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: '当前不在 WSL 环境中运行' }));
+        return;
+      }
+
+      if (!commandExists('wsl.exe')) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: '未找到 wsl.exe，WSL Interop 可能未启用' }));
+        return;
+      }
+
+      spawn('cmd.exe', ['/c', 'start', 'wsl.exe', '--cd', projectPath], {
+        detached: true,
+        windowsHide: false
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 0, data: { projectPath, mode: 'wsl-interop' } }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 500, message: err.message }));
+    }
+  });
+}
+
+module.exports = { handleOpenTerminal, handleOpenWslTerminal, handleOpenTerminalWsl };

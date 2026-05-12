@@ -46,7 +46,11 @@
   node axhost-make/bin/axhost-make.js serve --port 3820
   ```
 
-### 3. 图标规范
+### 3. 服务重启规范
+
+修改 `server/` 后需要重启 Node 服务才能生效。**重启 serve 的操作由用户自己执行**，不要代替用户执行。如果需要观察重启后的输出或验证效果，则向用户提示需要重启，并说明预期结果。
+
+### 4. 图标规范
 
 框架统一使用 `<iconpark-icon>` 图标组件：
 - `client/js/icons.js` 是 IconPark CDN 的 loader。开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。

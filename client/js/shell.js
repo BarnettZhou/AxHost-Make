@@ -128,6 +128,19 @@
           }
           return;
         }
+        if (action === 'wsl-terminal-v2') {
+          try {
+            const res = await window.apiClient.postOpenWslTerminalV2();
+            if (res.code === 0) {
+              window.showToast('已用 WSL Interop 打开终端', 'success');
+            } else {
+              window.showToast(res.message || '打开失败', 'error');
+            }
+          } catch (err) {
+            window.showToast(err.message, 'error');
+          }
+          return;
+        }
         if (action === 'copy-project-path') {
           const info = window.__axhostProjectInfo;
           if (info && info.projectAbsolutePath) {
