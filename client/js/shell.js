@@ -128,6 +128,19 @@
           }
           return;
         }
+        if (action === 'copy-project-path') {
+          const info = window.__axhostProjectInfo;
+          if (info && info.projectAbsolutePath) {
+            navigator.clipboard.writeText(info.projectAbsolutePath).then(() => {
+              window.showToast('项目路径已复制', 'success');
+            }).catch(() => {
+              window.showToast('复制失败', 'error');
+            });
+          } else {
+            window.showToast('未获取到项目路径', 'error');
+          }
+          return;
+        }
         const editor = item.dataset.editor;
         try {
           const res = await window.apiClient.postOpenEditor({ editor });
