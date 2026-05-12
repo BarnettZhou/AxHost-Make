@@ -98,6 +98,38 @@
         editorDropdown.classList.remove('open');
       }
     });
+  }
+
+  function renderEditorDropdown(env) {
+    if (!editorDropdown) return;
+    const editorNames = { vscode: 'VS Code', cursor: 'Cursor', trae: 'Trae' };
+    let html = '';
+
+    if (env.editors && env.editors.length) {
+      for (const editor of env.editors) {
+        html += `<div class="editor-dropdown-item" data-editor="${editor}">使用 ${editorNames[editor] || editor} 打开</div>`;
+      }
+    }
+
+    html += `<div class="editor-dropdown-divider"></div>`;
+    html += `<div class="editor-dropdown-item" data-action="copy-project-path">复制项目路径</div>`;
+    html += `<div class="editor-dropdown-divider"></div>`;
+
+    if (env.isWsl) {
+      html += `<div class="editor-dropdown-item" data-action="terminal">打开 WSL 终端</div>`;
+    } else if (env.platform === 'win32') {
+      html += `<div class="editor-dropdown-item" data-action="terminal">使用 PowerShell 打开</div>`;
+      if (env.hasWsl) {
+        html += `<div class="editor-dropdown-item" data-action="wsl-terminal">在 WSL 中打开</div>`;
+      }
+    } else if (env.platform === 'darwin') {
+      html += `<div class="editor-dropdown-item" data-action="terminal">在 Terminal 中打开</div>`;
+    } else {
+      html += `<div class="editor-dropdown-item" data-action="terminal">打开终端</div>`;
+    }
+
+    editorDropdown.innerHTML = html;
+
     editorDropdown.querySelectorAll('.editor-dropdown-item').forEach(item => {
       item.addEventListener('click', async () => {
         editorDropdown.classList.remove('open');
@@ -106,7 +138,7 @@
           try {
             const res = await window.apiClient.postOpenTerminal();
             if (res.code === 0) {
-              window.showToast('已打开命令行窗口', 'success');
+              window.showToast('已打开终端', 'success');
             } else {
               window.showToast(res.message || '打开失败', 'error');
             }
@@ -120,19 +152,6 @@
             const res = await window.apiClient.postOpenWslTerminal();
             if (res.code === 0) {
               window.showToast('已在 WSL 中打开目录', 'success');
-            } else {
-              window.showToast(res.message || '打开失败', 'error');
-            }
-          } catch (err) {
-            window.showToast(err.message, 'error');
-          }
-          return;
-        }
-        if (action === 'wsl-terminal-v2') {
-          try {
-            const res = await window.apiClient.postOpenWslTerminalV2();
-            if (res.code === 0) {
-              window.showToast('已用 WSL Interop 打开终端', 'success');
             } else {
               window.showToast(res.message || '打开失败', 'error');
             }
@@ -467,6 +486,7 @@
       const data = await res.json();
       if (data.code === 0) {
         window.__axhostProjectInfo = data.data;
+        renderEditorDropdown(data.data);
       }
     } catch (e) {}
   }
