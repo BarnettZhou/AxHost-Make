@@ -50,7 +50,9 @@ async function handleOpenTerminal(req, res, workspaceRoot) {
           res.end(JSON.stringify({ code: 400, message: '未找到 wsl.exe，WSL Interop 可能未启用' }));
           return;
         }
-        spawn('cmd.exe', ['/c', 'start', 'wsl.exe', '--cd', projectPath], {
+        const distro = process.env.WSL_DISTRO_NAME;
+        const wslArgs = distro ? ['-d', distro, '--cd', projectPath] : ['--cd', projectPath];
+        spawn('cmd.exe', ['/c', 'start', 'wsl.exe', ...wslArgs], {
           detached: true,
           windowsHide: false
         });
