@@ -179,6 +179,7 @@
       .inspector-popup-footer .inspector-copy-selector:hover {
         opacity: 0.9;
       }
+
       .inspector-popup-footer .text-btn {
         background: transparent;
         border: none;
@@ -221,14 +222,9 @@
   function injectIconPark(doc) {
     if (!doc || !doc.head) return;
     if (doc.querySelector('script[data-iconpark]')) return;
-    var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_39.3d5334329926fcf46130549c922bd1c4.js';
-    if (window.__axhostIconParkES5) {
-      url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_39.3d5334329926fcf46130549c922bd1c4.es5.js';
-    }
     var script = doc.createElement('script');
-    script.src = url;
+    script.src = '/client/js/icons.js';
     script.defer = true;
-    script.setAttribute('data-iconpark', 'true');
     doc.head.appendChild(script);
   }
 
@@ -400,6 +396,9 @@
         <button class="inspector-popup-parent text-btn" title="选中父元素" ${hasParent ? '' : 'disabled'}>
           <iconpark-icon icon-id="up" size="14" color="currentColor"></iconpark-icon>
         </button>
+        <button class="inspector-copy-image text-btn" title="复制为图片">
+          <iconpark-icon icon-id="down-picture" size="14" color="currentColor"></iconpark-icon>
+        </button>
         <button class="inspector-copy-selector">复制选择器</button>
       </div>
     `;
@@ -445,6 +444,13 @@
       const selector = generateSelector(targetEl);
       copyToClipboard(selector);
     });
+    const btnCopyImage = popup.querySelector('.inspector-copy-image');
+    if (btnCopyImage) {
+      btnCopyImage.addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyElementAsImage(targetEl);
+      });
+    }
     const btnParent = popup.querySelector('.inspector-popup-parent');
     if (btnParent && hasParent) {
       btnParent.addEventListener('click', (e) => {
@@ -512,6 +518,79 @@
       const ok = document.execCommand('copy');
       document.body.removeChild(textarea);
       if (window.showToast) window.showToast(ok ? '选择器已复制' : '复制失败', ok ? 'success' : 'error');
+    }
+  }
+
+  async function copyElementAsImage(el) {
+    if (typeof htmlToImage === 'undefined') {
+      if (window.showToast) window.showToast('图片库未加载', 'error');
+      return;
+    }
+
+    // 查找有效背景色（向上追溯祖先）
+    let bg = getComputedStyle(el).backgroundColor;
+    let target = el;
+    while ((!bg || bg === 'rgba(0, 0, 0, 0)' || bg === 'transparent') && target.parentElement) {
+      target = target.parentElement;
+      bg = getComputedStyle(target).backgroundColor;
+    }
+
+    // 保存并临时隐藏滚动条、应用背景色
+    const originalBg = el.style.backgroundColor;
+    if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+      el.style.backgroundColor = bg;
+    }
+
+    // 递归隐藏所有后代元素的滚动条
+    const scrollEls = [];
+    const walker = el.ownerDocument.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const s = getComputedStyle(node);
+      if (s.overflow === 'auto' || s.overflow === 'scroll' ||
+          s.overflowX === 'auto' || s.overflowX === 'scroll' ||
+          s.overflowY === 'auto' || s.overflowY === 'scroll') {
+        scrollEls.push({
+          el: node,
+          overflow: node.style.overflow,
+          overflowX: node.style.overflowX,
+          overflowY: node.style.overflowY
+        });
+        node.style.overflow = 'hidden';
+        node.style.overflowX = 'hidden';
+        node.style.overflowY = 'hidden';
+      }
+    }
+
+    try {
+      const blob = await htmlToImage.toBlob(el, {
+        backgroundColor: (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') ? bg : '#ffffff'
+      });
+      if (!blob) {
+        if (window.showToast) window.showToast('生成图片失败', 'error');
+        return;
+      }
+      if (navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        if (window.showToast) window.showToast('图片已复制到剪贴板', 'success');
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'element.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        if (window.showToast) window.showToast('浏览器不支持剪贴板图片，已触发下载', 'warning');
+      }
+    } catch (err) {
+      if (window.showToast) window.showToast('复制失败: ' + (err.message || ''), 'error');
+    } finally {
+      scrollEls.forEach(({ el: node, overflow, overflowX, overflowY }) => {
+        node.style.overflow = overflow;
+        node.style.overflowX = overflowX;
+        node.style.overflowY = overflowY;
+      });
+      el.style.backgroundColor = originalBg;
     }
   }
 })();
