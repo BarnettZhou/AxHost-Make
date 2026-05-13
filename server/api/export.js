@@ -7,6 +7,15 @@ async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
 
+function hasZipCommand() {
+  try {
+    execSync('which zip', { encoding: 'utf-8', timeout: 5000 });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function getWindowsDocumentsPath() {
   try {
     const output = execSync(
@@ -250,9 +259,13 @@ async function handleExportPublish(req, res, workspaceRoot) {
       // 2. Copy files
       await prepareExportDir(srcPrototypeDir, cacheDir, selectedPages, selectedComponents, selectedFlowcharts);
 
-      // 3. Pack to zip using tar (bsdtar supports zip on Windows 10+)
+      // 3. Pack to zip (Windows bsdtar supports zip; Linux uses zip command)
       try { await fs.rm(zipPath, { force: true }); } catch (e) {}
-      execSync(`tar -acf "${zipPath}" -C "${cacheDir}" .`, { timeout: 30000 });
+      if (process.platform === 'win32' || !hasZipCommand()) {
+        execSync(`tar -acf "${zipPath}" -C "${cacheDir}" .`, { timeout: 30000 });
+      } else {
+        execSync(`cd "${cacheDir}" && zip -r "${zipPath}" .`, { timeout: 30000 });
+      }
 
       // 4. Upload to AxHost
       const uploadUrl = serverUrl.replace(/\/+$/, '') + `/api/projects/${remoteProjectId}/update-file`;
