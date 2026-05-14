@@ -47,11 +47,16 @@ async function handleFilePost(req, res, projectRoot) {
         return;
       }
       const filePath = path.resolve(projectRoot, filePathInput);
+      let isNew = true;
+      try {
+        await fs.access(filePath);
+        isNew = false;
+      } catch {}
       await fs.mkdir(path.dirname(filePath), { recursive: true });
       await fs.writeFile(filePath, content, 'utf-8');
       const dir = path.dirname(filePath);
       const fileName = path.basename(filePath);
-      if (path.basename(dir) === 'docs' && ext === '.md') {
+      if (path.basename(dir) === 'docs' && ext === '.md' && isNew) {
         await addToOrder(dir, fileName);
       }
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });

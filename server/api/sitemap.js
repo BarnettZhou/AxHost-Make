@@ -83,6 +83,22 @@ async function regenerateSitemap(projectRoot) {
   sitemap.components = prune(sitemap.components || []);
   sitemap.flowcharts = prune(sitemap.flowcharts || []);
 
+  // Refresh docs for existing nodes
+  async function refreshNodeDocs(nodes, tabPath) {
+    for (const n of nodes) {
+      if (n.children) {
+        await refreshNodeDocs(n.children, tabPath);
+      }
+      if (n.type !== 'dir') {
+        n.docs = await readDocs(path.join(tabPath, n.path));
+      }
+    }
+  }
+  for (const tab of ['pages', 'components', 'flowcharts']) {
+    const tabPath = path.join(projectRoot, 'prototype', tab);
+    await refreshNodeDocs(sitemap[tab] || [], tabPath);
+  }
+
   // Discover new physical dirs not in sitemap
   for (const tab of ['pages', 'components', 'flowcharts']) {
     const tabPath = path.join(projectRoot, 'prototype', tab);

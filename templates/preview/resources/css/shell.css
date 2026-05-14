@@ -1845,7 +1845,10 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   background: #0958d9;
   border-color: #0958d9;
 }
-#shell-header button.disabled,
+#shell-header button.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
 .inspector-popup {
   position: absolute;
   z-index: 999999;

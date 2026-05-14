@@ -39,7 +39,49 @@
 
   function renderMarkdown(mdText) {
     if (!window.marked) return '<p>marked.js not loaded</p>';
-    return window.marked.parse(mdText || '', { headerIds: false, mangle: false });
+
+    function parseDocLink(href) {
+      if (!href || typeof href !== 'string') return null;
+      if (/^[^/#@][^/]*\.md$/i.test(href)) {
+        return { mode: 'same-page', doc: href };
+      }
+      const pageMatch = href.match(/^@([^/]+)\/(.+\.md)$/i);
+      if (pageMatch) {
+        return { mode: 'cross-page', type: 'page', path: pageMatch[1], doc: pageMatch[2] };
+      }
+      const compMatch = href.match(/^#([^/]+)\/(.+\.md)$/i);
+      if (compMatch) {
+        return { mode: 'cross-page', type: 'component', path: compMatch[1], doc: compMatch[2] };
+      }
+      return null;
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    const renderer = new window.marked.Renderer();
+    const originalLink = renderer.link.bind(renderer);
+    renderer.link = function (token) {
+      const parsed = parseDocLink(token.href);
+      if (parsed) {
+        const attrs = [
+          'href="#"',
+          `data-doc-link="${parsed.mode}"`,
+          `data-doc-name="${escapeHtml(parsed.doc)}"`
+        ];
+        if (parsed.type) attrs.push(`data-doc-type="${parsed.type}"`);
+        if (parsed.path) attrs.push(`data-doc-path="${escapeHtml(parsed.path)}"`);
+        return `<a ${attrs.join(' ')}>${this.parser.parseInline(token.tokens)}</a>`;
+      }
+      return originalLink(token);
+    };
+
+    return window.marked.parse(mdText || '', {
+      headerIds: false,
+      mangle: false,
+      renderer: renderer
+    });
   }
 
   async function loadDocs(type, pagePath) {
@@ -73,6 +115,14 @@
     }
     if (token !== loadToken) return;
     currentDocs = docs;
+
+    // Handle pending doc from cross-page navigation
+    if (window.__axhostPendingDoc && currentDocs.length > 0) {
+      const idx = currentDocs.findIndex(d => d.name === window.__axhostPendingDoc);
+      if (idx >= 0) activeDocIndex = idx;
+      window.__axhostPendingDoc = null;
+    }
+
     renderDocTabs();
     renderDocContent();
   }
@@ -103,6 +153,8 @@
     }
     const html = renderMarkdown(currentDocs[activeDocIndex].content);
     docContent.innerHTML = `<div class="doc-view">${html}</div>`;
+    const view = docContent.querySelector('.doc-view');
+    if (view) attachDocLinkHandler(view);
   }
 
   function renderTabs() {
@@ -257,6 +309,17 @@
     return null;
   }
 
+  function findNodeByPath(nodes, targetPath) {
+    for (const n of nodes) {
+      if ((n.type === 'page' || n.type === 'component' || n.type === 'flowchart') && n.path === targetPath) return n;
+      if (n.children) {
+        const f = findNodeByPath(n.children, targetPath);
+        if (f) return f;
+      }
+    }
+    return null;
+  }
+
   function expandAncestors(nodePath) {
     const parts = nodePath.split('/');
     let prefix = '';
@@ -337,6 +400,47 @@
       loadDocs(targetTab, node.path);
     }
   });
+
+  function attachDocLinkHandler(container) {
+    container.addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-doc-link]');
+      if (!link) return;
+      e.preventDefault();
+      const mode = link.dataset.docLink;
+      const docName = link.dataset.docName;
+      if (!docName) return;
+      if (mode === 'same-page') {
+        const idx = currentDocs.findIndex(d => d.name === docName);
+        if (idx >= 0) {
+          activeDocIndex = idx;
+          renderDocTabs();
+          renderDocContent();
+        }
+        return;
+      }
+      if (mode === 'cross-page') {
+        const type = link.dataset.docType;
+        const path = link.dataset.docPath;
+        if (!type || !path) return;
+        const tab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
+        if (tab === activeType && path === activePath) {
+          const idx = currentDocs.findIndex(d => d.name === docName);
+          if (idx >= 0) {
+            activeDocIndex = idx;
+            renderDocTabs();
+            renderDocContent();
+          }
+          return;
+        }
+        const allNodes = [...(map.pages || []), ...(map.components || []), ...(map.flowcharts || [])];
+        const node = findNodeByPath(allNodes, path);
+        if (node) {
+          window.__axhostPendingDoc = docName;
+          location.hash = '#' + node.id;
+        }
+      }
+    });
+  }
 
   const hashId = location.hash ? location.hash.slice(1) : '';
   const allNodes = [...(map.pages || []), ...(map.components || []), ...(map.flowcharts || [])];

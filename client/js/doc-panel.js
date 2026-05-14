@@ -14,7 +14,7 @@
   let currentPath = null;
   let loadToken = 0;
 
-  async function load(type, pagePath) {
+  async function load(type, pagePath, targetDoc) {
     const token = ++loadToken;
     currentType = type;
     currentPath = pagePath;
@@ -42,6 +42,15 @@
     if (token !== loadToken) return;
     currentDocs = docs;
     isPreviewMode = true;
+
+    // Handle target doc or pending doc from cross-page navigation
+    const pendingDoc = targetDoc || window.__axhostPendingDoc;
+    if (pendingDoc && currentDocs.length > 0) {
+      const idx = currentDocs.findIndex(d => d.name === pendingDoc);
+      if (idx >= 0) activeDocIndex = idx;
+      window.__axhostPendingDoc = null;
+    }
+
     renderTabs();
     updateActionButtons();
     renderContent();
@@ -102,17 +111,21 @@
         textarea.addEventListener('input', () => {
           previewWrap.innerHTML = window.mdRenderer.renderMarkdown(textarea.value);
         });
+        bindDocLinkAutocomplete(textarea);
       } else {
         docContent.classList.remove('split');
         const textarea = document.createElement('textarea');
         textarea.className = 'doc-editor';
         textarea.value = currentDocs[activeDocIndex].content;
         docContent.appendChild(textarea);
+        bindDocLinkAutocomplete(textarea);
       }
     } else {
       docContent.classList.remove('split');
       const html = window.mdRenderer.renderMarkdown(currentDocs[activeDocIndex].content);
       docContent.innerHTML = `<div class="doc-view">${html}</div>`;
+      const view = docContent.querySelector('.doc-view');
+      if (view) attachDocLinkHandler(view);
     }
   }
 
@@ -521,6 +534,297 @@
     const menu = document.getElementById('doc-tab-context-menu');
     if (menu) menu.remove();
   }
+
+  /* ========== Doc Link Click Handler ========== */
+  function attachDocLinkHandler(container) {
+    container.addEventListener('click', (e) => {
+      const link = e.target.closest('a[data-doc-link]');
+      if (!link) return;
+      e.preventDefault();
+      const mode = link.dataset.docLink;
+      const docName = link.dataset.docName;
+      if (!docName) return;
+      if (mode === 'same-page') {
+        const idx = currentDocs.findIndex(d => d.name === docName);
+        if (idx >= 0) {
+          activeDocIndex = idx;
+          isEditMode = false;
+          renderTabs();
+          updateActionButtons();
+          renderContent();
+        }
+        return;
+      }
+      if (mode === 'cross-page') {
+        const type = link.dataset.docType;
+        const path = link.dataset.docPath;
+        if (!type || !path) return;
+        if (type === currentType && path === currentPath) {
+          const idx = currentDocs.findIndex(d => d.name === docName);
+          if (idx >= 0) {
+            activeDocIndex = idx;
+            isEditMode = false;
+            renderTabs();
+            updateActionButtons();
+            renderContent();
+          }
+          return;
+        }
+        const shell = window.shell || (window.parent && window.parent.shell);
+        if (shell && shell.loadPage) {
+          window.__axhostPendingDoc = docName;
+          shell.loadPage(type, path);
+        }
+      }
+    });
+  }
+
+  /* ========== Doc Link Autocomplete (Edit Mode) ========== */
+  let acDropdown = null;
+  let acState = null;
+  let pagesCache = null;
+  let componentsCache = null;
+  let isComposing = false;
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  async function loadScanData(type) {
+    if (type === 'pages' && pagesCache) return pagesCache;
+    if (type === 'components' && componentsCache) return componentsCache;
+    try {
+      const res = await window.apiClient.getScan(type);
+      if (res.code === 0) {
+        const list = flattenNodes(res.data || [], type);
+        if (type === 'pages') pagesCache = list;
+        else componentsCache = list;
+        return list;
+      }
+    } catch (e) { console.error('loadScanData error:', e); }
+    return [];
+  }
+
+  function flattenNodes(nodes, type, parentNames = []) {
+    const result = [];
+    for (const node of nodes) {
+      const currentNames = [...parentNames, node.name];
+      if (node.type === 'page' || node.type === 'component') {
+        result.push({
+          name: node.name,
+          path: node.path,
+          type: type,
+          breadcrumb: currentNames.join(' / ')
+        });
+      }
+      if (node.children && node.children.length) {
+        result.push(...flattenNodes(node.children, type, currentNames));
+      }
+    }
+    return result;
+  }
+
+  async function loadDocNames(type, path) {
+    const tab = type === 'page' ? 'pages' : 'components';
+    const base = `prototype/${tab}/${path}`;
+    try {
+      const res = await window.apiClient.getDocs(`${base}/docs`);
+      if (res.code === 0) return res.data || [];
+    } catch (e) {}
+    return ['readme.md'];
+  }
+
+  function getCaretCoordinates(textarea, position) {
+    const div = document.createElement('div');
+    const style = getComputedStyle(textarea);
+    const properties = [
+      'boxSizing','width','height','overflowX','overflowY',
+      'borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth',
+      'paddingTop','paddingRight','paddingBottom','paddingLeft',
+      'fontStyle','fontVariant','fontWeight','fontStretch','fontSize',
+      'fontFamily','lineHeight','textTransform','textIndent','textDecoration',
+      'letterSpacing','wordSpacing','tabSize','whiteSpace'
+    ];
+    div.style.position = 'fixed';
+    div.style.visibility = 'hidden';
+    div.style.whiteSpace = 'pre-wrap';
+    div.style.wordWrap = 'break-word';
+    properties.forEach(prop => { div.style[prop] = style[prop]; });
+    div.style.width = textarea.clientWidth + 'px';
+
+    const taRect = textarea.getBoundingClientRect();
+    div.style.left = taRect.left + 'px';
+    div.style.top = taRect.top + 'px';
+
+    const text = textarea.value.substring(0, position);
+    const span = document.createElement('span');
+    span.innerHTML = escapeHtml(text).replace(/\n/g, '<br/>');
+    const caret = document.createElement('span');
+    caret.textContent = '|';
+    div.appendChild(span);
+    div.appendChild(caret);
+    document.body.appendChild(div);
+
+    const caretRect = caret.getBoundingClientRect();
+    document.body.removeChild(div);
+    return { left: caretRect.left, top: caretRect.top + caretRect.height };
+  }
+
+  function findTrigger(text, cursorPos) {
+    const before = text.substring(0, cursorPos);
+    // Stage 2: selecting document name after page/component hash
+    const stage2 = before.match(/\]\(([@#])([^/]+)\/([^/\s]*)$/);
+    if (stage2) {
+      const slashPos = before.lastIndexOf('/') + 1;
+      return {
+        stage: 2,
+        char: stage2[1],
+        path: stage2[2],
+        keyword: stage2[3],
+        startPos: slashPos
+      };
+    }
+    // Stage 1: selecting page/component hash
+    const stage1 = before.match(/\]\(([@#])([^/\s]*)$/);
+    if (stage1) {
+      return {
+        stage: 1,
+        char: stage1[1],
+        keyword: stage1[2],
+        startPos: stage1.index + 2
+      };
+    }
+    return null;
+  }
+
+  function ensureDropdown() {
+    if (!acDropdown) {
+      acDropdown = document.createElement('div');
+      acDropdown.id = 'doc-link-autocomplete';
+      acDropdown.className = 'prompt-autocomplete';
+      document.body.appendChild(acDropdown);
+    }
+    return acDropdown;
+  }
+
+  function hideDropdown() {
+    if (acDropdown) acDropdown.classList.remove('open');
+    acState = null;
+  }
+
+  async function updateDropdown(textarea) {
+    if (isComposing) return;
+    const pos = textarea.selectionStart;
+    const text = textarea.value;
+    const trigger = findTrigger(text, pos);
+    if (!trigger) {
+      hideDropdown();
+      return;
+    }
+
+    let items = [];
+    if (trigger.stage === 1) {
+      const type = trigger.char === '@' ? 'pages' : 'components';
+      items = await loadScanData(type);
+    } else {
+      const type = trigger.char === '@' ? 'page' : 'component';
+      const names = await loadDocNames(type, trigger.path);
+      items = names.map(name => ({ name, breadcrumb: '' }));
+    }
+
+    const keyword = trigger.keyword.toLowerCase();
+    const filtered = keyword
+      ? items.filter(it => it.name.toLowerCase().includes(keyword) || (it.breadcrumb && it.breadcrumb.toLowerCase().includes(keyword)))
+      : items.slice(0, 20);
+
+    if (filtered.length === 0) {
+      hideDropdown();
+      return;
+    }
+
+    const dropdown = ensureDropdown();
+    dropdown.innerHTML = '';
+    filtered.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'prompt-ac-item' + (idx === 0 ? ' active' : '');
+      div.innerHTML = `<div class="prompt-ac-name">${escapeHtml(item.name)}</div>${item.breadcrumb ? `<div class="prompt-ac-meta">${escapeHtml(item.breadcrumb)}</div>` : ''}`;
+      div.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectItem(item, textarea);
+      });
+      dropdown.appendChild(div);
+    });
+
+    const coords = getCaretCoordinates(textarea, trigger.startPos);
+    const taRect = textarea.getBoundingClientRect();
+    dropdown.style.left = coords.left + 'px';
+    dropdown.style.top = coords.top + 'px';
+    dropdown.style.minWidth = taRect.width + 'px';
+    dropdown.classList.add('open');
+
+    acState = { trigger, items: filtered, selectedIndex: 0 };
+  }
+
+  function selectItem(item, textarea) {
+    if (!acState) return;
+    const { trigger } = acState;
+    const text = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    let replacement = '';
+    if (trigger.stage === 1) {
+      replacement = trigger.char + item.path + '/';
+    } else {
+      replacement = item.name;
+    }
+    const newText = text.substring(0, trigger.startPos) + replacement + text.substring(cursorPos);
+    textarea.value = newText;
+    const newPos = trigger.startPos + replacement.length;
+    textarea.setSelectionRange(newPos, newPos);
+    hideDropdown();
+    textarea.focus();
+    if (trigger.stage === 1) {
+      setTimeout(() => updateDropdown(textarea), 0);
+    }
+  }
+
+  function updateActiveItem() {
+    if (!acState || !acDropdown) return;
+    acDropdown.querySelectorAll('.prompt-ac-item').forEach((el, idx) => {
+      el.classList.toggle('active', idx === acState.selectedIndex);
+    });
+  }
+
+  function onAcKeyDown(e, textarea) {
+    if (!acState) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      acState.selectedIndex = (acState.selectedIndex + 1) % acState.items.length;
+      updateActiveItem();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      acState.selectedIndex = (acState.selectedIndex - 1 + acState.items.length) % acState.items.length;
+      updateActiveItem();
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      selectItem(acState.items[acState.selectedIndex], textarea);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      hideDropdown();
+    }
+  }
+
+  function bindDocLinkAutocomplete(textarea) {
+    textarea.addEventListener('input', () => updateDropdown(textarea));
+    textarea.addEventListener('compositionstart', () => { isComposing = true; });
+    textarea.addEventListener('compositionend', () => { isComposing = false; updateDropdown(textarea); });
+    textarea.addEventListener('keydown', (e) => onAcKeyDown(e, textarea));
+  }
+
+  document.addEventListener('click', (e) => {
+    if (acState && acDropdown && !acDropdown.contains(e.target) && !e.target.classList.contains('doc-editor')) {
+      hideDropdown();
+    }
+  });
 
   window.docPanel = { load, isEditing: () => isEditMode };
 })();
