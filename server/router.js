@@ -83,86 +83,53 @@ function createRouter(workspaceRoot) {
     const urlPath = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
 
     if (urlPath.startsWith('/api/')) {
-      const projectRoot = getProjectRoot(req);
+      const method = req.method;
 
-      if (urlPath === '/api/projects' && req.method === 'GET') {
-        return handleProjectsGet(req, res, workspaceRoot);
+      // Routes that receive workspaceRoot
+      const workspaceRoutes = {
+        'GET:/api/projects':             [handleProjectsGet, workspaceRoot],
+        'POST:/api/projects':            [handleProjectsPost, workspaceRoot],
+        'GET:/api/project-info':         [handleProjectInfoGet, workspaceRoot],
+        'GET:/api/export/default-dir':   [handleExportDefaultDir],
+        'POST:/api/export':              [handleExportPost, workspaceRoot],
+        'POST:/api/export/publish':      [handleExportPublish, workspaceRoot],
+        'POST:/api/open-editor':         [handleOpenEditor, workspaceRoot],
+        'POST:/api/terminal/open':       [handleOpenTerminal, workspaceRoot],
+        'POST:/api/terminal/open-wsl':   [handleOpenWslTerminal, workspaceRoot],
+        'POST:/api/axhost-proxy':        [handleAxHostProxy],
+      };
+
+      // Routes that receive projectRoot (per-project, from ?project= query)
+      const projectRoutes = {
+        'GET:/api/scan':                 handleScan,
+        'GET:/api/file':                 handleFileGet,
+        'POST:/api/file':                handleFilePost,
+        'POST:/api/create':              handleCreate,
+        'POST:/api/rename':              handleRename,
+        'POST:/api/page-type':           handlePageType,
+        'POST:/api/delete':              handleDelete,
+        'GET:/api/settings':             handleSettingsGet,
+        'POST:/api/settings':            handleSettingsPost,
+        'GET:/api/docs':                 handleDocsGet,
+        'POST:/api/docs/reorder':        handleDocsReorder,
+        'POST:/api/sitemap/reorder':     handleReorder,
+        'POST:/api/move':                handleMove,
+        'POST:/api/copy':                handleCopy,
+        'POST:/api/upload-image':        handleUploadImage,
+        'POST:/api/cache-file-delete':   handleDeleteCacheFile,
+      };
+
+      const routeKey = `${method}:${urlPath}`;
+      const wsMatch = workspaceRoutes[routeKey];
+      if (wsMatch) {
+        const [handler, ...extra] = wsMatch;
+        return handler(req, res, ...extra);
       }
-      if (urlPath === '/api/projects' && req.method === 'POST') {
-        return handleProjectsPost(req, res, workspaceRoot);
+      const prMatch = projectRoutes[routeKey];
+      if (prMatch) {
+        return prMatch(req, res, getProjectRoot(req));
       }
-      if (urlPath === '/api/project-info' && req.method === 'GET') {
-        return handleProjectInfoGet(req, res, workspaceRoot);
-      }
-      if (urlPath === '/api/export/default-dir' && req.method === 'GET') {
-        return handleExportDefaultDir(req, res);
-      }
-      if (urlPath === '/api/export' && req.method === 'POST') {
-        return handleExportPost(req, res, workspaceRoot);
-      }
-      if (urlPath === '/api/export/publish' && req.method === 'POST') {
-        return handleExportPublish(req, res, workspaceRoot);
-      }
-      if (urlPath === '/api/open-editor' && req.method === 'POST') {
-        return handleOpenEditor(req, res, workspaceRoot);
-      }
-      if (urlPath === '/api/terminal/open' && req.method === 'POST') {
-        return handleOpenTerminal(req, res, workspaceRoot);
-      }
-      if (urlPath === '/api/terminal/open-wsl' && req.method === 'POST') {
-        return handleOpenWslTerminal(req, res, workspaceRoot);
-      }
-      if (urlPath === '/api/axhost-proxy' && req.method === 'POST') {
-        return handleAxHostProxy(req, res);
-      }
-      if (urlPath === '/api/scan' && req.method === 'GET') {
-        return handleScan(req, res, projectRoot);
-      }
-      if (urlPath === '/api/file' && req.method === 'GET') {
-        return handleFileGet(req, res, projectRoot);
-      }
-      if (urlPath === '/api/file' && req.method === 'POST') {
-        return handleFilePost(req, res, projectRoot);
-      }
-      if (urlPath === '/api/create' && req.method === 'POST') {
-        return handleCreate(req, res, projectRoot);
-      }
-      if (urlPath === '/api/rename' && req.method === 'POST') {
-        return handleRename(req, res, projectRoot);
-      }
-      if (urlPath === '/api/page-type' && req.method === 'POST') {
-        return handlePageType(req, res, projectRoot);
-      }
-      if (urlPath === '/api/delete' && req.method === 'POST') {
-        return handleDelete(req, res, projectRoot);
-      }
-      if (urlPath === '/api/settings' && req.method === 'GET') {
-        return handleSettingsGet(req, res, projectRoot);
-      }
-      if (urlPath === '/api/settings' && req.method === 'POST') {
-        return handleSettingsPost(req, res, projectRoot);
-      }
-      if (urlPath === '/api/docs' && req.method === 'GET') {
-        return handleDocsGet(req, res, projectRoot);
-      }
-      if (urlPath === '/api/docs/reorder' && req.method === 'POST') {
-        return handleDocsReorder(req, res, projectRoot);
-      }
-      if (urlPath === '/api/sitemap/reorder' && req.method === 'POST') {
-        return handleReorder(req, res, projectRoot);
-      }
-      if (urlPath === '/api/move' && req.method === 'POST') {
-        return handleMove(req, res, projectRoot);
-      }
-      if (urlPath === '/api/copy' && req.method === 'POST') {
-        return handleCopy(req, res, projectRoot);
-      }
-      if (urlPath === '/api/upload-image' && req.method === 'POST') {
-        return handleUploadImage(req, res, projectRoot);
-      }
-      if (urlPath === '/api/cache-file-delete' && req.method === 'POST') {
-        return handleDeleteCacheFile(req, res, projectRoot);
-      }
+
       res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 404, message: 'API not found' }));
       return;
