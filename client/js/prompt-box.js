@@ -2,11 +2,23 @@
   const promptInput = document.getElementById('prompt-input');
   const btnCopy = document.getElementById('btn-prompt-copy');
   const promptStatus = document.getElementById('prompt-status');
+  const btnAttachToggle = document.getElementById('btn-attach-toggle');
+  const attachPopup = document.getElementById('attach-popup');
+  const btnAttachClose = document.getElementById('btn-attach-close');
+  const attachList = document.getElementById('attach-list');
 
   if (!promptInput || !btnCopy || !promptStatus) return;
 
+  // ===== Attached images state =====
+  const attachedImages = []; // { path, url }
+
+  function getProjectId() {
+    return window.__axhostProjectId || '';
+  }
+
+  // ===== Prompt builder (with multimodal attachments) =====
   function buildPrompt(userText, pageType, pagePath, pageRelativePath, pageAbsolutePath) {
-    const projectId = window.__axhostProjectId || '';
+    const projectId = getProjectId();
     const projectInfo = window.__axhostProjectInfo || {};
     const baseUrl = projectId
       ? `http://${location.host}/projects/${projectId}/prototype`
@@ -15,7 +27,8 @@
     const outputInstruction = isComponent
       ? '请根据用户指示决定是否阅读页面文档。\n直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。\n当前正在开发/修改组件（component），请确保已阅读并理解框架内的 system-rules/components-spec.md 文档（项目目录/../../axhost-make/system-rules/components-spec.md）'
       : '请根据用户指示决定是否阅读页面文档。\n直接修改对应源码文件（html/js/css）、文档（.md）或流程图（.mmd），总结并输出修改要点。';
-    return [
+
+    const lines = [
       '# Current Page',
       '',
       `- **页面类型**: ${pageType}`,
@@ -39,7 +52,18 @@
       '# Output Instruction',
       '',
       outputInstruction
-    ].join('\n');
+    ];
+
+    // Append attachment files list
+    if (attachedImages.length > 0) {
+      lines.push('', '# Attachment Files:', '');
+      attachedImages.forEach((img, idx) => {
+        const num = String(idx + 1).padStart(2, '0');
+        lines.push(`- image-${num}:<image-path:${img.path}>`);
+      });
+    }
+
+    return lines.join('\n');
   }
 
   async function copyToClipboard(text) {
@@ -65,12 +89,12 @@
   async function handleCopy() {
     const state = window.__axhostState;
     if (!state || !state.currentPage) {
-      updateStatus('⚠️ 请先选择一个页面或组件');
+      updateStatus('请先选择页面或组件');
       return;
     }
     const userText = promptInput.value.trim();
     if (!userText) {
-      updateStatus('⚠️ 请输入修改需求');
+      updateStatus('请输入需求');
       return;
     }
     const prompt = buildPrompt(
@@ -82,26 +106,163 @@
     );
     const ok = await copyToClipboard(prompt);
     if (ok) {
-      updateStatus('复制成功', 3000);
+      updateStatus('复制成功');
     } else {
       updateStatus('复制失败');
     }
   }
 
-  function updateStatus(text, autoResetDelay = 0) {
+  function updateStatus(text, autoResetDelay = 3000) {
     promptStatus.textContent = text;
+    if (text) {
+      promptStatus.classList.remove('hidden');
+    } else {
+      promptStatus.classList.add('hidden');
+    }
     if (statusTimer) {
       clearTimeout(statusTimer);
       statusTimer = null;
     }
     if (autoResetDelay > 0) {
       statusTimer = setTimeout(() => {
+        promptStatus.classList.add('hidden');
         promptStatus.textContent = DEFAULT_STATUS;
       }, autoResetDelay);
     }
   }
 
   btnCopy.addEventListener('click', handleCopy);
+
+  // ===== Image paste upload =====
+  async function uploadImage(file) {
+    const projectId = getProjectId();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result.split(',')[1];
+          const res = await fetch(`/api/upload-image?project=${encodeURIComponent(projectId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: file.name,
+              mimeType: file.type,
+              data: base64
+            })
+          });
+          const data = await res.json();
+          if (data.code === 0) resolve(data);
+          else reject(new Error(data.message || 'Upload failed'));
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  promptInput.addEventListener('paste', async (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    let hasImage = false;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        hasImage = true;
+        break;
+      }
+    }
+    if (!hasImage) return;
+    e.preventDefault();
+
+    for (const item of items) {
+      if (!item.type.startsWith('image/')) continue;
+      const file = item.getAsFile();
+      if (!file) continue;
+      try {
+        updateStatus('上传中');
+        const data = await uploadImage(file);
+        const url = URL.createObjectURL(file);
+        attachedImages.push({ path: data.path, url });
+        updateStatus('上传成功');
+        renderAttachPopup();
+      } catch (err) {
+        console.error('Image upload error:', err);
+        updateStatus('上传失败');
+      }
+    }
+  });
+
+  // ===== Attach popup =====
+  function toggleAttachPopup() {
+    const isHidden = attachPopup.classList.contains('hidden');
+    if (isHidden) {
+      attachPopup.classList.remove('hidden');
+      btnAttachToggle.classList.add('active');
+    } else {
+      attachPopup.classList.add('hidden');
+      btnAttachToggle.classList.remove('active');
+    }
+  }
+
+  function hideAttachPopup() {
+    attachPopup.classList.add('hidden');
+    btnAttachToggle.classList.remove('active');
+  }
+
+  function renderAttachPopup() {
+    if (!attachList) return;
+    attachList.innerHTML = '';
+    if (attachedImages.length === 0) {
+      attachList.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">暂无附件</div>';
+      return;
+    }
+    attachedImages.forEach(img => {
+      const thumb = document.createElement('div');
+      thumb.className = 'attach-thumb';
+      thumb.innerHTML = `
+        <img src="${img.url}" alt="">
+        <button class="attach-thumb-close" data-path="${escapeHtml(img.path)}" title="删除">
+          <iconpark-icon icon-id="close-small" size="10"></iconpark-icon>
+        </button>
+      `;
+      thumb.querySelector('.attach-thumb-close').addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteAttachedImage(img.path);
+      });
+      attachList.appendChild(thumb);
+    });
+  }
+
+  async function deleteAttachedImage(imgPath) {
+    // 1. Remove from attachedImages
+    const idx = attachedImages.findIndex(img => img.path === imgPath);
+    if (idx >= 0) {
+      URL.revokeObjectURL(attachedImages[idx].url);
+      attachedImages.splice(idx, 1);
+    }
+
+    // 2. Delete file on server
+    try {
+      await fetch('/api/cache-file-delete?project=' + encodeURIComponent(getProjectId()), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: imgPath })
+      });
+    } catch (err) {
+      console.error('Delete cache file error:', err);
+    }
+
+    renderAttachPopup();
+  }
+
+  if (btnAttachToggle) {
+    btnAttachToggle.addEventListener('click', toggleAttachPopup);
+  }
+  if (btnAttachClose) {
+    btnAttachClose.addEventListener('click', hideAttachPopup);
+  }
+  renderAttachPopup();
 
   // ===== Autocomplete for @ (pages) and # (components) =====
   let acDropdown = null;

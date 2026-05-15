@@ -78,13 +78,24 @@
         </div>
         <div class="right-bar-body">
           <textarea id="prompt-input" placeholder="描述你想要的修改，例如：将表格背景改为深蓝色，增加一个导出按钮..."></textarea>
+          <div id="attach-popup" class="attach-popup hidden">
+            <div class="attach-popup-header">
+              <span>附件</span>
+              <button id="btn-attach-close" title="关闭">
+                <iconpark-icon icon-id="close-small" size="12"></iconpark-icon>
+              </button>
+            </div>
+            <div class="attach-popup-body" id="attach-list"></div>
+          </div>
           <div class="inspect-form hidden">
             <!-- 第二种状态预留：抓取元素结果展示 -->
           </div>
         </div>
         <div class="right-bar-footer">
-          <span id="prompt-status"></span>
-          <button id="btn-prompt-copy">复制提示词</button>
+          <button id="btn-attach-toggle" title="附件">
+            <iconpark-icon icon-id="plus" size="14"></iconpark-icon>
+          </button>
+          <button id="btn-prompt-copy">复制提示词<div id="prompt-status" class="prompt-status-tooltip hidden"></div></button>
         </div>
       </aside>
 

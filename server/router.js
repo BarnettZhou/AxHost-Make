@@ -23,6 +23,8 @@ const { handleExportDefaultDir, handleExportPost, handleExportPublish } = requir
 const { handleOpenEditor } = require('./api/open-editor.js');
 const { handleOpenTerminal, handleOpenWslTerminal } = require('./api/terminal.js');
 const { handleAxHostProxy } = require('./api/axhost-proxy.js');
+const { handleUploadImage } = require('./api/upload-image.js');
+const { handleDeleteCacheFile } = require('./api/cache-cleanup.js');
 
 function createRouter(workspaceRoot) {
   const CLIENT_ROOT = path.resolve(__dirname, '../client');
@@ -154,6 +156,12 @@ function createRouter(workspaceRoot) {
       }
       if (urlPath === '/api/copy' && req.method === 'POST') {
         return handleCopy(req, res, projectRoot);
+      }
+      if (urlPath === '/api/upload-image' && req.method === 'POST') {
+        return handleUploadImage(req, res, projectRoot);
+      }
+      if (urlPath === '/api/cache-file-delete' && req.method === 'POST') {
+        return handleDeleteCacheFile(req, res, projectRoot);
       }
       res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 404, message: 'API not found' }));

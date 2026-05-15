@@ -65,6 +65,7 @@ flowchart/{hash}/
 | **所有原型开发** | `../../axhost-make/system-rules/dev-spec.md` |
 | **创建/复用组件** | `../../axhost-make/system-rules/components-spec.md` |
 | **手机端/小程序原型** | `../../axhost-make/system-rules/mobile-frame-spec.md` |
+| **编写项目文档** | `../../axhost-make/system-rules/doc-format-spec.md` |
 | 项目自定义规则 | 本项目 `rules/*.md`（如存在） |
 
 ## 样式与脚本

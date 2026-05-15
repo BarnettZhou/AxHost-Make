@@ -1,5 +1,6 @@
 const http = require('http');
 const { createRouter } = require('./router.js');
+const { startCacheCleanup } = require('./api/cache-cleanup.js');
 
 function startServer({ port = 3820, host = '127.0.0.1', projectRoot }) {
   const router = createRouter(projectRoot);
@@ -16,6 +17,11 @@ function startServer({ port = 3820, host = '127.0.0.1', projectRoot }) {
   server.listen(port, host, () => {
     console.log(`Axhost-Make server running at http://${host}:${port}`);
   });
+
+  // Start cache cleanup timer for all projects
+  if (projectRoot) {
+    startCacheCleanup(projectRoot);
+  }
 
   return server;
 }
