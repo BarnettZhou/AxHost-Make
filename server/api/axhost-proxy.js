@@ -31,4 +31,8 @@ async function handleAxHostProxy(req, res) {
   }
 }
 
-module.exports = { handleAxHostProxy };
+module.exports = { handleAxHostProxy,
+  routes: [
+    { method: 'POST', path: '/api/axhost-proxy', handler: handleAxHostProxy, scope: 'none' }
+  ]
+};

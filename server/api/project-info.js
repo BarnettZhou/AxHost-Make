@@ -56,4 +56,8 @@ async function handleProjectInfoGet(req, res, workspaceRoot) {
   }
 }
 
-module.exports = { handleProjectInfoGet };
+module.exports = { handleProjectInfoGet,
+  routes: [
+    { method: 'GET', path: '/api/project-info', handler: handleProjectInfoGet, scope: 'workspace' }
+  ]
+};

@@ -60,4 +60,8 @@ async function handlePageType(req, res, projectRoot) {
   });
 }
 
-module.exports = { handlePageType };
+module.exports = { handlePageType,
+  routes: [
+    { method: 'POST', path: '/api/page-type', handler: handlePageType, scope: 'project' }
+  ]
+};

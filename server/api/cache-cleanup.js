@@ -98,4 +98,8 @@ function startCacheCleanup(workspaceRoot, options = {}) {
   };
 }
 
-module.exports = { handleDeleteCacheFile, startCacheCleanup };
+module.exports = { handleDeleteCacheFile, startCacheCleanup,
+  routes: [
+    { method: 'POST', path: '/api/cache-file-delete', handler: handleDeleteCacheFile, scope: 'project' }
+  ]
+};

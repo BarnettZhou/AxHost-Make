@@ -54,4 +54,8 @@ async function handleOpenEditor(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleOpenEditor };
+module.exports = { handleOpenEditor,
+  routes: [
+    { method: 'POST', path: '/api/open-editor', handler: handleOpenEditor, scope: 'workspace' }
+  ]
+};

@@ -155,4 +155,9 @@ async function handleOpenWslTerminal(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleOpenTerminal, handleOpenWslTerminal };
+module.exports = { handleOpenTerminal, handleOpenWslTerminal,
+  routes: [
+    { method: 'POST', path: '/api/terminal/open', handler: handleOpenTerminal, scope: 'workspace' },
+    { method: 'POST', path: '/api/terminal/open-wsl', handler: handleOpenWslTerminal, scope: 'workspace' }
+  ]
+};

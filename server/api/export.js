@@ -303,4 +303,10 @@ async function handleExportPublish(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleExportDefaultDir, handleExportPost, handleExportPublish };
+module.exports = { handleExportDefaultDir, handleExportPost, handleExportPublish,
+  routes: [
+    { method: 'GET', path: '/api/export/default-dir', handler: handleExportDefaultDir, scope: 'none' },
+    { method: 'POST', path: '/api/export', handler: handleExportPost, scope: 'workspace' },
+    { method: 'POST', path: '/api/export/publish', handler: handleExportPublish, scope: 'workspace' }
+  ]
+};

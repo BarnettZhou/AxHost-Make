@@ -168,4 +168,9 @@ async function handleProjectsPost(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleProjectsGet, handleProjectsPost };
+module.exports = { handleProjectsGet, handleProjectsPost,
+  routes: [
+    { method: 'GET', path: '/api/projects', handler: handleProjectsGet, scope: 'workspace' },
+    { method: 'POST', path: '/api/projects', handler: handleProjectsPost, scope: 'workspace' }
+  ]
+};

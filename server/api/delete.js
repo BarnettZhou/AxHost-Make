@@ -135,4 +135,8 @@ async function handleDelete(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleDelete };
+module.exports = { handleDelete,
+  routes: [
+    { method: 'POST', path: '/api/delete', handler: handleDelete, scope: 'project' }
+  ]
+};

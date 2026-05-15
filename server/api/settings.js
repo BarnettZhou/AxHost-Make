@@ -56,4 +56,9 @@ async function handleSettingsPost(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleSettingsGet, handleSettingsPost, readSitemap };
+module.exports = { handleSettingsGet, handleSettingsPost, readSitemap,
+  routes: [
+    { method: 'GET', path: '/api/settings', handler: handleSettingsGet, scope: 'project' },
+    { method: 'POST', path: '/api/settings', handler: handleSettingsPost, scope: 'project' }
+  ]
+};

@@ -29,4 +29,8 @@ async function handleReorder(req, res, projectRoot) {
   res.end(JSON.stringify({ code: 0 }));
 }
 
-module.exports = { handleReorder };
+module.exports = { handleReorder,
+  routes: [
+    { method: 'POST', path: '/api/sitemap/reorder', handler: handleReorder, scope: 'project' }
+  ]
+};

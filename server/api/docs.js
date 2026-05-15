@@ -68,4 +68,9 @@ async function handleDocsReorder(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleDocsGet, handleDocsReorder };
+module.exports = { handleDocsGet, handleDocsReorder,
+  routes: [
+    { method: 'GET', path: '/api/docs', handler: handleDocsGet, scope: 'project' },
+    { method: 'POST', path: '/api/docs/reorder', handler: handleDocsReorder, scope: 'project' }
+  ]
+};

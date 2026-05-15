@@ -189,4 +189,8 @@ async function handleMove(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleMove };
+module.exports = { handleMove,
+  routes: [
+    { method: 'POST', path: '/api/move', handler: handleMove, scope: 'project' }
+  ]
+};

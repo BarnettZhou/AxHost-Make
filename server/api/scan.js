@@ -95,4 +95,8 @@ async function handleScan(req, res, projectRoot) {
   }
 }
 
-module.exports = { handleScan, scanFlat };
+module.exports = { handleScan, scanFlat,
+  routes: [
+    { method: 'GET', path: '/api/scan', handler: handleScan, scope: 'project' }
+  ]
+};

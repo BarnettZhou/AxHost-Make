@@ -1,30 +1,12 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { staticHandler } = require('./middleware/static.js');
+const { cors } = require('./middleware/cors.js');
+const { workspaceRoutes, workspaceWithRoot, projectRoutes } = require('./routes.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
-const { cors } = require('./middleware/cors.js');
-const { handleScan } = require('./api/scan.js');
-const { handleFileGet, handleFilePost } = require('./api/file.js');
-const { handleCreate } = require('./api/create.js');
-const { handleRename } = require('./api/rename.js');
-const { handlePageType } = require('./api/page-type.js');
-const { handleDelete } = require('./api/delete.js');
-const { handleSettingsGet, handleSettingsPost } = require('./api/settings.js');
-const { handleDocsGet, handleDocsReorder } = require('./api/docs.js');
-const { handleReorder } = require('./api/reorder.js');
-const { handleMove } = require('./api/move.js');
-const { handleCopy } = require('./api/copy.js');
-const { handleProjectsGet, handleProjectsPost } = require('./api/projects.js');
-const { handleProjectInfoGet } = require('./api/project-info.js');
-const { handleExportDefaultDir, handleExportPost, handleExportPublish } = require('./api/export.js');
-const { handleOpenEditor } = require('./api/open-editor.js');
-const { handleOpenTerminal, handleOpenWslTerminal } = require('./api/terminal.js');
-const { handleAxHostProxy } = require('./api/axhost-proxy.js');
-const { handleUploadImage } = require('./api/upload-image.js');
-const { handleDeleteCacheFile } = require('./api/cache-cleanup.js');
 
 function createRouter(workspaceRoot) {
   const CLIENT_ROOT = path.resolve(__dirname, '../client');
@@ -83,51 +65,15 @@ function createRouter(workspaceRoot) {
     const urlPath = decodeURIComponent(new URL(req.url, `http://${req.headers.host}`).pathname);
 
     if (urlPath.startsWith('/api/')) {
-      const method = req.method;
+      const routeKey = `${req.method}:${urlPath}`;
 
-      // Routes that receive workspaceRoot
-      const workspaceRoutes = {
-        'GET:/api/projects':             [handleProjectsGet, workspaceRoot],
-        'POST:/api/projects':            [handleProjectsPost, workspaceRoot],
-        'GET:/api/project-info':         [handleProjectInfoGet, workspaceRoot],
-        'GET:/api/export/default-dir':   [handleExportDefaultDir],
-        'POST:/api/export':              [handleExportPost, workspaceRoot],
-        'POST:/api/export/publish':      [handleExportPublish, workspaceRoot],
-        'POST:/api/open-editor':         [handleOpenEditor, workspaceRoot],
-        'POST:/api/terminal/open':       [handleOpenTerminal, workspaceRoot],
-        'POST:/api/terminal/open-wsl':   [handleOpenWslTerminal, workspaceRoot],
-        'POST:/api/axhost-proxy':        [handleAxHostProxy],
-      };
-
-      // Routes that receive projectRoot (per-project, from ?project= query)
-      const projectRoutes = {
-        'GET:/api/scan':                 handleScan,
-        'GET:/api/file':                 handleFileGet,
-        'POST:/api/file':                handleFilePost,
-        'POST:/api/create':              handleCreate,
-        'POST:/api/rename':              handleRename,
-        'POST:/api/page-type':           handlePageType,
-        'POST:/api/delete':              handleDelete,
-        'GET:/api/settings':             handleSettingsGet,
-        'POST:/api/settings':            handleSettingsPost,
-        'GET:/api/docs':                 handleDocsGet,
-        'POST:/api/docs/reorder':        handleDocsReorder,
-        'POST:/api/sitemap/reorder':     handleReorder,
-        'POST:/api/move':                handleMove,
-        'POST:/api/copy':                handleCopy,
-        'POST:/api/upload-image':        handleUploadImage,
-        'POST:/api/cache-file-delete':   handleDeleteCacheFile,
-      };
-
-      const routeKey = `${method}:${urlPath}`;
-      const wsMatch = workspaceRoutes[routeKey];
-      if (wsMatch) {
-        const [handler, ...extra] = wsMatch;
-        return handler(req, res, ...extra);
+      const wsHandler = workspaceRoutes[routeKey];
+      if (wsHandler) {
+        return wsHandler(req, res, ...(workspaceWithRoot.has(routeKey) ? [workspaceRoot] : []));
       }
-      const prMatch = projectRoutes[routeKey];
-      if (prMatch) {
-        return prMatch(req, res, getProjectRoot(req));
+      const prHandler = projectRoutes[routeKey];
+      if (prHandler) {
+        return prHandler(req, res, getProjectRoot(req));
       }
 
       res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });

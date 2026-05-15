@@ -147,4 +147,8 @@ async function handleCopy(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleCopy };
+module.exports = { handleCopy,
+  routes: [
+    { method: 'POST', path: '/api/copy', handler: handleCopy, scope: 'project' }
+  ]
+};

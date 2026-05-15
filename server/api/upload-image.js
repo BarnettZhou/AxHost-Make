@@ -50,4 +50,8 @@ async function handleUploadImage(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleUploadImage };
+module.exports = { handleUploadImage,
+  routes: [
+    { method: 'POST', path: '/api/upload-image', handler: handleUploadImage, scope: 'project' }
+  ]
+};

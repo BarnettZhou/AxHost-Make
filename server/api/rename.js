@@ -81,4 +81,8 @@ async function handleRename(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleRename };
+module.exports = { handleRename,
+  routes: [
+    { method: 'POST', path: '/api/rename', handler: handleRename, scope: 'project' }
+  ]
+};

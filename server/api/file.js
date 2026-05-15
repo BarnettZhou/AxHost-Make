@@ -68,4 +68,9 @@ async function handleFilePost(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleFileGet, handleFilePost };
+module.exports = { handleFileGet, handleFilePost,
+  routes: [
+    { method: 'GET', path: '/api/file', handler: handleFileGet, scope: 'project' },
+    { method: 'POST', path: '/api/file', handler: handleFilePost, scope: 'project' }
+  ]
+};

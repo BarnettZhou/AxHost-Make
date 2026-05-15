@@ -222,4 +222,8 @@ async function handleCreate(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleCreate, createItem };
+module.exports = { handleCreate, createItem,
+  routes: [
+    { method: 'POST', path: '/api/create', handler: handleCreate, scope: 'project' }
+  ]
+};
