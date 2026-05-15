@@ -1,5 +1,6 @@
 (function () {
   const basePath = window.__axhostBasePath || './';
+  const map = window.__axhostSitemap || { name: 'Prototype', pages: [], components: [], flowcharts: [] };
 
   async function loadDocs(type, pagePath) {
     const token = ++loadToken;
