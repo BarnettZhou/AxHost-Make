@@ -113,3 +113,19 @@ The `system-rules/` directory contains specifications that guide AI agents when 
 The `skills/axhost-make-cli.md` documents the CLI skill commands available to agents working inside user projects.
 
 For detailed framework development guidelines (including AxHost integration, publish flow, and workflow details), see `agents.md`.
+
+## Developer documentation
+
+The `dev-docs/` directory contains structured reference documentation for framework development:
+
+- `dev-docs/contents.md` — index of all dev docs
+- `dev-docs/architecture.md` — high-level architecture, workspace layout, design principles
+- `dev-docs/server.md` — server routing, API handler patterns, middleware, shared libs
+- `dev-docs/client.md` — client module system, global state, iframe preview, event flows
+- `dev-docs/cli.md` — CLI command dispatch, init/update/build flows, scaffolding
+- `dev-docs/data-model.md` — sitemap.js, .axhost-meta.json, order files, project index
+- `dev-docs/api-reference.md` — all 20+ API endpoints with request/response formats
+- `dev-docs/workflows.md` — key interaction flows (tree nav, doc panel, export/publish, cross-frame)
+- `dev-docs/build-and-deploy.md` — build pipeline, update sync, template system
+
+Consult these when making significant changes to understand the full picture before coding.

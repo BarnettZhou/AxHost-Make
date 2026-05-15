@@ -52,6 +52,18 @@ async function build(projectRoot) {
     path.join(clientRoot, 'js', 'preview-app.js'),
     path.join(previewRoot, 'resources', 'js', 'preview-app.js')
   );
+  await copyResource(
+    path.join(clientRoot, 'js', 'zoom-control.js'),
+    path.join(previewRoot, 'resources', 'js', 'zoom-control.js')
+  );
+  await copyResource(
+    path.join(clientRoot, 'js', 'touch-emulation.js'),
+    path.join(previewRoot, 'resources', 'js', 'touch-emulation.js')
+  );
+  await copyResource(
+    path.join(clientRoot, 'js', 'md-renderer.js'),
+    path.join(previewRoot, 'resources', 'js', 'md-renderer.js')
+  );
 
   await fs.mkdir(path.dirname(outputHtmlPath), { recursive: true });
   await fs.writeFile(outputHtmlPath, html, 'utf-8');

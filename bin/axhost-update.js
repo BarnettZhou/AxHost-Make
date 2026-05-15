@@ -139,6 +139,33 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Updated prototype/resources/js/preview-app.js');
   }
 
+  // Copy md-renderer.js
+  const mdRendererSrc = path.resolve(__dirname, '../client/js/md-renderer.js');
+  const mdRendererDest = path.join(projectRoot, 'prototype/resources/js/md-renderer.js');
+  if (await exists(mdRendererSrc)) {
+    await fs.mkdir(path.dirname(mdRendererDest), { recursive: true });
+    await fs.copyFile(mdRendererSrc, mdRendererDest);
+    console.log('  - Updated prototype/resources/js/md-renderer.js');
+  }
+
+  // Copy zoom-control.js
+  const zoomCtrlSrc = path.resolve(__dirname, '../client/js/zoom-control.js');
+  const zoomCtrlDest = path.join(projectRoot, 'prototype/resources/js/zoom-control.js');
+  if (await exists(zoomCtrlSrc)) {
+    await fs.mkdir(path.dirname(zoomCtrlDest), { recursive: true });
+    await fs.copyFile(zoomCtrlSrc, zoomCtrlDest);
+    console.log('  - Updated prototype/resources/js/zoom-control.js');
+  }
+
+  // Copy touch-emulation.js
+  const touchEmuSrc = path.resolve(__dirname, '../client/js/touch-emulation.js');
+  const touchEmuDest = path.join(projectRoot, 'prototype/resources/js/touch-emulation.js');
+  if (await exists(touchEmuSrc)) {
+    await fs.mkdir(path.dirname(touchEmuDest), { recursive: true });
+    await fs.copyFile(touchEmuSrc, touchEmuDest);
+    console.log('  - Updated prototype/resources/js/touch-emulation.js');
+  }
+
   // Copy icon.svg
   const iconSrc = path.join(previewTplRoot, 'icon.svg');
   const iconDest = path.join(projectRoot, 'prototype', 'icon.svg');
