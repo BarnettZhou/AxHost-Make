@@ -780,6 +780,14 @@ body.dark .doc-tab.active {
 .doc-content blockquote.axhost-alert-warning { --alert-bar: #faad14; --alert-bg: rgba(250, 173, 20, 0.08); }
 .doc-content blockquote.axhost-alert-error   { --alert-bar: #ff4d4f; --alert-bg: rgba(255, 77, 79, 0.08); }
 
+/* Tighten first/last child margins inside blockquotes to prevent padding stacking */
+.doc-content blockquote > :first-child {
+  margin-top: 0.5em;
+}
+.doc-content blockquote > :last-child {
+  margin-bottom: 0.5em;
+}
+
 /* Markdown tables */
 .doc-content table,
 .rule-viewer-content table {
