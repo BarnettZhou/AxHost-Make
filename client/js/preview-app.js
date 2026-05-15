@@ -1,6 +1,41 @@
 (function () {
   const basePath = window.__axhostBasePath || './';
   const map = window.__axhostSitemap || { name: 'Prototype', pages: [], components: [], flowcharts: [] };
+  let activePath = null;
+  let activeType = 'pages';
+  let currentDocs = [];
+  let activeDocIndex = 0;
+  let loadToken = 0;
+
+  const sidebar = document.getElementById('panel-nav');
+  const preview = document.getElementById('preview-frame');
+  const docsPanel = document.getElementById('panel-docs');
+  const docsResizer = document.getElementById('docs-resizer');
+  const btnDocs = document.getElementById('btn-toggle-docs');
+  const btnToggleNav = document.getElementById('btn-toggle-nav');
+  const docTabs = document.getElementById('doc-tabs-scroll');
+  const docContent = document.getElementById('doc-content');
+  const treeRoot = document.getElementById('tree-root');
+  const projectNameEl = document.getElementById('project-name');
+  let expandedPaths = new Set();
+
+  if (projectNameEl) projectNameEl.textContent = map.name || 'Prototype';
+  document.title = map.name || 'Prototype';
+
+  if (docsResizer && docsPanel && docsPanel.classList.contains('hidden')) {
+    docsResizer.classList.add('hidden');
+  }
+
+  btnDocs.addEventListener('click', () => {
+    docsPanel.classList.toggle('hidden');
+    if (docsResizer) docsResizer.classList.toggle('hidden');
+    btnDocs.classList.toggle('active', !docsPanel.classList.contains('hidden'));
+  });
+  if (btnToggleNav) {
+    btnToggleNav.addEventListener('click', () => {
+      sidebar.classList.toggle('hidden');
+    });
+  }
 
   async function loadDocs(type, pagePath) {
     const token = ++loadToken;
