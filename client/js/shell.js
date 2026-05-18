@@ -189,9 +189,26 @@
     });
   }
 
+  function freezePanelChildren(panel) {
+    var children = panel.children;
+    var w = panel.getBoundingClientRect().width;
+    for (var i = 0; i < children.length; i++) {
+      children[i].style.minWidth = w + 'px';
+    }
+    function cleanup() {
+      for (var j = 0; j < children.length; j++) {
+        children[j].style.minWidth = '';
+      }
+      panel.removeEventListener('transitionend', cleanup);
+    }
+    panel.addEventListener('transitionend', cleanup);
+  }
+
   btnToggleNav.addEventListener('click', () => {
     window.__axhostState.navVisible = !window.__axhostState.navVisible;
-    panelNav.classList.toggle('hidden', !window.__axhostState.navVisible);
+    var hide = !window.__axhostState.navVisible;
+    if (hide) freezePanelChildren(panelNav);
+    panelNav.classList.toggle('hidden', hide);
   });
 
   const docsResizer = document.getElementById('docs-resizer');
@@ -200,8 +217,10 @@
   }
   btnToggleDocs.addEventListener('click', () => {
     window.__axhostState.docsVisible = !window.__axhostState.docsVisible;
-    panelDocs.classList.toggle('hidden', !window.__axhostState.docsVisible);
-    if (docsResizer) docsResizer.classList.toggle('hidden', !window.__axhostState.docsVisible);
+    var hide = !window.__axhostState.docsVisible;
+    if (hide) freezePanelChildren(panelDocs);
+    panelDocs.classList.toggle('hidden', hide);
+    if (docsResizer) docsResizer.classList.toggle('hidden', hide);
     btnToggleDocs.classList.toggle('active', window.__axhostState.docsVisible);
   });
 
@@ -229,8 +248,12 @@
     btnToggleRightBar.classList.toggle('active', window.__axhostState.rightBarVisible);
     btnToggleRightBar.addEventListener('click', () => {
       window.__axhostState.rightBarVisible = !window.__axhostState.rightBarVisible;
-      if (panelRightBar) panelRightBar.classList.toggle('hidden', !window.__axhostState.rightBarVisible);
-      if (rightBarResizer) rightBarResizer.classList.toggle('hidden', !window.__axhostState.rightBarVisible);
+      var hide = !window.__axhostState.rightBarVisible;
+      if (panelRightBar) {
+        if (hide) freezePanelChildren(panelRightBar);
+        panelRightBar.classList.toggle('hidden', hide);
+      }
+      if (rightBarResizer) rightBarResizer.classList.toggle('hidden', hide);
       btnToggleRightBar.classList.toggle('active', window.__axhostState.rightBarVisible);
     });
   }

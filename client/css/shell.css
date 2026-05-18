@@ -170,6 +170,7 @@ html, body {
   flex-direction: column;
   overflow: hidden;
   min-height: 80px;
+  transition: flex 0.25s ease, min-height 0.25s ease;
 }
 .preview-mode #panel-nav-bottom,
 .preview-mode #panel-nav .resizer-h {
@@ -210,17 +211,13 @@ html, body {
   border-top: 1px solid var(--border);
 }
 #panel-nav-bottom.collapsed .rules-list {
-  display: none;
+  visibility: hidden;
 }
 
 .rules-list {
   flex: 1;
   overflow: auto;
   padding: 4px 0;
-  background: #fafafa;
-}
-body.dark .rules-list {
-  background: transparent;
 }
 .rules-item {
   display: flex;
@@ -516,6 +513,7 @@ body.dark #prompt-box:focus-within {
 }
 #panel-right-bar {
   transition: width 0.25s ease, opacity 0.25s ease, min-width 0.25s ease;
+  overflow: hidden;
 }
 #panel-right-bar.hidden {
   width: 0 !important;
@@ -772,6 +770,7 @@ body.dark #prompt-box:focus-within {
 }
 #panel-docs {
   transition: width 0.25s ease, opacity 0.25s ease, min-width 0.25s ease;
+  overflow: hidden;
 }
 #panel-docs.hidden {
   width: 0 !important;
