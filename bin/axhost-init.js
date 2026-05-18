@@ -13,9 +13,6 @@ const DIRS = [
   'wiki/raw',
   'wiki/pages',
   'prototype',
-  'prototype/shell-resources',
-  'prototype/shell-resources/js',
-  'prototype/shell-resources/css',
   'prototype/resources',
   'prototype/resources/js',
   'prototype/resources/css',
@@ -35,20 +32,7 @@ async function init(projectRoot) {
   await regenerateSitemap(projectRoot);
 
   const templateRoot = path.resolve(__dirname, '../templates');
-  const previewTplRoot = path.join(templateRoot, 'preview');
   const projectTplRoot = path.join(templateRoot, 'project');
-
-  const protoIndexPath = path.join(projectRoot, 'prototype', 'index.html');
-  if (!await exists(protoIndexPath)) {
-    const tpl = await fs.readFile(path.join(previewTplRoot, 'index.html'), 'utf-8');
-    await fs.writeFile(protoIndexPath, tpl, 'utf-8');
-  }
-
-  const protoStartPath = path.join(projectRoot, 'prototype', 'start.html');
-  if (!await exists(protoStartPath)) {
-    const tpl = await fs.readFile(path.join(previewTplRoot, 'start.html'), 'utf-8');
-    await fs.writeFile(protoStartPath, tpl, 'utf-8');
-  }
 
   const agentsPath = path.join(projectRoot, 'AGENTS.md');
   if (!await exists(agentsPath)) {
@@ -90,55 +74,11 @@ async function init(projectRoot) {
     }
   }
 
-  // Copy marked.min.js to prototype shell-resources
-  const markedSrc = path.resolve(__dirname, '../client/assets/marked.min.js');
-  const markedDest = path.join(projectRoot, 'prototype/shell-resources/js/marked.min.js');
-  if (await exists(markedSrc)) {
-    await fs.mkdir(path.dirname(markedDest), { recursive: true });
-    await fs.copyFile(markedSrc, markedDest);
-  }
-
-  // Copy icon-loader-shell.js to prototype shell-resources
-  const iconsSrc = path.resolve(__dirname, '../client/js/icon-loader-shell.js');
-  const iconsDest = path.join(projectRoot, 'prototype/shell-resources/js/icon-loader-shell.js');
-  if (await exists(iconsSrc)) {
-    await fs.mkdir(path.dirname(iconsDest), { recursive: true });
-    await fs.copyFile(iconsSrc, iconsDest);
-  }
-
-  // Copy preview-app.js to prototype shell-resources
-  const previewAppSrc = path.resolve(__dirname, '../client/js/preview-app.js');
-  const previewAppDest = path.join(projectRoot, 'prototype/shell-resources/js/preview-app.js');
-  if (await exists(previewAppSrc)) {
-    await fs.mkdir(path.dirname(previewAppDest), { recursive: true });
-    await fs.copyFile(previewAppSrc, previewAppDest);
-  }
-
-  // Copy shell.css to prototype shell-resources
-  const cssSrc = path.resolve(__dirname, '../client/css/shell.css');
-  const cssDest = path.join(projectRoot, 'prototype/shell-resources/css/shell.css');
-  if (await exists(cssSrc)) {
-    await fs.mkdir(path.dirname(cssDest), { recursive: true });
-    await fs.copyFile(cssSrc, cssDest);
-  }
-
-  // Copy icon.svg to prototype
-  const iconSrc = path.join(previewTplRoot, 'icon.svg');
-  const iconDest = path.join(projectRoot, 'prototype', 'icon.svg');
-  if (await exists(iconSrc)) {
-    await fs.copyFile(iconSrc, iconDest);
-  }
+  // 框架资源由 /client/ 统一提供，不再复制到项目
 
   console.log('Axhost-Make project initialized successfully.');
   console.log('Generated files:');
-  console.log('  - prototype/index.html');
-  console.log('  - prototype/start.html');
-  console.log('  - prototype/icon.svg');
   console.log('  - prototype/sitemap.js');
-  console.log('  - prototype/shell-resources/js/marked.min.js');
-  console.log('  - prototype/shell-resources/js/icon-loader-shell.js');
-  console.log('  - prototype/shell-resources/js/preview-app.js');
-  console.log('  - prototype/shell-resources/css/shell.css');
   console.log('  - AGENTS.md (if not exists)');
   console.log('  - readme.md (if not exists)');
 }

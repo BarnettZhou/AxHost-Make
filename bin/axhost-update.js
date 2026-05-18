@@ -54,124 +54,30 @@ async function ensurePageResources(projectRoot) {
 
 async function updateSingleProject(projectRoot) {
   const templateRoot = path.resolve(__dirname, '../templates');
-  const previewTplRoot = path.join(templateRoot, 'preview');
   const projectTplRoot = path.join(templateRoot, 'project');
 
-  // Update prototype/index.html
-  const protoIndexPath = path.join(projectRoot, 'prototype', 'index.html');
-  const tplPath = path.join(previewTplRoot, 'index.html');
-  if (await exists(tplPath)) {
-    await fs.copyFile(tplPath, protoIndexPath);
-    console.log('  - Updated prototype/index.html');
+  // index.html / start.html / shell-resources 由框架 /client/ 统一提供，不再复制到项目
+
+  // Clean up legacy shell-resources if exists from old version
+  const legacyShellRes = path.join(projectRoot, 'prototype', 'shell-resources');
+  if (await exists(legacyShellRes)) {
+    await fs.rm(legacyShellRes, { recursive: true, force: true });
+    console.log('  - Removed legacy prototype/shell-resources/');
   }
 
-  // Ensure start.html exists
-  const protoStartPath = path.join(projectRoot, 'prototype', 'start.html');
-  if (!await exists(protoStartPath)) {
-    const startTpl = path.join(previewTplRoot, 'start.html');
-    if (await exists(startTpl)) {
-      await fs.copyFile(startTpl, protoStartPath);
-      console.log('  - Created prototype/start.html');
-    }
+  // Clean up legacy index.html if exists (now served from framework)
+  const legacyIndex = path.join(projectRoot, 'prototype', 'index.html');
+  if (await exists(legacyIndex)) {
+    await fs.unlink(legacyIndex);
+    console.log('  - Removed legacy prototype/index.html');
   }
-
-  // Copy marked.min.js
-  const markedSrc = path.resolve(__dirname, '../client/assets/marked.min.js');
-  const markedDest = path.join(projectRoot, 'prototype/shell-resources/js/marked.min.js');
-  if (await exists(markedSrc)) {
-    await fs.mkdir(path.dirname(markedDest), { recursive: true });
-    await fs.copyFile(markedSrc, markedDest);
-    console.log('  - Updated prototype/shell-resources/js/marked.min.js');
+  const legacyStart = path.join(projectRoot, 'prototype', 'start.html');
+  if (await exists(legacyStart)) {
+    await fs.unlink(legacyStart);
   }
-
-  // Copy mermaid.min.js only if project has flowcharts
-  async function hasFlowcharts(root) {
-    const flowchartsDir = path.join(root, 'prototype', 'flowcharts');
-    if (!await exists(flowchartsDir)) return false;
-    const entries = await fs.readdir(flowchartsDir, { withFileTypes: true }).catch(() => []);
-    for (const e of entries) {
-      if (!e.isDirectory()) continue;
-      const metaPath = path.join(flowchartsDir, e.name, '.axhost-meta.json');
-      try {
-        const meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
-        if (meta.kind === 'flowchart') return true;
-      } catch (e) {}
-    }
-    return false;
-  }
-  const mermaidSrc = path.join(projectTplRoot, 'resources/js/mermaid.min.js');
-  const mermaidDest = path.join(projectRoot, 'prototype/shell-resources/js/mermaid.min.js');
-  if (await hasFlowcharts(projectRoot)) {
-    if (await exists(mermaidSrc)) {
-      await fs.mkdir(path.dirname(mermaidDest), { recursive: true });
-      await fs.copyFile(mermaidSrc, mermaidDest);
-      console.log('  - Updated prototype/shell-resources/js/mermaid.min.js');
-    }
-  } else if (await exists(mermaidDest)) {
-    await fs.unlink(mermaidDest);
-    console.log('  - Removed prototype/shell-resources/js/mermaid.min.js (no flowcharts)');
-  }
-
-  // Copy icon-loader-shell.js
-  const iconsSrc = path.resolve(__dirname, '../client/js/icon-loader-shell.js');
-  const iconsDest = path.join(projectRoot, 'prototype/shell-resources/js/icon-loader-shell.js');
-  if (await exists(iconsSrc)) {
-    await fs.mkdir(path.dirname(iconsDest), { recursive: true });
-    await fs.copyFile(iconsSrc, iconsDest);
-    console.log('  - Updated prototype/shell-resources/js/icon-loader-shell.js');
-  }
-
-  // Copy shell.css
-  const cssSrc = path.resolve(__dirname, '../client/css/shell.css');
-  const cssDest = path.join(projectRoot, 'prototype/shell-resources/css/shell.css');
-  if (await exists(cssSrc)) {
-    await fs.mkdir(path.dirname(cssDest), { recursive: true });
-    await fs.copyFile(cssSrc, cssDest);
-    console.log('  - Updated prototype/shell-resources/css/shell.css');
-  }
-
-  // Copy preview-app.js
-  const previewAppSrc = path.resolve(__dirname, '../client/js/preview-app.js');
-  const previewAppDest = path.join(projectRoot, 'prototype/shell-resources/js/preview-app.js');
-  if (await exists(previewAppSrc)) {
-    await fs.mkdir(path.dirname(previewAppDest), { recursive: true });
-    await fs.copyFile(previewAppSrc, previewAppDest);
-    console.log('  - Updated prototype/shell-resources/js/preview-app.js');
-  }
-
-  // Copy md-renderer.js
-  const mdRendererSrc = path.resolve(__dirname, '../client/js/md-renderer.js');
-  const mdRendererDest = path.join(projectRoot, 'prototype/shell-resources/js/md-renderer.js');
-  if (await exists(mdRendererSrc)) {
-    await fs.mkdir(path.dirname(mdRendererDest), { recursive: true });
-    await fs.copyFile(mdRendererSrc, mdRendererDest);
-    console.log('  - Updated prototype/shell-resources/js/md-renderer.js');
-  }
-
-  // Copy zoom-control.js
-  const zoomCtrlSrc = path.resolve(__dirname, '../client/js/zoom-control.js');
-  const zoomCtrlDest = path.join(projectRoot, 'prototype/shell-resources/js/zoom-control.js');
-  if (await exists(zoomCtrlSrc)) {
-    await fs.mkdir(path.dirname(zoomCtrlDest), { recursive: true });
-    await fs.copyFile(zoomCtrlSrc, zoomCtrlDest);
-    console.log('  - Updated prototype/shell-resources/js/zoom-control.js');
-  }
-
-  // Copy touch-emulation.js
-  const touchEmuSrc = path.resolve(__dirname, '../client/js/touch-emulation.js');
-  const touchEmuDest = path.join(projectRoot, 'prototype/shell-resources/js/touch-emulation.js');
-  if (await exists(touchEmuSrc)) {
-    await fs.mkdir(path.dirname(touchEmuDest), { recursive: true });
-    await fs.copyFile(touchEmuSrc, touchEmuDest);
-    console.log('  - Updated prototype/shell-resources/js/touch-emulation.js');
-  }
-
-  // Copy icon.svg
-  const iconSrc = path.join(previewTplRoot, 'icon.svg');
-  const iconDest = path.join(projectRoot, 'prototype', 'icon.svg');
-  if (await exists(iconSrc)) {
-    await fs.copyFile(iconSrc, iconDest);
-    console.log('  - Updated prototype/icon.svg');
+  const legacyIcon = path.join(projectRoot, 'prototype', 'icon.svg');
+  if (await exists(legacyIcon)) {
+    await fs.unlink(legacyIcon);
   }
 
   // Copy AGENTS.md
@@ -196,29 +102,6 @@ async function updateSingleProject(projectRoot) {
   if (await exists(designMdSrc) && !await exists(designMdDest)) {
     await fs.copyFile(designMdSrc, designMdDest);
     console.log('  - Created rules/design.md');
-  }
-
-  // Copy template resources (e.g. flowchart viewer) to shell-resources
-  const resourcesSrcDir = path.join(projectTplRoot, 'resources');
-  const resourcesDestDir = path.join(projectRoot, 'prototype', 'shell-resources');
-  async function copyDir(src, dest) {
-    const entries = await fs.readdir(src, { withFileTypes: true }).catch(() => []);
-    for (const entry of entries) {
-      if (entry.name === 'mermaid.min.js') continue;
-      const srcPath = path.join(src, entry.name);
-      const destPath = path.join(dest, entry.name);
-      if (entry.isDirectory()) {
-        await fs.mkdir(destPath, { recursive: true });
-        await copyDir(srcPath, destPath);
-      } else {
-        await fs.mkdir(path.dirname(destPath), { recursive: true });
-        await fs.copyFile(srcPath, destPath);
-      }
-    }
-  }
-  if (await exists(resourcesSrcDir)) {
-    await copyDir(resourcesSrcDir, resourcesDestDir);
-    console.log('  - Updated prototype/shell-resources/');
   }
 
   // Ensure missing page resources

@@ -121,6 +121,7 @@ async function handleDelete(req, res, projectRoot) {
         }
         return false;
       }
+      // mermaid.min.js 由 /client/js/ 统一提供，清理旧版本残留
       if (!await hasFlowcharts(projectRoot)) {
         const mermaidPath = path.join(projectRoot, 'prototype/shell-resources/js/mermaid.min.js');
         try { await fs.unlink(mermaidPath); } catch (e) {}

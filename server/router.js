@@ -86,6 +86,39 @@ function createRouter(workspaceRoot) {
       return staticHandler(req, res, staticPath);
     }
 
+    // 框架入口：/prototype/index.html 和 /prototype/start.html
+    if (urlPath === '/prototype/index.html' || urlPath === '/prototype/start.html' ||
+        /^\/projects\/[^/]+\/prototype\/index\.html$/.test(urlPath) ||
+        /^\/projects\/[^/]+\/prototype\/start\.html$/.test(urlPath)) {
+      const isStart = urlPath.endsWith('/start.html');
+      const projectMatch = urlPath.match(/^\/projects\/([^/]+)\/prototype\//);
+      const projectBase = projectMatch ? '/projects/' + projectMatch[1] + '/prototype/' : '/prototype/';
+
+      if (isStart) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end('<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0; url=index.html"><link rel="icon" type="image/svg+xml" href="/client/icon.svg"><title>Redirecting...</title></head><body><p>Redirecting to <a href="index.html">Prototype Index</a>...</p></body></html>');
+        return;
+      }
+
+      try {
+        let html = await fs.readFile(path.join(CLIENT_ROOT, 'preview-index.html'), 'utf-8');
+        html = html.replace(
+          "window.__axhostBasePath = '/prototype/'",
+          "window.__axhostBasePath = '" + projectBase + "'"
+        );
+        html = html.replace(
+          'src="/prototype/sitemap.js"',
+          'src="' + projectBase + 'sitemap.js"'
+        );
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(html);
+      } catch (e) {
+        res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+        res.end('Internal Server Error');
+      }
+      return;
+    }
+
     const projectStaticPath = resolveProjectStaticUrl(urlPath);
     if (projectStaticPath) {
       return staticHandler(req, res, projectStaticPath);

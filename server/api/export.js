@@ -155,24 +155,59 @@ async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selecte
 async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents, selectedFlowcharts) {
   await fs.mkdir(exportDir, { recursive: true });
 
-  const srcShellResources = path.join(srcPrototypeDir, 'shell-resources');
-  const destShellResources = path.join(exportDir, 'shell-resources');
-  if (await exists(srcShellResources)) {
-    await copyDir(srcShellResources, destShellResources);
+  const CLIENT_ROOT = path.resolve(__dirname, '../../client');
+  const DEST_SHELL = path.join(exportDir, 'shell-resources');
+
+  // Package framework files from client/ → shell-resources/
+  const frameworkFiles = [
+    // CSS
+    ['css/shell.css', 'css/shell.css'],
+    ['css/flowchart.css', 'css/flowchart.css'],
+    // JS
+    ['js/icon-loader-shell.js', 'js/icon-loader-shell.js'],
+    ['js/preview-app.js', 'js/preview-app.js'],
+    ['js/md-renderer.js', 'js/md-renderer.js'],
+    ['js/zoom-control.js', 'js/zoom-control.js'],
+    ['js/touch-emulation.js', 'js/touch-emulation.js'],
+    ['js/mermaid.min.js', 'js/mermaid.min.js'],
+    ['js/flowchart.js', 'js/flowchart.js'],
+    ['assets/marked.min.js', 'js/marked.min.js'],
+  ];
+  for (const [src, dest] of frameworkFiles) {
+    const srcPath = path.join(CLIENT_ROOT, src);
+    if (await exists(srcPath)) {
+      await fs.mkdir(path.dirname(path.join(DEST_SHELL, dest)), { recursive: true });
+      await fs.copyFile(srcPath, path.join(DEST_SHELL, dest));
+    }
   }
 
+  // Generate standalone index.html with paths rewritten to relative
+  const previewHtml = await fs.readFile(path.join(CLIENT_ROOT, 'preview-index.html'), 'utf-8');
+  let standaloneHtml = previewHtml
+    .replace("window.__axhostBasePath = '/prototype/'", "window.__axhostBasePath = './'")
+    .replace(/\/client\/css\//g, './shell-resources/css/')
+    .replace(/\/client\/js\//g, './shell-resources/js/')
+    .replace(/\/client\/assets\//g, './shell-resources/js/')
+    .replace(/\/client\/preview-icon\.svg/g, './icon.svg')
+    .replace(/\/prototype\/sitemap\.js/g, './sitemap.js');
+  await fs.writeFile(path.join(exportDir, 'index.html'), standaloneHtml, 'utf-8');
+
+  // Generate start.html redirect
+  await fs.writeFile(path.join(exportDir, 'start.html'),
+    '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0; url=index.html"><link rel="icon" type="image/svg+xml" href="./icon.svg"><title>Redirecting...</title></head><body><p>Redirecting to <a href="index.html">Prototype Index</a>...</p></body></html>',
+    'utf-8');
+
+  // Copy icon.svg
+  const iconSrc = path.join(CLIENT_ROOT, 'preview-icon.svg');
+  if (await exists(iconSrc)) {
+    await fs.copyFile(iconSrc, path.join(exportDir, 'icon.svg'));
+  }
+
+  // Copy project resources (user files)
   const srcResources = path.join(srcPrototypeDir, 'resources');
   const destResources = path.join(exportDir, 'resources');
   if (await exists(srcResources)) {
     await copyDir(srcResources, destResources);
-  }
-
-  const filesToCopy = ['index.html', 'start.html', 'icon.svg'];
-  for (const file of filesToCopy) {
-    const srcFile = path.join(srcPrototypeDir, file);
-    if (await exists(srcFile)) {
-      await fs.copyFile(srcFile, path.join(exportDir, file));
-    }
   }
 
   await rewriteSitemap(srcPrototypeDir, exportDir, selectedPages || [], selectedComponents || [], selectedFlowcharts || []);
