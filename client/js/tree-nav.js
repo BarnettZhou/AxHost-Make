@@ -440,6 +440,187 @@
     });
   }
 
+  function showExportComponentModal(node) {
+    let modal = document.getElementById('axhost-export-component-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'axhost-export-component-modal';
+      modal.className = 'settings-modal';
+      modal.innerHTML = `<div class="settings-modal-overlay"></div>
+        <div class="settings-modal-content" style="width:400px;">
+          <div class="settings-modal-header">
+            <h4 id="export-modal-title">导出组件</h4>
+            <button class="settings-modal-close" id="export-modal-cancel">&times;</button>
+          </div>
+          <div class="settings-modal-body">
+            <label>目标项目</label>
+            <div style="position:relative;margin-bottom:12px;">
+              <input type="text" id="export-modal-project" placeholder="搜索或选择项目..." autocomplete="off" style="width:100%;padding:6px 10px;font-size:13px;border-radius:4px;border:1px solid var(--border);background:var(--bg-body);color:var(--text-main);">
+              <div id="export-modal-project-dropdown" class="host-project-dropdown" style="top:100%;left:0;right:0;"></div>
+            </div>
+            <label>导出文档</label>
+            <div id="export-modal-docs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-body);margin-bottom:12px;"></div>
+            <div style="font-size:12px;color:var(--text-muted);background:var(--bg-hover);padding:8px 10px;border-radius:4px;line-height:1.5;">组件样式依赖项目全局 CSS，且可能引用其他组件，导出后请在目标项目中检查适配。</div>
+          </div>
+          <div class="settings-modal-footer">
+            <button id="export-modal-cancel2">取消</button>
+            <button id="export-modal-submit" class="primary">导出</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      function closeExportModal() { modal.classList.remove('open'); }
+      modal.querySelector('#export-modal-cancel').addEventListener('click', closeExportModal);
+      modal.querySelector('#export-modal-cancel2').addEventListener('click', closeExportModal);
+      modal.querySelector('.settings-modal-overlay').addEventListener('click', closeExportModal);
+    }
+
+    modal.querySelector('#export-modal-title').textContent = '导出组件 — ' + (node.name || '');
+
+    var projectInput = modal.querySelector('#export-modal-project');
+    var projectDropdown = modal.querySelector('#export-modal-project-dropdown');
+    var projectList = [];
+    var selectedProjectId = null;
+    projectInput.value = '';
+    projectDropdown.innerHTML = '';
+    projectDropdown.classList.remove('open');
+
+    function renderProjectDropdown(keyword) {
+      projectDropdown.innerHTML = '';
+      var kw = (keyword || '').toLowerCase();
+      var filtered = kw ? projectList.filter(function(p) { return p.name.toLowerCase().indexOf(kw) !== -1; }) : projectList;
+      if (filtered.length === 0) {
+        projectDropdown.innerHTML = '<div class="host-project-dropdown-empty">无匹配项目</div>';
+      } else {
+        filtered.forEach(function(p) {
+          var div = document.createElement('div');
+          div.className = 'host-project-dropdown-item';
+          div.textContent = p.name;
+          div.addEventListener('click', function() {
+            projectInput.value = p.name;
+            selectedProjectId = p.id;
+            projectDropdown.classList.remove('open');
+          });
+          projectDropdown.appendChild(div);
+        });
+      }
+      projectDropdown.classList.add('open');
+    }
+
+    projectInput.addEventListener('input', function() {
+      selectedProjectId = null;
+      renderProjectDropdown(this.value);
+    });
+    projectInput.addEventListener('focus', function() {
+      if (projectList.length > 0 && !projectDropdown.classList.contains('open')) {
+        renderProjectDropdown(this.value);
+      }
+    });
+    projectInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { projectDropdown.classList.remove('open'); return; }
+      if (e.key === 'Enter') {
+        var items = projectDropdown.querySelectorAll('.host-project-dropdown-item');
+        var activeItem = projectDropdown.querySelector('.host-project-dropdown-item.active');
+        if (activeItem) { activeItem.click(); e.preventDefault(); }
+        else if (items.length === 1) { items[0].click(); e.preventDefault(); }
+        return;
+      }
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      e.preventDefault();
+      var items = projectDropdown.querySelectorAll('.host-project-dropdown-item');
+      if (items.length === 0) return;
+      var activeItem = projectDropdown.querySelector('.host-project-dropdown-item.active');
+      var idx = -1;
+      if (activeItem) {
+        activeItem.classList.remove('active');
+        idx = Array.prototype.indexOf.call(items, activeItem);
+      }
+      if (e.key === 'ArrowDown') idx = (idx + 1) % items.length;
+      else idx = (idx - 1 + items.length) % items.length;
+      items[idx].classList.add('active');
+    });
+    document.addEventListener('click', function closeExportDropdown(e) {
+      if (!projectDropdown.classList.contains('open')) return;
+      if (!projectDropdown.contains(e.target) && e.target !== projectInput) {
+        projectDropdown.classList.remove('open');
+      }
+    });
+
+    fetch('/api/projects')
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.code !== 0) throw new Error(data.message);
+        var all = data.data || [];
+        var currentId = window.__axhostProjectId;
+        projectList = [];
+        all.forEach(function(p) {
+          if (p.id !== currentId) {
+            projectList.push({ id: p.id, name: p.name || p.id });
+          }
+        });
+        if (projectList.length === 0) {
+          projectInput.placeholder = '无其他项目可导出';
+          projectInput.disabled = true;
+        }
+      })
+      .catch(function() {
+        projectInput.placeholder = '加载失败';
+      });
+
+    var docsDiv = modal.querySelector('#export-modal-docs');
+    var docs = node.docs || ['readme.md'];
+    docsDiv.innerHTML = '';
+    docs.forEach(function(doc) {
+      var label = document.createElement('label');
+      label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = doc;
+      cb.checked = true;
+      if (doc === 'readme.md') cb.disabled = true;
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(doc));
+      docsDiv.appendChild(label);
+    });
+
+    var submitBtn = modal.querySelector('#export-modal-submit');
+    submitBtn.onclick = function() {
+      var targetProjectId = selectedProjectId;
+      if (!targetProjectId) {
+        window.showToast('请选择有效的目标项目', 'error');
+        return;
+      }
+      var checkedDocs = [];
+      docsDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) { checkedDocs.push(cb.value); });
+      if (checkedDocs.length === 0) {
+        window.showToast('请至少选择一个文档', 'error');
+        return;
+      }
+      submitBtn.disabled = true;
+      submitBtn.textContent = '导出中...';
+      window.apiClient.postExportComponent({
+        sourceProjectId: window.__axhostProjectId,
+        targetProjectId: targetProjectId,
+        componentPath: node.path,
+        selectedDocs: checkedDocs
+      }).then(function(result) {
+        if (result.code === 0) {
+          window.showToast('导出成功', 'success');
+          modal.classList.remove('open');
+        } else {
+          window.showToast('导出失败：' + (result.message || '未知错误'), 'error');
+        }
+      }).catch(function(e) {
+        window.showToast('导出失败：' + e.message, 'error');
+      }).finally(function() {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '导出';
+      });
+    };
+
+    modal.classList.add('open');
+  }
+
+
   function showPageContextMenu(e, node, type) {
     if (currentTab === 'wiki') return;
     const pageLabel = type === 'components' ? '新建组件' : type === 'flowcharts' ? '新建流程图' : '新建页面';
@@ -450,6 +631,7 @@
       { label: pageLabel, action: 'create_page' },
       { label: '新建子目录', action: 'create_subfolder' },
       { label: copyLabel, action: 'copy_page' },
+      ...(type === 'components' ? [{ label: '导出到项目', action: 'export_to_project' }] : []),
       { divider: true },
       { label: '复制路径', action: 'copy_path' },
       { label: '重命名', action: 'rename' },
@@ -465,6 +647,8 @@
         handleCreate(node.path, 'folder');
       } else if (action === 'copy_page') {
         handleCopy(node.path, type);
+      } else if (action === 'export_to_project') {
+        showExportComponentModal(node, type);
       } else if (action === 'copy_path') {
         navigator.clipboard.writeText(`prototype/${type}/${node.path}`);
       } else if (action === 'rename') {

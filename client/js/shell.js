@@ -346,16 +346,13 @@
         const div = document.createElement('div');
         div.className = 'host-project-dropdown-item';
         div.textContent = p.name || p.object_id || p.id || '';
-        div.addEventListener('click', async () => {
+        div.addEventListener('click', function() {
           selectedHostProject = { id: p.object_id || p.id, name: p.name };
           currentSettingsLink = { remoteProjectId: p.object_id || p.id, remoteProjectName: p.name };
           hostProjectSearch.value = p.name || '';
           hostProjectDropdown.classList.remove('open');
           hostProjectHint.textContent = '';
           renderHostProjectState();
-          try {
-            await window.apiClient.postSettings({ link: currentSettingsLink });
-          } catch (e) {}
         });
         hostProjectDropdown.appendChild(div);
       });
@@ -404,13 +401,11 @@
   }
 
   if (btnUnlinkProject) {
-    btnUnlinkProject.addEventListener('click', async () => {
+    btnUnlinkProject.addEventListener('click', function() {
+      selectedHostProject = null;
       currentSettingsLink = null;
+      hostProjectSearch.value = '';
       renderHostProjectState();
-      updateOpenOnlineButton();
-      try {
-        await window.apiClient.postSettings({ link: null });
-      } catch (e) {}
     });
   }
 

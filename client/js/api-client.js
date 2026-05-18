@@ -80,6 +80,10 @@
       method: 'POST',
       body: JSON.stringify(data)
     }),
+    postExportComponent: (data) => request('/api/export-component', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
     postOpenEditor: (data) => request('/api/open-editor', {
       method: 'POST',
       body: JSON.stringify(data)

@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
+const { readSitemap, writeSitemap, addNodeToSitemap } = require('../lib/sitemap-io.js');
 const { generateId } = require('../lib/ids.js');
 
 const TEMPLATE_ROOT = path.resolve(__dirname, '../../templates/project');
@@ -48,34 +48,6 @@ async function writeMeta(absPath, meta) {
     JSON.stringify(meta, null, 2) + '\n',
     'utf-8'
   );
-}
-
-function addNodeToSitemap(sitemap, tab, parentId, node) {
-  const list = sitemap[tab] || [];
-  if (!parentId) {
-    list.push(node);
-    sitemap[tab] = list;
-  } else {
-    function findAndInsert(nodes) {
-      for (const n of nodes) {
-        if (n.id === parentId) {
-          if (!n.children) n.children = [];
-          n.children.push(node);
-          return true;
-        }
-        if (n.children && findAndInsert(n.children)) return true;
-      }
-      return false;
-    }
-    findAndInsert(list);
-  }
-  // Update flat map
-  if (!sitemap._map) sitemap._map = {};
-  sitemap._map[node.id] = {
-    name: node.name,
-    type: node.type,
-    path: `${tab.slice(0, -1)}/${node.path}`
-  };
 }
 
 async function createItem(projectRoot, parentPath, name, kind, template = 'default') {

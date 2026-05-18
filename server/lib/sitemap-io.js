@@ -21,4 +21,31 @@ async function writeSitemap(projectRoot, data) {
   );
 }
 
-module.exports = { readSitemap, writeSitemap };
+function addNodeToSitemap(sitemap, tab, parentId, node) {
+  const list = sitemap[tab] || [];
+  if (!parentId) {
+    list.push(node);
+    sitemap[tab] = list;
+  } else {
+    function findAndInsert(nodes) {
+      for (const n of nodes) {
+        if (n.id === parentId) {
+          if (!n.children) n.children = [];
+          n.children.push(node);
+          return true;
+        }
+        if (n.children && findAndInsert(n.children)) return true;
+      }
+      return false;
+    }
+    findAndInsert(list);
+  }
+  if (!sitemap._map) sitemap._map = {};
+  sitemap._map[node.id] = {
+    name: node.name,
+    type: node.type,
+    path: `${tab.slice(0, -1)}/${node.path}`
+  };
+}
+
+module.exports = { readSitemap, writeSitemap, addNodeToSitemap };

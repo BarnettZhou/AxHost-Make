@@ -26,6 +26,7 @@ const modules = [
   require('./api/reorder.js'),
   require('./api/move.js'),
   require('./api/copy.js'),
+  require('./api/export-component.js'),
   require('./api/upload-image.js'),
   require('./api/cache-cleanup.js'),
 ];
