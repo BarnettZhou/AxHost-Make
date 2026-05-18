@@ -223,7 +223,7 @@
     if (!doc || !doc.head) return;
     if (doc.querySelector('script[data-iconpark]')) return;
     var script = doc.createElement('script');
-    script.src = '/client/js/icons.js';
+    script.src = '/client/js/icon-loader-shell.js';
     script.defer = true;
     doc.head.appendChild(script);
   }

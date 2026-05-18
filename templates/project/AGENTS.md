@@ -33,8 +33,11 @@
 |---------|---------|-------------|
 | 页面私有 JS/CSS | `pages/{hash}/resources/` | `resources/js/xxx.js` |
 | 组件私有 JS/CSS | `components/{hash}/resources/` | `resources/js/xxx.js`（组件内） |
+| 框架 Shell 资源 | `prototype/shell-resources/` | `../../shell-resources/js/xxx.js`（只读，禁止修改） |
 | 项目公共资源 | `prototype/resources/` | `../../resources/js/xxx.js`（从 pages 下引用） |
 | 框架系统规则 | `../../axhost-make/system-rules/` | 只读，禁止修改 |
+
+> **shell-resources vs resources**：`shell-resources/` 存放框架提供的运行时文件（shell.css、icon-loader-shell.js、marked.min.js、preview-app.js 等），由 `axhost-make update` 自动维护，**禁止手动修改**。`resources/` 存放项目自己的公共资源（跨页面复用的 CSS/JS/组件），由开发者维护。
 
 目录名为 8 位 hash（人类不可读），用 CLI 获取映射，**禁止**手动 `ls prototype/pages/` 猜测结构。
 
@@ -53,6 +56,7 @@ flowchart/{hash}/
 
 - dir 节点是逻辑分组，无物理目录，仅存在于 `sitemap.js`。
 - 页面级资源（仅该页面使用）→ 页面 `resources/` 下；跨页面共享 → `prototype/resources/` 下。
+- 框架 Shell 资源统一在 `prototype/shell-resources/`，路径与项目资源分离，避免误改。
 
 ## 按需阅读
 

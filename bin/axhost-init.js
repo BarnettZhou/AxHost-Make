@@ -13,6 +13,9 @@ const DIRS = [
   'wiki/raw',
   'wiki/pages',
   'prototype',
+  'prototype/shell-resources',
+  'prototype/shell-resources/js',
+  'prototype/shell-resources/css',
   'prototype/resources',
   'prototype/resources/js',
   'prototype/resources/css',
@@ -87,33 +90,33 @@ async function init(projectRoot) {
     }
   }
 
-  // Copy marked.min.js to prototype resources
+  // Copy marked.min.js to prototype shell-resources
   const markedSrc = path.resolve(__dirname, '../client/assets/marked.min.js');
-  const markedDest = path.join(projectRoot, 'prototype/resources/js/marked.min.js');
+  const markedDest = path.join(projectRoot, 'prototype/shell-resources/js/marked.min.js');
   if (await exists(markedSrc)) {
     await fs.mkdir(path.dirname(markedDest), { recursive: true });
     await fs.copyFile(markedSrc, markedDest);
   }
 
-  // Copy icons.js to prototype resources
-  const iconsSrc = path.resolve(__dirname, '../client/js/icons.js');
-  const iconsDest = path.join(projectRoot, 'prototype/resources/js/icons.js');
+  // Copy icon-loader-shell.js to prototype shell-resources
+  const iconsSrc = path.resolve(__dirname, '../client/js/icon-loader-shell.js');
+  const iconsDest = path.join(projectRoot, 'prototype/shell-resources/js/icon-loader-shell.js');
   if (await exists(iconsSrc)) {
     await fs.mkdir(path.dirname(iconsDest), { recursive: true });
     await fs.copyFile(iconsSrc, iconsDest);
   }
 
-  // Copy preview-app.js to prototype resources
+  // Copy preview-app.js to prototype shell-resources
   const previewAppSrc = path.resolve(__dirname, '../client/js/preview-app.js');
-  const previewAppDest = path.join(projectRoot, 'prototype/resources/js/preview-app.js');
+  const previewAppDest = path.join(projectRoot, 'prototype/shell-resources/js/preview-app.js');
   if (await exists(previewAppSrc)) {
     await fs.mkdir(path.dirname(previewAppDest), { recursive: true });
     await fs.copyFile(previewAppSrc, previewAppDest);
   }
 
-  // Copy shell.css to prototype resources
+  // Copy shell.css to prototype shell-resources
   const cssSrc = path.resolve(__dirname, '../client/css/shell.css');
-  const cssDest = path.join(projectRoot, 'prototype/resources/css/shell.css');
+  const cssDest = path.join(projectRoot, 'prototype/shell-resources/css/shell.css');
   if (await exists(cssSrc)) {
     await fs.mkdir(path.dirname(cssDest), { recursive: true });
     await fs.copyFile(cssSrc, cssDest);
@@ -132,10 +135,10 @@ async function init(projectRoot) {
   console.log('  - prototype/start.html');
   console.log('  - prototype/icon.svg');
   console.log('  - prototype/sitemap.js');
-  console.log('  - prototype/resources/js/marked.min.js');
-  console.log('  - prototype/resources/js/icons.js');
-  console.log('  - prototype/resources/js/preview-app.js');
-  console.log('  - prototype/resources/css/shell.css');
+  console.log('  - prototype/shell-resources/js/marked.min.js');
+  console.log('  - prototype/shell-resources/js/icon-loader-shell.js');
+  console.log('  - prototype/shell-resources/js/preview-app.js');
+  console.log('  - prototype/shell-resources/css/shell.css');
   console.log('  - AGENTS.md (if not exists)');
   console.log('  - readme.md (if not exists)');
 }

@@ -48,6 +48,7 @@ node axhost-make/bin/axhost-make.js add-doc <name> --to <path-or-hash>
 
 After editing `server/`: kill the Node process and restart `serve` (no hot reload).
 After editing `bin/`: test by running the command directly.
+**After editing `templates/` or `client/` (build + update)**: if the dev server was already running, remind the user to restart it — existing processes won't pick up the new files until restarted.
 
 ## Architecture
 

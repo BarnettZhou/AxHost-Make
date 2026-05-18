@@ -122,7 +122,7 @@ async function handleDelete(req, res, projectRoot) {
         return false;
       }
       if (!await hasFlowcharts(projectRoot)) {
-        const mermaidPath = path.join(projectRoot, 'prototype/resources/js/mermaid.min.js');
+        const mermaidPath = path.join(projectRoot, 'prototype/shell-resources/js/mermaid.min.js');
         try { await fs.unlink(mermaidPath); } catch (e) {}
       }
 

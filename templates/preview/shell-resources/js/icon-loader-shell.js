@@ -1,3 +1,4 @@
+// IconPark CDN loader — 供 Shell/Preview 宿主环境使用，原型页面请使用 icon-loader.js
 (function () {
   var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_66.a73051952f9609123a20fad84ae14620.js';
   if (window.__axhostIconParkES5) {

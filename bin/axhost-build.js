@@ -30,8 +30,8 @@ async function build(projectRoot) {
   html = html.replace("window.__axhostBasePath = '/prototype/'", "window.__axhostBasePath = './'");
 
   // Replace /client/ paths to ./resources/
-  html = html.replace(/(href|src)="\/client\/css\//g, '$1="./resources/css/');
-  html = html.replace(/(href|src)="\/client\/js\//g, '$1="./resources/js/');
+  html = html.replace(/(href|src)="\/client\/css\//g, '$1="./shell-resources/css/');
+  html = html.replace(/(href|src)="\/client\/js\//g, '$1="./shell-resources/js/');
   html = html.replace(/(href|src)="\/client\/icon\.svg"/g, '$1="./icon.svg"');
 
   // Replace /prototype/ paths to ./
@@ -40,29 +40,29 @@ async function build(projectRoot) {
   // Copy CSS resources
   await copyResource(
     path.join(clientRoot, 'css', 'shell.css'),
-    path.join(previewRoot, 'resources', 'css', 'shell.css')
+    path.join(previewRoot, 'shell-resources', 'css', 'shell.css')
   );
 
   // Copy JS resources
   await copyResource(
-    path.join(clientRoot, 'js', 'icons.js'),
-    path.join(previewRoot, 'resources', 'js', 'icons.js')
+    path.join(clientRoot, 'js', 'icon-loader-shell.js'),
+    path.join(previewRoot, 'shell-resources', 'js', 'icon-loader-shell.js')
   );
   await copyResource(
     path.join(clientRoot, 'js', 'preview-app.js'),
-    path.join(previewRoot, 'resources', 'js', 'preview-app.js')
+    path.join(previewRoot, 'shell-resources', 'js', 'preview-app.js')
   );
   await copyResource(
     path.join(clientRoot, 'js', 'zoom-control.js'),
-    path.join(previewRoot, 'resources', 'js', 'zoom-control.js')
+    path.join(previewRoot, 'shell-resources', 'js', 'zoom-control.js')
   );
   await copyResource(
     path.join(clientRoot, 'js', 'touch-emulation.js'),
-    path.join(previewRoot, 'resources', 'js', 'touch-emulation.js')
+    path.join(previewRoot, 'shell-resources', 'js', 'touch-emulation.js')
   );
   await copyResource(
     path.join(clientRoot, 'js', 'md-renderer.js'),
-    path.join(previewRoot, 'resources', 'js', 'md-renderer.js')
+    path.join(previewRoot, 'shell-resources', 'js', 'md-renderer.js')
   );
 
   await fs.mkdir(path.dirname(outputHtmlPath), { recursive: true });

@@ -73,6 +73,16 @@
 `ax-component` 类名用于标记可复用核心 DOM，方便 LLM 快速识别。
 `demo-controls` 类名用于标记演示交互区域，Agent 添加触发按钮时应放在此处。
 
+### 3.1.1 遮罩层限定规则
+
+若组件示例中包含唤起 modal/drawer 的场景（含遮罩层），遮罩层**必须限定在 `.demo-body` 内**，不得覆盖全局页面。
+
+- `.demo-body` 需设置 `position: relative`，作为遮罩层和弹窗的定位锚点。
+- 遮罩层使用 `position: absolute`（**禁止 `fixed`**），确保其只覆盖 `.demo-body` 区域。
+- modal/drawer 弹窗本体同样使用 `position: absolute`，定位在 `.demo-body` 内。
+
+**原则**：demo 的一切交互效果限定在 `demo-container` 内。
+
 ### 3.2 CSS/JS 纯净原则
 
 组件 `resources/css/style.css` 和 `resources/js/main.js` **只能包含组件功能本身**的样式和逻辑，**严禁**写入以下内容：

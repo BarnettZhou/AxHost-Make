@@ -191,7 +191,7 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   // Ensure mermaid.min.js exists for flowchart projects
   if (kind === 'flowchart') {
     const mermaidSrc = path.resolve(__dirname, '../../templates/project/resources/js/mermaid.min.js');
-    const mermaidDest = path.join(projectRoot, 'prototype/resources/js/mermaid.min.js');
+    const mermaidDest = path.join(projectRoot, 'prototype/shell-resources/js/mermaid.min.js');
     try {
       await fs.mkdir(path.dirname(mermaidDest), { recursive: true });
       await fs.copyFile(mermaidSrc, mermaidDest);

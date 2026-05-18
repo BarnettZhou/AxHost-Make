@@ -155,6 +155,12 @@ async function rewriteSitemap(srcPrototypeDir, exportDir, selectedPages, selecte
 async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selectedComponents, selectedFlowcharts) {
   await fs.mkdir(exportDir, { recursive: true });
 
+  const srcShellResources = path.join(srcPrototypeDir, 'shell-resources');
+  const destShellResources = path.join(exportDir, 'shell-resources');
+  if (await exists(srcShellResources)) {
+    await copyDir(srcShellResources, destShellResources);
+  }
+
   const srcResources = path.join(srcPrototypeDir, 'resources');
   const destResources = path.join(exportDir, 'resources');
   if (await exists(srcResources)) {
