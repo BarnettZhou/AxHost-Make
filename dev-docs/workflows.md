@@ -5,7 +5,7 @@
 ### 修改 Client/Templates
 ```
 1. 编辑 client/ 或 templates/ 源文件
-2. 如果修改了 preview-index.html | shell.css | icons.js | preview-app.js:
+2. 如果修改了 preview-index.html | shell.css | icon-loader-shell.js | preview-app.js | md-renderer.js | zoom-control.js | touch-emulation.js:
    node axhost-make/bin/axhost-make.js build
 3. node axhost-make/bin/axhost-make.js update --all
 4. 刷新浏览器验证

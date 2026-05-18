@@ -43,11 +43,14 @@ update(currentDir, { all: true })
         └── updateSingleProject(projectRoot)
               ├── 复制 templates/preview/index.html → prototype/index.html
               ├── 复制 templates/preview/start.html → prototype/start.html（如果缺失）
-              ├── 复制 client/assets/marked.min.js → prototype/resources/js/
-              ├── 条件复制 mermaid.min.js（有 flowchart 则复制，无则删除）
-              ├── 复制 client/js/icons.js → prototype/resources/js/
-              ├── 复制 client/css/shell.css → prototype/resources/css/
-              ├── 复制 client/js/preview-app.js → prototype/resources/js/
+              ├── 复制 client/assets/marked.min.js → prototype/shell-resources/js/
+              ├── 条件复制 mermaid.min.js（有 flowchart 则复制至 shell-resources/js/，无则删除）
+              ├── 复制 client/js/icon-loader-shell.js → prototype/shell-resources/js/
+              ├── 复制 client/css/shell.css → prototype/shell-resources/css/
+              ├── 复制 client/js/preview-app.js → prototype/shell-resources/js/
+              ├── 复制 client/js/md-renderer.js → prototype/shell-resources/js/
+              ├── 复制 client/js/zoom-control.js → prototype/shell-resources/js/
+              ├── 复制 client/js/touch-emulation.js → prototype/shell-resources/js/
               ├── 复制 client/icon.svg → prototype/
               ├── 复制 AGENTS.md, CLAUDE.md（覆盖）
               ├── 复制 rules/design.md（如果缺失）
@@ -65,17 +68,20 @@ build(projectRoot)
   ├── 读取 client/preview-index.html
   ├── 路径替换：
   │   ├── window.__axhostBasePath = '/prototype/' → './'
-  │   ├── /client/css/ → ./resources/css/
-  │   ├── /client/js/  → ./resources/js/
+  │   ├── /client/css/ → ./shell-resources/css/
+  │   ├── /client/js/  → ./shell-resources/js/
   │   ├── /client/icon.svg → ./icon.svg
   │   └── /prototype/ → ./
   ├── 写入 templates/preview/index.html
-  ├── 复制 shell.css → templates/preview/resources/css/
-  ├── 复制 icons.js  → templates/preview/resources/js/
-  └── 复制 preview-app.js → templates/preview/resources/js/
+  ├── 复制 shell.css → templates/preview/shell-resources/css/
+  ├── 复制 icon-loader-shell.js  → templates/preview/shell-resources/js/
+  ├── 复制 preview-app.js → templates/preview/shell-resources/js/
+  ├── 复制 md-renderer.js → templates/preview/shell-resources/js/
+  ├── 复制 zoom-control.js → templates/preview/shell-resources/js/
+  └── 复制 touch-emulation.js → templates/preview/shell-resources/js/
 ```
 
-**触发条件：** 修改了 `preview-index.html`、`shell.css`、`icons.js`、`preview-app.js` 中任意一个后执行。build 是 update 的前置步骤。
+**触发条件：** 修改了 `preview-index.html`、`shell.css`、`icon-loader-shell.js`、`preview-app.js`、`md-renderer.js`、`zoom-control.js`、`touch-emulation.js` 中任意一个后执行。build 是 update 的前置步骤。
 
 ## 脚手架命令（add-*）
 

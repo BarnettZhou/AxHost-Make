@@ -7,7 +7,7 @@
 ### 加载顺序（shell.html）
 
 ```
-1. icons.js          → IconPark CDN loader
+1. icon-loader-shell.js → IconPark CDN loader（Shell 宿主使用）
 2. inline script     → 设置 window.__axhostProjectId（从 ?project= 参数）
 3. marked.min.js     → Markdown 渲染库
 4. html-to-image.min.js → 元素截图库
