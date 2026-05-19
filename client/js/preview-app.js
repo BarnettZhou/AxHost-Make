@@ -174,7 +174,13 @@
 
     const arrow = document.createElement('span');
     arrow.className = 'tree-arrow';
-    arrow.textContent = isExpandable ? (expandedPaths.has(node.path) ? '▼' : '▶') : '';
+    if (isExpandable) {
+      const arrowIcon = document.createElement('iconpark-icon');
+      arrowIcon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'down' : 'right');
+      arrowIcon.setAttribute('size', '12');
+      arrowIcon.setAttribute('color', 'currentColor');
+      arrow.appendChild(arrowIcon);
+    }
 
     let icon = null;
     if (node.type === 'dir') {

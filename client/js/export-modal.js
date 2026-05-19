@@ -28,15 +28,6 @@
   const hostProjectHint = document.getElementById('export-host-project-hint');
   const exportPreviewUrlField = document.getElementById('export-preview-url-field');
   const exportPreviewUrl = document.getElementById('export-preview-url');
-  const createRemoteModal = document.getElementById('export-create-remote-modal');
-  const newRemoteProjectName = document.getElementById('export-new-remote-project-name');
-  const needsPasswordCheckbox = document.getElementById('export-needs-password');
-  const passwordField = document.getElementById('export-password-field');
-  const remotePasswordInput = document.getElementById('export-remote-password');
-  const btnRandomPassword = document.getElementById('export-btn-random-password');
-  const btnCancelCreateRemote = document.getElementById('export-btn-cancel-create-remote');
-  const btnConfirmCreateRemote = document.getElementById('export-btn-confirm-create-remote');
-  const createRemoteError = document.getElementById('export-create-remote-error');
 
   let currentTab = 'pages';
   let currentMode = 'local';
@@ -214,9 +205,11 @@
     const arrow = document.createElement('span');
     arrow.className = 'export-tree-arrow';
     if (isExpandable) {
-      arrow.textContent = expandedPaths.has(node.path) ? '▼' : '▶';
-    } else {
-      arrow.textContent = '';
+      const icon = document.createElement('iconpark-icon');
+      icon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'down' : 'right');
+      icon.setAttribute('size', '12');
+      icon.setAttribute('color', 'currentColor');
+      arrow.appendChild(icon);
     }
 
     const checkbox = document.createElement('input');
@@ -244,11 +237,6 @@
     label.appendChild(arrow);
     if (node.type !== 'dir') {
       label.appendChild(checkbox);
-    } else {
-      const spacer = document.createElement('span');
-      spacer.style.width = '14px';
-      spacer.style.flexShrink = '0';
-      label.appendChild(spacer);
     }
     label.appendChild(name);
     li.appendChild(label);
@@ -378,6 +366,8 @@
           renderHostProjectState();
           try {
             await window.apiClient.postSettings({ link: currentSettingsLink });
+            window.showToast('托管关联已设置', 'success');
+            if (window.onHostProjectLinked) window.onHostProjectLinked(p.object_id || p.id, p.name);
           } catch (e) {}
         });
         hostProjectDropdown.appendChild(div);
@@ -414,103 +404,103 @@
       renderHostProjectState();
       try {
         await window.apiClient.postSettings({ link: null });
+        window.showToast('托管关联已移除', 'info');
+        if (window.onHostProjectUnlinked) window.onHostProjectUnlinked();
       } catch (e) {}
     });
   }
 
-  if (needsPasswordCheckbox && passwordField) {
-    needsPasswordCheckbox.addEventListener('change', (e) => {
-      passwordField.style.display = e.target.checked ? '' : 'none';
-      if (!e.target.checked && remotePasswordInput) remotePasswordInput.value = '';
-    });
-  }
-
-  if (btnRandomPassword && remotePasswordInput) {
-    btnRandomPassword.addEventListener('click', () => {
-      remotePasswordInput.value = generateRandomPassword();
-    });
-  }
-
   if (btnCreateRemoteProject) {
-    btnCreateRemoteProject.addEventListener('click', () => {
-      createRemoteModal.classList.add('active');
-      newRemoteProjectName.value = '';
-      if (needsPasswordCheckbox) needsPasswordCheckbox.checked = false;
-      if (passwordField) passwordField.style.display = 'none';
-      if (remotePasswordInput) remotePasswordInput.value = '';
-      createRemoteError.textContent = '';
-      setTimeout(() => newRemoteProjectName.focus(), 50);
-    });
-  }
+    btnCreateRemoteProject.addEventListener('click', function() {
+      var modal = new AxhostModal({
+        title: '创建新项目',
+        width: '360px',
+        confirmText: '创建',
+        body: function(container) {
+          container.innerHTML =
+            '<label for="export-new-remote-name">项目名称</label>' +
+            '<input type="text" id="export-new-remote-name" placeholder="请输入项目名称" autocomplete="off">' +
+            '<div class="remote-password-option" style="margin-top:12px;">' +
+              '<label class="checkbox-label" style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-main);cursor:pointer;">' +
+                '<input type="checkbox" id="export-needs-pwd" style="width:16px;height:16px;cursor:pointer;">' +
+                '<span>需要密码</span>' +
+              '</label>' +
+            '</div>' +
+            '<div id="export-pwd-field" style="display:none;margin-top:10px;">' +
+              '<label for="export-pwd-input">密码</label>' +
+              '<div style="display:flex;gap:8px;">' +
+                '<input type="text" id="export-pwd-input" placeholder="请输入密码" maxlength="6" autocomplete="off" style="flex:1;">' +
+                '<button class="axhost-modal-btn" id="export-random-pwd" type="button" style="white-space:nowrap;">随机生成</button>' +
+              '</div>' +
+            '</div>' +
+            '<div id="export-create-error" style="color:#ff4d4f;font-size:12px;margin-top:8px;min-height:16px;"></div>';
 
-  if (btnCancelCreateRemote) {
-    btnCancelCreateRemote.addEventListener('click', () => {
-      createRemoteModal.classList.remove('active');
-    });
-  }
-  if (createRemoteModal) {
-    createRemoteModal.addEventListener('click', (e) => {
-      if (e.target === createRemoteModal) createRemoteModal.classList.remove('active');
-    });
-  }
+          var needsPwd = container.querySelector('#export-needs-pwd');
+          var pwdField = container.querySelector('#export-pwd-field');
+          var pwdInput = container.querySelector('#export-pwd-input');
+          var btnRandom = container.querySelector('#export-random-pwd');
+          var errorEl = container.querySelector('#export-create-error');
+          var nameInput = container.querySelector('#export-new-remote-name');
 
-  if (btnConfirmCreateRemote) {
-    btnConfirmCreateRemote.addEventListener('click', async () => {
-      const name = newRemoteProjectName.value.trim();
-      if (!name) {
-        createRemoteError.textContent = '请输入项目名称';
-        return;
-      }
-      const baseUrl = localStorage.getItem('axhost-server-url');
-      if (!baseUrl) {
-        createRemoteError.textContent = 'AxHost 服务地址未设置';
-        return;
-      }
-      const token = localStorage.getItem('axhost-token') || '';
-      if (!token) {
-        createRemoteError.textContent = '请先登录';
-        return;
-      }
-      btnConfirmCreateRemote.disabled = true;
-      btnConfirmCreateRemote.textContent = '创建中...';
-      try {
-        const res = await fetch('/api/axhost-proxy', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            serverUrl: baseUrl,
-            path: '/api/projects',
-            method: 'POST',
-            headers: { 'Authorization': 'Bearer ' + token },
-            body: {
-              name,
-              is_public: !(needsPasswordCheckbox && needsPasswordCheckbox.checked),
-              view_password: (needsPasswordCheckbox && needsPasswordCheckbox.checked) ? (remotePasswordInput ? remotePasswordInput.value.trim() : '') : undefined
-            }
-          })
-        });
-        const data = await res.json();
-        if (res.ok && (data.object_id || data.id)) {
-          const projectId = data.object_id || data.id;
-          selectedHostProject = { id: projectId, name: data.name || name };
-          currentSettingsLink = { remoteProjectId: projectId, remoteProjectName: data.name || name };
-          renderHostProjectState();
-          createRemoteModal.classList.remove('active');
-          window.showToast('项目创建成功并已关联', 'success');
-          // 保存关联到 settings
-          try {
-            await window.apiClient.postSettings({ link: currentSettingsLink });
-          } catch (e) {}
-          hostProjectList = await fetchHostProjects();
-        } else {
-          createRemoteError.textContent = data.message || '创建失败';
+          needsPwd.addEventListener('change', function() {
+            pwdField.style.display = this.checked ? '' : 'none';
+            if (!this.checked) pwdInput.value = '';
+          });
+
+          btnRandom.addEventListener('click', function() {
+            pwdInput.value = generateRandomPassword();
+          });
+
+          container._errorEl = errorEl;
+          container._needsPwd = needsPwd;
+          container._pwdInput = pwdInput;
+          container._nameInput = nameInput;
+        },
+        onConfirm: async function() {
+          var body = modal.getBody();
+          var nameInput = body._nameInput;
+          var errorEl = body._errorEl;
+          var needsPwd = body._needsPwd;
+          var pwdInput = body._pwdInput;
+
+          var name = nameInput.value.trim();
+          if (!name) { errorEl.textContent = '请输入项目名称'; throw new Error(); }
+
+          var baseUrl = localStorage.getItem('axhost-server-url');
+          if (!baseUrl) { errorEl.textContent = 'AxHost 服务地址未设置'; throw new Error(); }
+
+          var token = localStorage.getItem('axhost-token') || '';
+          if (!token) { errorEl.textContent = '请先登录'; throw new Error(); }
+
+          var res = await fetch('/api/axhost-proxy', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              serverUrl: baseUrl, path: '/api/projects', method: 'POST',
+              headers: { 'Authorization': 'Bearer ' + token },
+              body: {
+                name: name,
+                is_public: !(needsPwd && needsPwd.checked),
+                view_password: (needsPwd && needsPwd.checked) ? (pwdInput ? pwdInput.value.trim() : '') : undefined
+              }
+            })
+          });
+          var data = await res.json();
+          if (res.ok && (data.object_id || data.id)) {
+            var projectId = data.object_id || data.id;
+            selectedHostProject = { id: projectId, name: data.name || name };
+            currentSettingsLink = { remoteProjectId: projectId, remoteProjectName: data.name || name };
+            renderHostProjectState();
+            window.showToast('项目创建成功并已关联', 'success');
+            try { await window.apiClient.postSettings({ link: currentSettingsLink }); } catch (e) {}
+            if (window.onHostProjectLinked) window.onHostProjectLinked(projectId, data.name || name);
+            hostProjectList = await fetchHostProjects();
+          } else {
+            errorEl.textContent = data.message || '创建失败';
+            throw new Error();
+          }
         }
-      } catch (e) {
-        createRemoteError.textContent = '网络错误';
-      } finally {
-        btnConfirmCreateRemote.disabled = false;
-        btnConfirmCreateRemote.textContent = '创建';
-      }
+      });
+      modal.open();
     });
   }
 

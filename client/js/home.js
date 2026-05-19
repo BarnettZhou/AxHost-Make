@@ -32,10 +32,6 @@
     projectListBody: document.getElementById('project-list-body'),
     projectListView: document.getElementById('project-list-view'),
     shellContainer: document.getElementById('shell-container'),
-    newProjectModal: document.getElementById('new-project-modal'),
-    newProjectName: document.getElementById('new-project-name'),
-    btnCancelNew: document.getElementById('btn-cancel-new'),
-    btnConfirmNew: document.getElementById('btn-confirm-new'),
     avatarWrap: document.getElementById('avatar-wrap'),
     btnAvatar: document.getElementById('btn-avatar'),
     avatarDropdown: document.getElementById('avatar-dropdown'),
@@ -43,16 +39,6 @@
     themeToggleIcon: document.getElementById('theme-toggle-icon'),
     btnSystemSettings: document.getElementById('btn-system-settings'),
     btnLogin: document.getElementById('btn-login'),
-    settingsModal: document.getElementById('settings-modal'),
-    btnCancelSettings: document.getElementById('btn-cancel-settings'),
-    btnSaveSettings: document.getElementById('btn-save-settings'),
-    axhostServerUrl: document.getElementById('axhost-server-url'),
-    loginModal: document.getElementById('login-modal'),
-    btnCancelLogin: document.getElementById('btn-cancel-login'),
-    btnConfirmLogin: document.getElementById('btn-confirm-login'),
-    loginEmployeeId: document.getElementById('login-employee-id'),
-    loginPassword: document.getElementById('login-password'),
-    loginError: document.getElementById('login-error')
   };
 
   // ===== Utilities =====
@@ -406,47 +392,6 @@
     els.projectListBody.appendChild(list);
   }
 
-  // ===== Create Project =====
-  async function createProject() {
-    const name = els.newProjectName.value.trim();
-    if (!name) {
-      alert('请输入项目名称');
-      return;
-    }
-    els.btnConfirmNew.disabled = true;
-    els.btnConfirmNew.textContent = '创建中...';
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-      });
-      const data = await res.json();
-      if (data.code === 0) {
-        closeModal();
-        await loadProjects();
-        openTab(data.data.id, data.data.name);
-      } else {
-        alert(data.message || '创建失败');
-      }
-    } catch (err) {
-      alert('创建失败: ' + err.message);
-    } finally {
-      els.btnConfirmNew.disabled = false;
-      els.btnConfirmNew.textContent = '创建';
-    }
-  }
-
-  function openModal() {
-    els.newProjectModal.classList.add('active');
-    els.newProjectName.value = '';
-    setTimeout(() => els.newProjectName.focus(), 50);
-  }
-
-  function closeModal() {
-    els.newProjectModal.classList.remove('active');
-  }
-
   // ===== Events =====
   function bindEvents() {
     els.btnHome.addEventListener('click', showProjectList);
@@ -490,12 +435,28 @@
       renderProjects();
     });
 
-    els.btnNewProject.addEventListener('click', openModal);
-    els.btnCancelNew.addEventListener('click', closeModal);
-    els.btnConfirmNew.addEventListener('click', createProject);
-    els.newProjectName.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') createProject();
-      if (e.key === 'Escape') closeModal();
+    els.btnNewProject.addEventListener('click', async () => {
+      const name = await AxhostModal.prompt({
+        title: '新建原型项目',
+        placeholder: '请输入项目名称'
+      });
+      if (!name) return;
+      try {
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (data.code === 0) {
+          await loadProjects();
+          openTab(data.data.id, data.data.name);
+        } else {
+          alert(data.message || '创建失败');
+        }
+      } catch (err) {
+        alert('创建失败: ' + err.message);
+      }
     });
 
 
@@ -518,28 +479,26 @@
       els.avatarDropdown.classList.remove('open');
     });
     els.btnSystemSettings.addEventListener('click', () => {
-      const saved = getAxHostBaseUrl() || '';
-      if (els.axhostServerUrl) els.axhostServerUrl.value = saved;
-      els.settingsModal.classList.add('active');
       els.avatarDropdown.classList.remove('open');
-    });
-    els.btnCancelSettings.addEventListener('click', () => {
-      els.settingsModal.classList.remove('active');
-    });
-
-    els.btnSaveSettings.addEventListener('click', () => {
-      const url = (els.axhostServerUrl.value || '').trim();
-      if (!url) {
-        showToast('请输入 AxHost 服务地址', 'error');
-        return;
-      }
-      if (!/^https?:\/\//i.test(url)) {
-        showToast('地址必须以 http:// 或 https:// 开头', 'error');
-        return;
-      }
-      localStorage.setItem('axhost-server-url', url.replace(/\/+$/, ''));
-      els.settingsModal.classList.remove('active');
-      showToast('设置已保存', 'success');
+      var modal = new AxhostModal({
+        title: '系统设置',
+        confirmText: '保存',
+        body: function(container) {
+          var saved = getAxHostBaseUrl() || '';
+          container.innerHTML =
+            '<label for="axhost-server-url-input">AxHost 服务地址</label>' +
+            '<input type="url" id="axhost-server-url-input" placeholder="https://axhost.example.com" value="' + saved.replace(/"/g, '&quot;') + '" autocomplete="off">';
+        },
+        onConfirm: function() {
+          var input = modal.getBody().querySelector('#axhost-server-url-input');
+          var url = (input.value || '').trim();
+          if (!url) { showToast('请输入 AxHost 服务地址', 'error'); throw new Error(); }
+          if (!/^https?:\/\//i.test(url)) { showToast('地址必须以 http:// 或 https:// 开头', 'error'); throw new Error(); }
+          localStorage.setItem('axhost-server-url', url.replace(/\/+$/, ''));
+          showToast('设置已保存', 'success');
+        }
+      });
+      modal.open();
     });
     els.btnLogin.addEventListener('click', () => {
       if (isLoggedIn()) {
@@ -547,58 +506,60 @@
         els.avatarDropdown.classList.remove('open');
         return;
       }
-      els.loginEmployeeId.value = '';
-      els.loginPassword.value = '';
-      els.loginError.textContent = '';
-      els.loginModal.classList.add('active');
       els.avatarDropdown.classList.remove('open');
-      setTimeout(() => els.loginEmployeeId.focus(), 50);
-    });
-    els.btnCancelLogin.addEventListener('click', () => {
-      els.loginModal.classList.remove('active');
-    });
-
-    els.btnConfirmLogin.addEventListener('click', async () => {
-      const baseUrl = getAxHostBaseUrl();
-      if (!baseUrl) {
-        showToast('AxHost 服务地址未设置，请先前往设置页面完成设置', 'error');
-        return;
-      }
-      const employeeId = els.loginEmployeeId.value.trim();
-      const password = els.loginPassword.value;
-      if (!employeeId || !password) {
-        els.loginError.textContent = '请输入工号和密码';
-        return;
-      }
-      els.loginError.textContent = '';
-      els.btnConfirmLogin.disabled = true;
-      els.btnConfirmLogin.textContent = '登录中...';
-      try {
-        const res = await axhostRequest('/api/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ employee_id: employeeId, password: password })
-        });
-        const data = await res.json();
-        if (res.ok && data.access_token) {
-          localStorage.setItem('axhost-token', data.access_token);
-          els.loginModal.classList.remove('active');
-          showToast('登录成功', 'success');
-          if (data.user && data.user.name) {
-            localStorage.setItem('axhost-user-name', data.user.name);
-            updateLoginUI();
+      var modal = new AxhostModal({
+        title: '登录账号',
+        confirmText: '登录',
+        body: function(container) {
+          container.innerHTML =
+            '<label for="login-employee-id-input">工号</label>' +
+            '<input type="text" id="login-employee-id-input" placeholder="请输入工号" autocomplete="off">' +
+            '<label for="login-password-input" style="margin-top:12px;">密码</label>' +
+            '<input type="password" id="login-password-input" placeholder="请输入密码" style="margin-bottom:8px;">' +
+            '<div id="login-error-msg" style="color:#ff4d4f;font-size:12px;min-height:16px;"></div>';
+          setTimeout(function() { container.querySelector('#login-employee-id-input').focus(); }, 50);
+        },
+        onConfirm: async function() {
+          var baseUrl = getAxHostBaseUrl();
+          if (!baseUrl) { showToast('AxHost 服务地址未设置，请先前往设置页面完成设置', 'error'); throw new Error(); }
+          var bodyEl = modal.getBody();
+          var employeeId = bodyEl.querySelector('#login-employee-id-input').value.trim();
+          var password = bodyEl.querySelector('#login-password-input').value;
+          var errorEl = bodyEl.querySelector('#login-error-msg');
+          if (!employeeId || !password) { errorEl.textContent = '请输入工号和密码'; throw new Error(); }
+          errorEl.textContent = '';
+          try {
+            var res = await axhostRequest('/api/auth/login', {
+              method: 'POST',
+              body: JSON.stringify({ employee_id: employeeId, password: password })
+            });
+            var data = await res.json();
+            if (res.ok && data.access_token) {
+              localStorage.setItem('axhost-token', data.access_token);
+              showToast('登录成功', 'success');
+              if (data.user && data.user.name) {
+                localStorage.setItem('axhost-user-name', data.user.name);
+                updateLoginUI();
+              }
+            } else {
+              errorEl.textContent = data.message || '登录失败，请检查工号和密码';
+              throw new Error();
+            }
+          } catch (err) {
+            if (errorEl.textContent) throw err;
+            errorEl.textContent = '网络错误，请检查服务地址是否正确';
+            throw err;
           }
-        } else {
-          els.loginError.textContent = data.message || '登录失败，请检查工号和密码';
         }
-      } catch (err) {
-        els.loginError.textContent = '网络错误，请检查服务地址是否正确';
-      } finally {
-        els.btnConfirmLogin.disabled = false;
-        els.btnConfirmLogin.textContent = '登录';
+      });
+      modal.open();
+      // Enter key on password field
+      var pwdInput = modal.getBody().querySelector('#login-password-input');
+      if (pwdInput) {
+        pwdInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter' && modal._btnConfirm) modal._btnConfirm.click();
+        });
       }
-    });
-    els.loginPassword.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') els.btnConfirmLogin.click();
     });
   }
 
@@ -647,11 +608,7 @@
     window.addEventListener('message', (e) => {
       if (e.data && e.data.type === 'axhost-request-login') {
         if (!isLoggedIn()) {
-          els.loginEmployeeId.value = '';
-          els.loginPassword.value = '';
-          els.loginError.textContent = '';
-          els.loginModal.classList.add('active');
-          setTimeout(() => els.loginEmployeeId.focus(), 50);
+          els.btnLogin.click();
         }
       }
     });

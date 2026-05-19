@@ -256,9 +256,11 @@
     const arrow = document.createElement('span');
     arrow.className = 'tree-arrow';
     if (isExpandable) {
-      arrow.textContent = expandedPaths.has(node.path) ? '▼' : '▶';
-    } else {
-      arrow.textContent = '';
+      const arrowIcon = document.createElement('iconpark-icon');
+      arrowIcon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'down' : 'right');
+      arrowIcon.setAttribute('size', '12');
+      arrowIcon.setAttribute('color', 'currentColor');
+      arrow.appendChild(arrowIcon);
     }
 
     function createTreeIcon(iconId) {
@@ -275,7 +277,8 @@
     if (node.type === 'dir') {
       icon = createTreeIcon(expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
     } else if (node.type === 'page') {
-      icon = createTreeIcon('page');
+      var pageType = node.page_type || 'default';
+      icon = createTreeIcon(pageType === 'mobile' ? 'phone' : pageType === 'mini-program' ? 'wechat' : 'page');
     } else if (node.type === 'component') {
       icon = createTreeIcon('figma-component');
     } else if (node.type === 'flowchart') {
@@ -441,48 +444,54 @@
   }
 
   function showExportComponentModal(node) {
-    let modal = document.getElementById('axhost-export-component-modal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'axhost-export-component-modal';
-      modal.className = 'settings-modal';
-      modal.innerHTML = `<div class="settings-modal-overlay"></div>
-        <div class="settings-modal-content" style="width:400px;">
-          <div class="settings-modal-header">
-            <h4 id="export-modal-title">导出组件</h4>
-            <button class="settings-modal-close" id="export-modal-cancel">&times;</button>
-          </div>
-          <div class="settings-modal-body">
-            <label>目标项目</label>
-            <div style="position:relative;margin-bottom:12px;">
-              <input type="text" id="export-modal-project" placeholder="搜索或选择项目..." autocomplete="off" style="width:100%;padding:6px 10px;font-size:13px;border-radius:4px;border:1px solid var(--border);background:var(--bg-body);color:var(--text-main);">
-              <div id="export-modal-project-dropdown" class="host-project-dropdown" style="top:100%;left:0;right:0;"></div>
-            </div>
-            <label>导出文档</label>
-            <div id="export-modal-docs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-body);margin-bottom:12px;"></div>
-            <div style="font-size:12px;color:var(--text-muted);background:var(--bg-hover);padding:8px 10px;border-radius:4px;line-height:1.5;">组件样式依赖项目全局 CSS，且可能引用其他组件，导出后请在目标项目中检查适配。</div>
-          </div>
-          <div class="settings-modal-footer">
-            <button id="export-modal-cancel2">取消</button>
-            <button id="export-modal-submit" class="primary">导出</button>
-          </div>
-        </div>`;
-      document.body.appendChild(modal);
-      function closeExportModal() { modal.classList.remove('open'); }
-      modal.querySelector('#export-modal-cancel').addEventListener('click', closeExportModal);
-      modal.querySelector('#export-modal-cancel2').addEventListener('click', closeExportModal);
-      modal.querySelector('.settings-modal-overlay').addEventListener('click', closeExportModal);
-    }
+    let projectList = [];
+    let selectedProjectId = null;
 
-    modal.querySelector('#export-modal-title').textContent = '导出组件 — ' + (node.name || '');
+    var modal = new AxhostModal({
+      title: '导出组件 — ' + (node.name || ''),
+      width: '400px',
+      confirmText: '导出',
+      body: function(container) {
+        container.innerHTML =
+          '<label>目标项目</label>' +
+          '<div style="position:relative;margin-bottom:12px;">' +
+            '<input type="text" id="export-modal-project" placeholder="搜索或选择项目..." autocomplete="off" style="width:100%;padding:6px 10px;font-size:13px;border-radius:4px;border:1px solid var(--border);background:var(--bg-body);color:var(--text-main);">' +
+            '<div id="export-modal-project-dropdown" class="host-project-dropdown" style="top:100%;left:0;right:0;"></div>' +
+          '</div>' +
+          '<label>导出文档</label>' +
+          '<div id="export-modal-docs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-body);margin-bottom:12px;"></div>' +
+          '<div style="font-size:12px;color:var(--text-muted);background:var(--bg-hover);padding:8px 10px;border-radius:4px;line-height:1.5;">组件样式依赖项目全局 CSS，且可能引用其他组件，导出后请在目标项目中检查适配。</div>';
+      },
+      onConfirm: function() {
+        var targetProjectId = selectedProjectId;
+        if (!targetProjectId) { window.showToast('请选择有效的目标项目', 'error'); throw new Error(); }
+        var docsDiv = modal.getBody().querySelector('#export-modal-docs');
+        var checkedDocs = [];
+        docsDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) { checkedDocs.push(cb.value); });
+        if (checkedDocs.length === 0) { window.showToast('请至少选择一个文档', 'error'); throw new Error(); }
+        return window.apiClient.postExportComponent({
+          sourceProjectId: window.__axhostProjectId,
+          targetProjectId: targetProjectId,
+          componentPath: node.path,
+          selectedDocs: checkedDocs
+        }).then(function(result) {
+          if (result.code !== 0) {
+            window.showToast('导出失败：' + (result.message || '未知错误'), 'error');
+            throw new Error();
+          }
+          window.showToast('导出成功', 'success');
+        }).catch(function(e) {
+          if (e.message && e.message.indexOf('导出失败') !== -1) throw e;
+          window.showToast('导出失败：' + e.message, 'error');
+          throw e;
+        });
+      }
+    });
 
-    var projectInput = modal.querySelector('#export-modal-project');
-    var projectDropdown = modal.querySelector('#export-modal-project-dropdown');
-    var projectList = [];
-    var selectedProjectId = null;
-    projectInput.value = '';
-    projectDropdown.innerHTML = '';
-    projectDropdown.classList.remove('open');
+    // Set up project search after modal is created
+    var body = modal.getBody();
+    var projectInput = body.querySelector('#export-modal-project');
+    var projectDropdown = body.querySelector('#export-modal-project-dropdown');
 
     function renderProjectDropdown(keyword) {
       projectDropdown.innerHTML = '';
@@ -538,13 +547,16 @@
       else idx = (idx - 1 + items.length) % items.length;
       items[idx].classList.add('active');
     });
-    document.addEventListener('click', function closeExportDropdown(e) {
+
+    function closeExportDropdown(e) {
       if (!projectDropdown.classList.contains('open')) return;
       if (!projectDropdown.contains(e.target) && e.target !== projectInput) {
         projectDropdown.classList.remove('open');
       }
-    });
+    }
+    document.addEventListener('click', closeExportDropdown);
 
+    // Fetch projects
     fetch('/api/projects')
       .then(function(r) { return r.json(); })
       .then(function(data) {
@@ -553,22 +565,18 @@
         var currentId = window.__axhostProjectId;
         projectList = [];
         all.forEach(function(p) {
-          if (p.id !== currentId) {
-            projectList.push({ id: p.id, name: p.name || p.id });
-          }
+          if (p.id !== currentId) projectList.push({ id: p.id, name: p.name || p.id });
         });
         if (projectList.length === 0) {
           projectInput.placeholder = '无其他项目可导出';
           projectInput.disabled = true;
         }
       })
-      .catch(function() {
-        projectInput.placeholder = '加载失败';
-      });
+      .catch(function() { projectInput.placeholder = '加载失败'; });
 
-    var docsDiv = modal.querySelector('#export-modal-docs');
+    // Docs
+    var docsDiv = body.querySelector('#export-modal-docs');
     var docs = node.docs || ['readme.md'];
-    docsDiv.innerHTML = '';
     docs.forEach(function(doc) {
       var label = document.createElement('label');
       label.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
@@ -582,42 +590,7 @@
       docsDiv.appendChild(label);
     });
 
-    var submitBtn = modal.querySelector('#export-modal-submit');
-    submitBtn.onclick = function() {
-      var targetProjectId = selectedProjectId;
-      if (!targetProjectId) {
-        window.showToast('请选择有效的目标项目', 'error');
-        return;
-      }
-      var checkedDocs = [];
-      docsDiv.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb) { checkedDocs.push(cb.value); });
-      if (checkedDocs.length === 0) {
-        window.showToast('请至少选择一个文档', 'error');
-        return;
-      }
-      submitBtn.disabled = true;
-      submitBtn.textContent = '导出中...';
-      window.apiClient.postExportComponent({
-        sourceProjectId: window.__axhostProjectId,
-        targetProjectId: targetProjectId,
-        componentPath: node.path,
-        selectedDocs: checkedDocs
-      }).then(function(result) {
-        if (result.code === 0) {
-          window.showToast('导出成功', 'success');
-          modal.classList.remove('open');
-        } else {
-          window.showToast('导出失败：' + (result.message || '未知错误'), 'error');
-        }
-      }).catch(function(e) {
-        window.showToast('导出失败：' + e.message, 'error');
-      }).finally(function() {
-        submitBtn.disabled = false;
-        submitBtn.textContent = '导出';
-      });
-    };
-
-    modal.classList.add('open');
+    modal.open();
   }
 
 
@@ -662,108 +635,112 @@
     });
   }
 
-  function showNodeProperties(node, type) {
-    let modal = document.getElementById('axhost-node-properties-modal');
-    const isPage = type === 'pages';
-    const labelMap = { default: '默认页面', mobile: '手机页面', 'mini-program': '小程序' };
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'axhost-node-properties-modal';
-      modal.className = 'add-doc-modal';
-      modal.innerHTML = `
-        <div class="add-doc-modal-overlay"></div>
-        <div class="add-doc-modal-content" style="width:360px;">
-          <h4 id="prop-modal-title">属性</h4>
-          <div style="margin-bottom:12px;">
-            <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;">名称</label>
-            <div id="prop-modal-name" style="font-size:14px;color:var(--text-main);padding:8px 10px;background:var(--bg-body);border-radius:4px;border:1px solid var(--border-color);"></div>
-          </div>
-          <div id="prop-modal-type-wrap" style="margin-bottom:12px;display:none;">
-            <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;">页面类型</label>
-            <div style="position:relative;">
-              <button id="prop-modal-type-trigger" style="width:100%;text-align:left;padding:6px 10px;font-size:14px;border-radius:4px;border:1px solid var(--border-color);background:var(--bg-body);color:var(--text-main);cursor:pointer;display:flex;align-items:center;justify-content:space-between;">
-                <span id="prop-modal-type-label">默认页面</span>
-                <iconpark-icon icon-id="down" size="12" color="var(--text-muted)"></iconpark-icon>
-              </button>
-              <div id="prop-modal-type-dropdown" class="editor-dropdown" style="width:100%;top:calc(100% + 4px);left:0;" data-selected-value="default">
-                <div class="editor-dropdown-item" data-value="default">默认页面</div>
-                <div class="editor-dropdown-item" data-value="mobile">手机页面</div>
-                <div class="editor-dropdown-item" data-value="mini-program">小程序</div>
-              </div>
-            </div>
-          </div>
-          <div style="margin-bottom:16px;">
-            <label style="display:block;font-size:12px;color:var(--text-muted);margin-bottom:4px;">项目内位置</label>
-            <div id="prop-modal-path" style="font-size:13px;color:var(--text-main);padding:8px 10px;background:var(--bg-body);border-radius:4px;border:1px solid var(--border-color);font-family:monospace;word-break:break-all;"></div>
-          </div>
-          <div class="add-doc-modal-actions">
-            <button class="prop-modal-save primary" style="display:none;">保存</button>
-            <button class="prop-modal-close">关闭</button>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-      modal.querySelector('.prop-modal-close').addEventListener('click', () => {
-        modal.classList.remove('open');
-      });
-      modal.querySelector('.add-doc-modal-overlay').addEventListener('click', () => {
-        modal.classList.remove('open');
-      });
+  let nodePropsModal = null;
+  let nodePropsModalNode = null;
+  let nodePropsModalType = null;
 
-      const trigger = modal.querySelector('#prop-modal-type-trigger');
-      const dropdown = modal.querySelector('#prop-modal-type-dropdown');
-      trigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        dropdown.classList.toggle('open');
-      });
-      dropdown.querySelectorAll('.editor-dropdown-item').forEach(item => {
-        item.addEventListener('click', () => {
-          modal.querySelector('#prop-modal-type-label').textContent = item.textContent;
-          dropdown.dataset.selectedValue = item.dataset.value;
-          dropdown.classList.remove('open');
-        });
-      });
-      document.addEventListener('click', (e) => {
-        if (!dropdown.contains(e.target) && e.target !== trigger && !trigger.contains(e.target)) {
-          dropdown.classList.remove('open');
+  function showNodeProperties(node, type) {
+    var isPage = type === 'pages';
+
+    if (!nodePropsModal) {
+      nodePropsModal = new AxhostModal({
+        title: '',
+        width: '360px',
+        hideConfirm: true,
+        hideCancel: true,
+        header: function(container) {
+          container.innerHTML =
+            '<span id="prop-modal-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;margin-right:8px;font-size:18px;font-weight:600;"></span>' +
+            '<span id="prop-modal-path-tag" style="flex-shrink:0;font-size:11px;color:var(--text-muted);background:var(--bg-body);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:Consolas,monospace;"></span>';
+        },
+        body: function(container) {
+          container.innerHTML =
+            '<label>页面类型</label>' +
+            '<div class="page-type-cards">' +
+              '<div class="page-type-card" data-value="default">' +
+                '<div class="page-type-icon"><iconpark-icon icon-id="browser" size="24"></iconpark-icon></div>' +
+                '<span>默认页面</span>' +
+              '</div>' +
+              '<div class="page-type-card" data-value="mobile">' +
+                '<div class="page-type-icon"><iconpark-icon icon-id="iphone" size="24"></iconpark-icon></div>' +
+                '<span>手机页面</span>' +
+              '</div>' +
+              '<div class="page-type-card" data-value="mini-program">' +
+                '<div class="page-type-icon"><iconpark-icon icon-id="wechat" size="24"></iconpark-icon></div>' +
+                '<span>小程序</span>' +
+              '</div>' +
+            '</div>';
+        },
+        footer: function(container) {
+          container.innerHTML =
+            '<button class="axhost-modal-btn axhost-modal-btn-primary prop-modal-save" style="display:none;">保存</button>' +
+            '<button class="axhost-modal-btn prop-modal-close">关闭</button>';
+          container.querySelector('.prop-modal-close').addEventListener('click', function() {
+            nodePropsModal.close();
+          });
         }
       });
     }
-    const titleMap = { pages: '页面属性', components: '组件属性', flowcharts: '流程图属性' };
-    modal.querySelector('#prop-modal-title').textContent = titleMap[type] || '属性';
-    modal.querySelector('#prop-modal-name').textContent = node.name || '';
-    modal.querySelector('#prop-modal-path').textContent = `prototype/${type}/${node.path}`;
 
-    const typeWrap = modal.querySelector('#prop-modal-type-wrap');
-    const dropdown = modal.querySelector('#prop-modal-type-dropdown');
-    const saveBtn = modal.querySelector('.prop-modal-save');
+    nodePropsModalNode = node;
+    nodePropsModalType = type;
+
+    var el = nodePropsModal.getElement();
+
+    // Header: page name (truncatable) + path tag
+    el.querySelector('#prop-modal-title').textContent = node.name || '';
+    var pathTag = el.querySelector('#prop-modal-path-tag');
     if (isPage) {
-      typeWrap.style.display = 'block';
+      pathTag.textContent = 'pages/' + node.path;
+      pathTag.style.display = '';
+    } else {
+      pathTag.style.display = 'none';
+    }
+
+    // Body: type cards (pages only)
+    var body = nodePropsModal.getBody();
+    var typeCardsWrap = body.querySelector('.page-type-cards');
+    var saveBtn = el.querySelector('.prop-modal-save');
+
+    if (isPage) {
+      typeCardsWrap.style.display = '';
       saveBtn.style.display = 'inline-block';
-      const currentVal = node.page_type || 'default';
-      modal.querySelector('#prop-modal-type-label').textContent = labelMap[currentVal];
-      dropdown.dataset.selectedValue = currentVal;
-      saveBtn.onclick = async () => {
-        const newType = dropdown.dataset.selectedValue || 'default';
+
+      var cards = typeCardsWrap.querySelectorAll('.page-type-card');
+      var currentVal = node.page_type || 'default';
+      cards.forEach(function(c) {
+        c.classList.toggle('active', c.dataset.value === currentVal);
+      });
+
+      saveBtn.onclick = async function() {
+        var activeCard = typeCardsWrap.querySelector('.page-type-card.active');
+        var newType = activeCard ? activeCard.dataset.value : 'default';
         try {
           await window.apiClient.postPageType({
-            path: `prototype/${type}/${node.path}`,
+            path: 'prototype/' + nodePropsModalType + '/' + nodePropsModalNode.path,
             pageType: newType
           });
-          node.page_type = newType;
-          modal.classList.remove('open');
+          nodePropsModalNode.page_type = newType;
+          nodePropsModal.close();
           window.showToast('保存成功', 'success');
         } catch (e) {
           window.showToast('保存失败：' + e.message, 'error');
         }
       };
+
+      // Card click toggles active
+      cards.forEach(function(c) {
+        c.onclick = function() {
+          cards.forEach(function(x) { x.classList.remove('active'); });
+          c.classList.add('active');
+        };
+      });
     } else {
-      typeWrap.style.display = 'none';
+      typeCardsWrap.style.display = 'none';
       saveBtn.style.display = 'none';
-      dropdown.classList.remove('open');
     }
 
-    modal.classList.add('open');
+    nodePropsModal.open();
   }
 
   function renderMenu(event, items, onSelect) {
@@ -798,174 +775,65 @@
     document.querySelectorAll('.context-menu').forEach(el => el.remove());
   }
 
-  async function showCreatePagePrompt(title) {
-    return new Promise((resolve) => {
-      let modal = document.getElementById('axhost-create-page-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'axhost-create-page-modal';
-        modal.className = 'add-doc-modal';
-        modal.innerHTML = `
-          <div class="add-doc-modal-overlay"></div>
-          <div class="add-doc-modal-content">
-            <h4>${title}</h4>
-            <div class="page-type-cards">
-              <div class="page-type-card active" data-value="default">
-                <div class="page-type-icon"><iconpark-icon icon-id="browser" size="24"></iconpark-icon></div>
-                <span>默认页面</span>
-              </div>
-              <div class="page-type-card" data-value="mobile">
-                <div class="page-type-icon"><iconpark-icon icon-id="iphone" size="24"></iconpark-icon></div>
-                <span>手机页面</span>
-              </div>
-              <div class="page-type-card" data-value="mini-program">
-                <div class="page-type-icon"><iconpark-icon icon-id="wechat" size="24"></iconpark-icon></div>
-                <span>小程序</span>
-              </div>
-            </div>
-            <input type="text" class="create-page-name-input" placeholder="请输入页面名称">
-            <div class="add-doc-modal-actions">
-              <button class="create-page-cancel">取消</button>
-              <button class="create-page-confirm primary">确认</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-      }
-      modal.querySelector('h4').textContent = title || '新建页面';
-      const input = modal.querySelector('.create-page-name-input');
-      input.value = '';
-      const cards = modal.querySelectorAll('.page-type-card');
-      cards.forEach(c => {
-        c.classList.toggle('active', c.dataset.value === 'default');
-        c.onclick = () => {
-          cards.forEach(x => x.classList.remove('active'));
-          c.classList.add('active');
-        };
+  function _createTypeSelectPrompt(title, typeCards, placeholder) {
+    return new Promise(function(resolve) {
+      var submitted = false;
+      var modal = new AxhostModal({
+        title: title,
+        body: function(container) {
+          var cardsHtml = '';
+          typeCards.forEach(function(c, i) {
+            cardsHtml += '<div class="page-type-card' + (i === 0 ? ' active' : '') + '" data-value="' + c.value + '">' +
+              '<div class="page-type-icon"><iconpark-icon icon-id="' + c.icon + '" size="24"></iconpark-icon></div>' +
+              '<span>' + c.label + '</span></div>';
+          });
+          container.innerHTML =
+            '<div class="page-type-cards">' + cardsHtml + '</div>' +
+            '<input type="text" class="axhost-modal-input create-page-name-input" placeholder="' + placeholder + '" style="margin-top:12px;">';
+
+          var cards = container.querySelectorAll('.page-type-card');
+          cards.forEach(function(c) {
+            c.onclick = function() {
+              cards.forEach(function(x) { x.classList.remove('active'); });
+              c.classList.add('active');
+            };
+          });
+        },
+        confirmText: '确认',
+        onConfirm: function() {
+          var input = modal.getBody().querySelector('.create-page-name-input');
+          var name = input.value.trim();
+          if (!name) { window.showToast('名称不能为空', 'error'); throw new Error(); }
+          var selected = modal.getBody().querySelector('.page-type-card.active');
+          submitted = true;
+          resolve({ name: name, template: selected ? selected.dataset.value : 'default' });
+        },
+        onCancel: function() { if (!submitted) resolve(null); },
+        onClose: function() { if (!submitted) resolve(null); }
       });
-      modal.classList.add('open');
-      setTimeout(() => input.focus(), 0);
-
-      const btnOk = modal.querySelector('.create-page-confirm');
-      const btnCancel = modal.querySelector('.create-page-cancel');
-      const overlay = modal.querySelector('.add-doc-modal-overlay');
-
-      function cleanup() {
-        modal.classList.remove('open');
-        btnOk.onclick = null;
-        btnCancel.onclick = null;
-        overlay.onclick = null;
-        input.onkeydown = null;
-        cards.forEach(c => c.onclick = null);
+      modal.open();
+      var input = modal.getBody().querySelector('.create-page-name-input');
+      if (input) {
+        input.addEventListener('keydown', function(e) {
+          if (e.key === 'Enter') { e.preventDefault(); modal._handleConfirm(); }
+        });
       }
-
-      function submit() {
-        const name = input.value.trim();
-        if (!name) {
-          window.showToast('名称不能为空', 'error');
-          return;
-        }
-        const selected = modal.querySelector('.page-type-card.active');
-        cleanup();
-        resolve({ name, template: selected ? selected.dataset.value : 'default' });
-      }
-
-      function cancel() {
-        cleanup();
-        resolve(null);
-      }
-
-      btnOk.onclick = submit;
-      btnCancel.onclick = cancel;
-      overlay.onclick = cancel;
-      input.onkeydown = (e) => {
-        if (e.key === 'Enter') submit();
-        else if (e.key === 'Escape') cancel();
-      };
     });
   }
 
-  async function showCreateComponentPrompt(title) {
-    return new Promise((resolve) => {
-      let modal = document.getElementById('axhost-create-component-modal');
-      if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'axhost-create-component-modal';
-        modal.className = 'add-doc-modal';
-        modal.innerHTML = `
-          <div class="add-doc-modal-overlay"></div>
-          <div class="add-doc-modal-content">
-            <h4>${title}</h4>
-            <div class="page-type-cards">
-              <div class="page-type-card active" data-value="default">
-                <div class="page-type-icon"><iconpark-icon icon-id="browser" size="24"></iconpark-icon></div>
-                <span>默认页面</span>
-              </div>
-              <div class="page-type-card" data-value="mobile">
-                <div class="page-type-icon"><iconpark-icon icon-id="iphone" size="24"></iconpark-icon></div>
-                <span>手机页面</span>
-              </div>
-            </div>
-            <input type="text" class="create-page-name-input" placeholder="请输入组件名称">
-            <div class="add-doc-modal-actions">
-              <button class="create-page-cancel">取消</button>
-              <button class="create-page-confirm primary">确认</button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(modal);
-      }
-      modal.querySelector('h4').textContent = title || '新建组件';
-      const input = modal.querySelector('.create-page-name-input');
-      input.value = '';
-      const cards = modal.querySelectorAll('.page-type-card');
-      cards.forEach(c => {
-        c.classList.toggle('active', c.dataset.value === 'default');
-        c.onclick = () => {
-          cards.forEach(x => x.classList.remove('active'));
-          c.classList.add('active');
-        };
-      });
-      modal.classList.add('open');
-      setTimeout(() => input.focus(), 0);
+  function showCreatePagePrompt(title) {
+    return _createTypeSelectPrompt(title || '新建页面', [
+      { value: 'default', icon: 'browser', label: '默认页面' },
+      { value: 'mobile', icon: 'iphone', label: '手机页面' },
+      { value: 'mini-program', icon: 'wechat', label: '小程序' }
+    ], '请输入页面名称');
+  }
 
-      const btnOk = modal.querySelector('.create-page-confirm');
-      const btnCancel = modal.querySelector('.create-page-cancel');
-      const overlay = modal.querySelector('.add-doc-modal-overlay');
-
-      function cleanup() {
-        modal.classList.remove('open');
-        btnOk.onclick = null;
-        btnCancel.onclick = null;
-        overlay.onclick = null;
-        input.onkeydown = null;
-        cards.forEach(c => c.onclick = null);
-      }
-
-      function submit() {
-        const name = input.value.trim();
-        if (!name) {
-          window.showToast('名称不能为空', 'error');
-          return;
-        }
-        const selected = modal.querySelector('.page-type-card.active');
-        cleanup();
-        resolve({ name, template: selected ? selected.dataset.value : 'default' });
-      }
-
-      function cancel() {
-        cleanup();
-        resolve(null);
-      }
-
-      btnOk.onclick = submit;
-      btnCancel.onclick = cancel;
-      overlay.onclick = cancel;
-      input.onkeydown = (e) => {
-        if (e.key === 'Enter') submit();
-        else if (e.key === 'Escape') cancel();
-      };
-    });
+  function showCreateComponentPrompt(title) {
+    return _createTypeSelectPrompt(title || '新建组件', [
+      { value: 'default', icon: 'browser', label: '默认页面' },
+      { value: 'mobile', icon: 'iphone', label: '手机页面' }
+    ], '请输入组件名称');
   }
 
   async function handleCreate(parentPath, kind) {

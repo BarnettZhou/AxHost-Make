@@ -54,7 +54,7 @@
         <div class="resizer resizer-h" data-target="panel-nav-top" data-dir="h" id="rules-resizer"></div>
         <div id="panel-nav-bottom">
           <div class="rules-header" id="rules-header" title="点击收起/展开">
-            <span class="rules-header-arrow">▼</span>
+            <span class="rules-header-arrow"><iconpark-icon icon-id="down" size="12" color="currentColor"></iconpark-icon></span>
             <span>Rules</span>
           </div>
           <div class="rules-list" id="rules-root"></div>
@@ -121,98 +121,6 @@
     </div>
   </div>
 
-  <div id="settings-modal" class="settings-modal">
-    <div class="settings-modal-overlay"></div>
-    <div class="settings-modal-content">
-      <div class="settings-modal-header">
-        <h4>项目设置</h4>
-        <button class="settings-modal-close" id="settings-close">&times;</button>
-      </div>
-      <div class="settings-modal-body">
-        <label for="project-name-input">项目名称</label>
-        <input type="text" id="project-name-input" placeholder="Prototype">
-
-        <label>项目 ID</label>
-        <div class="settings-project-id" id="settings-project-id"></div>
-
-        <label>托管项目</label>
-        <div class="host-project-row">
-          <div class="host-project-select-wrap" id="host-project-wrap">
-            <input type="text" id="host-project-search" placeholder="搜索或选择项目..." autocomplete="off">
-            <div class="host-project-dropdown" id="host-project-dropdown"></div>
-            <div class="host-project-linked" id="host-project-linked" style="display:none;">
-              <span id="host-project-linked-name"></span>
-              <button class="text-btn" id="btn-unlink-project" title="解除关联">
-                <iconpark-icon icon-id="close-small" size="12" color="currentColor"></iconpark-icon>
-              </button>
-            </div>
-          </div>
-          <button class="text-btn" id="btn-create-remote-project" title="创建新项目">
-            <iconpark-icon icon-id="plus" size="14" color="currentColor"></iconpark-icon>
-          </button>
-        </div>
-        <div class="host-project-hint" id="host-project-hint"></div>
-      </div>
-      <div class="settings-modal-footer">
-        <button id="settings-modal-cancel">取消</button>
-        <button id="btn-save-settings" class="primary">保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 删除规则文件确认弹窗 -->
-  <div class="modal-overlay" id="delete-rule-modal">
-    <div class="modal-content" style="width:360px;">
-      <div class="modal-title">删除确认</div>
-      <div class="modal-body">
-        <div id="delete-rule-message">确定要删除该文件吗？</div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-delete-rule">取消</button>
-        <button class="btn-primary" id="btn-confirm-delete-rule">删除</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 快捷键说明弹窗 -->
-  <div class="modal-overlay" id="shortcuts-modal">
-    <div class="modal-content" style="width:480px;">
-      <div class="modal-title">快捷键</div>
-      <div class="modal-body" id="shortcuts-body"></div>
-      <div class="modal-actions">
-        <button class="btn-primary" id="btn-close-shortcuts">关闭</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 创建远程项目弹窗 -->
-  <div class="modal-overlay" id="create-remote-project-modal">
-    <div class="modal-content" style="width:360px;">
-      <div class="modal-title">创建新项目</div>
-      <div class="modal-body">
-        <label for="new-remote-project-name">项目名称</label>
-        <input type="text" id="new-remote-project-name" placeholder="请输入项目名称" autocomplete="off">
-        <div class="remote-password-option">
-          <label class="checkbox-label">
-            <input type="checkbox" id="needs-password">
-            <span>需要密码</span>
-          </label>
-        </div>
-        <div class="remote-password-field" id="password-field" style="display:none;">
-          <label for="remote-password">密码</label>
-          <div class="password-input-row">
-            <input type="text" id="remote-password" placeholder="请输入密码" maxlength="6" autocomplete="off">
-            <button class="btn-secondary" id="btn-random-password" type="button">随机生成</button>
-          </div>
-        </div>
-        <div id="create-remote-error" class="form-error"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-create-remote">取消</button>
-        <button class="btn-primary" id="btn-confirm-create-remote">创建</button>
-      </div>
-    </div>
-  </div>
 
   <script src="/client/js/icon-loader-shell.js"></script>
   <script>
@@ -224,6 +132,7 @@
   <script src="/client/assets/marked.min.js"></script>
   <script src="/client/assets/html-to-image.min.js"></script>
   <script src="/client/js/api-client.js"></script>
+  <script src="/client/js/modal.js"></script>
   <script src="/client/js/md-renderer.js"></script>
   <script src="/client/js/autocomplete-core.js"></script>
   <!-- Export Modal -->
@@ -295,33 +204,6 @@
       <div class="export-modal-footer">
         <button id="export-cancel">取消</button>
         <button id="export-confirm" class="primary">导出</button>
-      </div>
-    </div>
-  </div>
-  <div class="modal-overlay" id="export-create-remote-modal">
-    <div class="modal-content" style="width:360px;">
-      <div class="modal-title">创建新项目</div>
-      <div class="modal-body">
-        <label for="export-new-remote-project-name">项目名称</label>
-        <input type="text" id="export-new-remote-project-name" placeholder="请输入项目名称" autocomplete="off">
-        <div class="remote-password-option">
-          <label class="checkbox-label">
-            <input type="checkbox" id="export-needs-password">
-            <span>需要密码</span>
-          </label>
-        </div>
-        <div class="remote-password-field" id="export-password-field" style="display:none;">
-          <label for="export-remote-password">密码</label>
-          <div class="password-input-row">
-            <input type="text" id="export-remote-password" placeholder="请输入密码" maxlength="6" autocomplete="off">
-            <button class="btn-secondary" id="export-btn-random-password" type="button">随机生成</button>
-          </div>
-        </div>
-        <div id="export-create-remote-error" class="form-error"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="export-btn-cancel-create-remote">取消</button>
-        <button class="btn-primary" id="export-btn-confirm-create-remote">创建</button>
       </div>
     </div>
   </div>

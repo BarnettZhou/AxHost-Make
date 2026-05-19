@@ -79,57 +79,11 @@
     </main>
   </div>
 
-  <!-- 新建项目弹窗 -->
-  <div class="modal-overlay" id="new-project-modal">
-    <div class="modal-content">
-      <div class="modal-title">新建原型项目</div>
-      <div class="modal-body">
-        <label for="new-project-name">项目名称</label>
-        <input type="text" id="new-project-name" placeholder="请输入项目名称" autocomplete="off">
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-new">取消</button>
-        <button class="btn-primary" id="btn-confirm-new">创建</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 系统设置弹窗 -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal-content">
-      <div class="modal-title">系统设置</div>
-      <div class="modal-body">
-        <label for="axhost-server-url">AxHost 服务地址</label>
-        <input type="url" id="axhost-server-url" placeholder="https://axhost.example.com" autocomplete="off">
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-settings">取消</button>
-        <button class="btn-primary" id="btn-save-settings">保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 登录弹窗 -->
-  <div class="modal-overlay" id="login-modal">
-    <div class="modal-content">
-      <div class="modal-title">登录账号</div>
-      <div class="modal-body">
-        <label for="login-employee-id">工号</label>
-        <input type="text" id="login-employee-id" placeholder="请输入工号" autocomplete="off">
-        <label for="login-password">密码</label>
-        <input type="password" id="login-password" placeholder="请输入密码">
-        <div id="login-error" class="form-error"></div>
-      </div>
-      <div class="modal-actions">
-        <button class="btn-secondary" id="btn-cancel-login">取消</button>
-        <button class="btn-primary" id="btn-confirm-login">登录</button>
-      </div>
-    </div>
-  </div>
 
   <div id="toast-container"></div>
 
   <script src="/client/js/icon-loader-shell.js"></script>
+  <script src="/client/js/modal.js"></script>
   <script src="/client/js/home.js"></script>
 </body>
 </html>

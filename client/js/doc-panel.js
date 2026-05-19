@@ -185,181 +185,75 @@
   }
 
   /* ========== Modals ========== */
-  function createModal(id, title) {
-    const modal = document.createElement('div');
-    modal.className = 'add-doc-modal';
-    modal.id = id;
-    modal.innerHTML = `
-      <div class="add-doc-modal-overlay"></div>
-      <div class="add-doc-modal-content">
-        <h4>${title}</h4>
-        <input type="text" class="doc-modal-input" placeholder="输入文档名称，不需要 .md 后缀">
-        <div class="add-doc-modal-actions">
-          <button class="doc-modal-cancel">取消</button>
-          <button class="doc-modal-confirm primary">确认</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(modal);
-    return modal;
-  }
-
-  const addModal = createModal('add-doc-modal', '新建文档');
-  const renameModal = createModal('rename-doc-modal', '重命名文档');
-
   let currentRenameIndex = -1;
 
-  function openModal(modalEl, value = '') {
-    const input = modalEl.querySelector('.doc-modal-input');
-    input.value = value;
-    modalEl.classList.add('open');
-    setTimeout(() => input.focus(), 0);
-  }
-
-  function closeModal(modalEl) {
-    modalEl.classList.remove('open');
-  }
-
-  addModal.querySelector('.doc-modal-cancel').addEventListener('click', () => closeModal(addModal));
-  renameModal.querySelector('.doc-modal-cancel').addEventListener('click', () => closeModal(renameModal));
-
   function buildDocContent(title) {
-    const now = new Date().toLocaleString('zh-CN', { hour12: false });
-    return `# ${title}\n\n---\n创建时间：${now}\n---\n\n## 需求说明\n\n这里填写需求说明\n`;
+    var now = new Date().toLocaleString('zh-CN', { hour12: false });
+    return '# ' + title + '\n\n---\n创建时间：' + now + '\n---\n\n## 需求说明\n\n这里填写需求说明\n';
   }
 
-  addModal.querySelector('.doc-modal-confirm').addEventListener('click', async () => {
-    const rawName = addModal.querySelector('.doc-modal-input').value.trim();
-    if (!rawName) {
-      window.showToast('请输入文档名称', 'error');
-      return;
-    }
-    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(rawName)) {
-      window.showToast('名称包含非法字符', 'error');
-      return;
-    }
-    const name = rawName + '.md';
-    const base = `prototype/${currentType}s/${currentPath}`;
-    const docPath = `${base}/docs/${name}`;
-
-    if (currentDocs.some(d => d.name === name)) {
-      window.showToast(`文档 "${name}" 已存在`, 'error');
-      return;
-    }
-
-    try {
-      const content = buildDocContent(rawName);
-      await window.apiClient.postFile(docPath, content);
-      currentDocs.push({ name, path: docPath, content });
-      activeDocIndex = currentDocs.length - 1;
-      isEditMode = false;
-      renderTabs();
-      renderContent();
-      closeModal(addModal);
-      window.showToast('文档创建成功', 'success');
-    } catch (err) {
-      window.showToast('创建失败: ' + err.message, 'error');
-    }
-  });
-
-  addModal.querySelector('.doc-modal-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') addModal.querySelector('.doc-modal-confirm').click();
-    else if (e.key === 'Escape') closeModal(addModal);
-  });
-
-  renameModal.querySelector('.doc-modal-confirm').addEventListener('click', async () => {
-    const rawName = renameModal.querySelector('.doc-modal-input').value.trim();
-    if (!rawName) {
-      window.showToast('请输入文档名称', 'error');
-      return;
-    }
-    if (!/^[a-zA-Z0-9_\-\u4e00-\u9fa5]+$/.test(rawName)) {
-      window.showToast('名称包含非法字符', 'error');
-      return;
-    }
-    const newName = rawName + '.md';
-    const doc = currentDocs[currentRenameIndex];
-    if (newName === doc.name) {
-      closeModal(renameModal);
-      return;
-    }
-    if (currentDocs.some((d, i) => i !== currentRenameIndex && d.name === newName)) {
-      window.showToast(`文档 "${newName}" 已存在`, 'error');
-      return;
-    }
-
-    try {
-      const oldPath = doc.path;
-      const newPath = oldPath.replace(/\/[^/]+$/, '/' + newName);
-      await window.apiClient.postRename({ oldPath, newName });
-      doc.name = newName;
-      doc.path = newPath;
-      activeDocIndex = currentDocs.findIndex(d => d.name === newName);
-      isEditMode = false;
-      renderTabs();
-      renderContent();
-      closeModal(renameModal);
-      window.showToast('重命名成功', 'success');
-    } catch (err) {
-      window.showToast('重命名失败: ' + err.message, 'error');
-    }
-  });
-
-  renameModal.querySelector('.doc-modal-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') renameModal.querySelector('.doc-modal-confirm').click();
-    else if (e.key === 'Escape') closeModal(renameModal);
-  });
+  function checkDocName(value) {
+    if (!/^[a-zA-Z0-9_\-一-龥]+$/.test(value)) return '名称包含非法字符';
+    return null;
+  }
 
   if (btnAdd) {
-    btnAdd.addEventListener('click', () => {
+    btnAdd.addEventListener('click', async function() {
       if (!currentType || !currentPath) {
         window.showToast('请先选择一个页面', 'error');
         return;
       }
-      openModal(addModal, '');
+      var rawName = await AxhostModal.prompt({
+        title: '新建文档',
+        placeholder: '输入文档名称，不需要 .md 后缀',
+        validator: checkDocName
+      });
+      if (!rawName) return;
+      var name = rawName + '.md';
+      var base = 'prototype/' + currentType + 's/' + currentPath;
+      var docPath = base + '/docs/' + name;
+      if (currentDocs.some(function(d) { return d.name === name; })) {
+        window.showToast('文档 "' + name + '" 已存在', 'error');
+        return;
+      }
+      try {
+        var content = buildDocContent(rawName);
+        await window.apiClient.postFile(docPath, content);
+        currentDocs.push({ name: name, path: docPath, content: content });
+        activeDocIndex = currentDocs.length - 1;
+        isEditMode = false;
+        renderTabs();
+        renderContent();
+        window.showToast('文档创建成功', 'success');
+      } catch (err) {
+        window.showToast('创建失败: ' + err.message, 'error');
+      }
     });
   }
 
   /* ========== Sort Modal ========== */
-  const sortModal = document.createElement('div');
-  sortModal.className = 'doc-sort-modal';
-  sortModal.id = 'doc-sort-modal';
-  sortModal.innerHTML = `
-    <div class="doc-sort-modal-overlay"></div>
-    <div class="doc-sort-modal-content">
-      <h4>排序文档</h4>
-      <div class="doc-sort-list" id="doc-sort-list"></div>
-      <div class="doc-sort-actions">
-        <button class="doc-modal-cancel" id="btn-sort-cancel">取消</button>
-        <button class="doc-modal-confirm primary" id="btn-sort-confirm">确定</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(sortModal);
+  var sortDocs = [];
+  var draggedIndex = null;
 
-  const sortListEl = document.getElementById('doc-sort-list');
-  let sortDocs = [];
-  let draggedIndex = null;
-
-  function renderSortList(docs) {
+  function renderSortList(sortListEl, docs) {
     sortListEl.innerHTML = '';
-    docs.forEach((doc, idx) => {
-      const item = document.createElement('div');
+    docs.forEach(function(doc, idx) {
+      var item = document.createElement('div');
       item.className = 'doc-sort-item';
       item.draggable = true;
       item.dataset.index = idx;
-      item.innerHTML = `<iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon><span>${doc.name}</span>`;
+      item.innerHTML = '<iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon><span>' + doc.name + '</span>';
 
-      item.addEventListener('dragstart', (e) => {
+      item.addEventListener('dragstart', function(e) {
         draggedIndex = idx;
         item.classList.add('dragging');
         e.dataTransfer.effectAllowed = 'move';
       });
 
-      item.addEventListener('dragend', () => {
+      item.addEventListener('dragend', function() {
         draggedIndex = null;
         item.classList.remove('dragging');
-        sortListEl.querySelectorAll('.doc-sort-item').forEach(el => {
+        sortListEl.querySelectorAll('.doc-sort-item').forEach(function(el) {
           el.classList.remove('drop-before', 'drop-after');
         });
       });
@@ -368,43 +262,45 @@
     });
   }
 
-  sortListEl.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    const target = e.target.closest('.doc-sort-item');
-    if (!target) return;
+  function setupSortDragDrop(sortListEl) {
+    sortListEl.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      if (draggedIndex === null) return;
+      var target = e.target.closest('.doc-sort-item');
+      if (!target) return;
 
-    const targetIdx = parseInt(target.dataset.index, 10);
-    if (targetIdx === draggedIndex) return;
+      var targetIdx = parseInt(target.dataset.index, 10);
+      if (targetIdx === draggedIndex) return;
 
-    sortListEl.querySelectorAll('.doc-sort-item').forEach(el => {
-      el.classList.remove('drop-before', 'drop-after');
+      sortListEl.querySelectorAll('.doc-sort-item').forEach(function(el) {
+        el.classList.remove('drop-before', 'drop-after');
+      });
+
+      var rect = target.getBoundingClientRect();
+      var midY = rect.top + rect.height / 2;
+      target.classList.add(e.clientY < midY ? 'drop-before' : 'drop-after');
     });
 
-    const rect = target.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    target.classList.add(e.clientY < midY ? 'drop-before' : 'drop-after');
-  });
+    sortListEl.addEventListener('drop', function(e) {
+      e.preventDefault();
+      if (draggedIndex === null) return;
+      var target = e.target.closest('.doc-sort-item');
+      if (!target) return;
 
-  sortListEl.addEventListener('drop', (e) => {
-    e.preventDefault();
-    if (draggedIndex === null) return;
-    const target = e.target.closest('.doc-sort-item');
-    if (!target) return;
+      var targetIdx = parseInt(target.dataset.index, 10);
+      if (targetIdx === draggedIndex) return;
 
-    const targetIdx = parseInt(target.dataset.index, 10);
-    if (targetIdx === draggedIndex) return;
+      var rect = target.getBoundingClientRect();
+      var midY = rect.top + rect.height / 2;
+      var toIdx = targetIdx;
+      if (e.clientY > midY) toIdx++;
+      if (draggedIndex < toIdx) toIdx--;
 
-    const rect = target.getBoundingClientRect();
-    const midY = rect.top + rect.height / 2;
-    let toIdx = targetIdx;
-    if (e.clientY > midY) toIdx++;
-    if (draggedIndex < toIdx) toIdx--;
-
-    const [moved] = sortDocs.splice(draggedIndex, 1);
-    sortDocs.splice(toIdx, 0, moved);
-    renderSortList(sortDocs);
-  });
+      var moved = sortDocs.splice(draggedIndex, 1)[0];
+      sortDocs.splice(toIdx, 0, moved);
+      renderSortList(sortListEl, sortDocs);
+    });
+  }
 
   function openSortModal() {
     if (!currentType || !currentPath) {
@@ -415,34 +311,36 @@
       window.showToast('暂无文档可排序', 'error');
       return;
     }
-    sortDocs = currentDocs.map(d => ({ name: d.name }));
-    renderSortList(sortDocs);
-    sortModal.classList.add('open');
-  }
+    sortDocs = currentDocs.map(function(d) { return { name: d.name }; });
 
-  function closeSortModal() {
-    sortModal.classList.remove('open');
+    var modal = new AxhostModal({
+      title: '排序文档',
+      width: '320px',
+      body: function(container) {
+        container.innerHTML = '<div class="doc-sort-list" id="doc-sort-list"></div>';
+        var sortListEl = container.querySelector('#doc-sort-list');
+        renderSortList(sortListEl, sortDocs);
+        setupSortDragDrop(sortListEl);
+      },
+      onConfirm: function() {
+        var base = 'prototype/' + currentType + 's/' + currentPath + '/docs';
+        var order = sortDocs.map(function(d) { return d.name; });
+        return window.apiClient.postDocsReorder({ path: base, order: order }).then(function() {
+          return load(currentType, currentPath);
+        }).then(function() {
+          window.showToast('排序已保存', 'success');
+        }).catch(function(err) {
+          window.showToast('保存失败: ' + err.message, 'error');
+          throw err;
+        });
+      }
+    });
+    modal.open();
   }
 
   if (btnSort) {
     btnSort.addEventListener('click', openSortModal);
   }
-
-  document.getElementById('btn-sort-cancel').addEventListener('click', closeSortModal);
-  document.getElementById('btn-sort-confirm').addEventListener('click', async () => {
-    const base = `prototype/${currentType}s/${currentPath}/docs`;
-    const order = sortDocs.map(d => d.name);
-    try {
-      await window.apiClient.postDocsReorder({ path: base, order });
-      await load(currentType, currentPath);
-      closeSortModal();
-      window.showToast('排序已保存', 'success');
-    } catch (err) {
-      window.showToast('保存失败: ' + err.message, 'error');
-    }
-  });
-
-  sortModal.querySelector('.doc-sort-modal-overlay').addEventListener('click', closeSortModal);
 
   /* ========== Context Menu ========== */
   function showDocContextMenu(event, doc, idx) {
@@ -476,10 +374,38 @@
     const renameItem = document.createElement('div');
     renameItem.className = 'context-menu-item';
     renameItem.textContent = '重命名';
-    renameItem.onclick = () => {
+    renameItem.onclick = async function() {
       currentRenameIndex = idx;
-      openModal(renameModal, doc.name.replace(/\.md$/, ''));
       removeDocContextMenu();
+      var curDoc = currentDocs[idx];
+      var curName = curDoc.name.replace(/\.md$/, '');
+      var newRawName = await AxhostModal.prompt({
+        title: '重命名文档',
+        placeholder: '输入文档名称',
+        defaultValue: curName,
+        validator: checkDocName
+      });
+      if (!newRawName) return;
+      var newName = newRawName + '.md';
+      if (newName === curDoc.name) return;
+      if (currentDocs.some(function(d, i) { return i !== idx && d.name === newName; })) {
+        window.showToast('文档 "' + newName + '" 已存在', 'error');
+        return;
+      }
+      try {
+        var oldPath = curDoc.path;
+        var newPath = oldPath.replace(/\/[^/]+$/, '/' + newName);
+        await window.apiClient.postRename({ oldPath: oldPath, newName: newName });
+        curDoc.name = newName;
+        curDoc.path = newPath;
+        activeDocIndex = currentDocs.findIndex(function(d) { return d.name === newName; });
+        isEditMode = false;
+        renderTabs();
+        renderContent();
+        window.showToast('重命名成功', 'success');
+      } catch (err) {
+        window.showToast('重命名失败: ' + err.message, 'error');
+      }
     };
 
     const deleteItem = document.createElement('div');
