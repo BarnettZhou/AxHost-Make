@@ -293,10 +293,6 @@ body.dark .tree-container {
 .tree-item > .tree-label:hover {
   background: var(--bg-hover);
 }
-.tree-label iconpark-icon[icon-id="folder-open"],
-.tree-label iconpark-icon[icon-id="folder-close"] {
-  color: #1677ff;
-}
 .tree-item > .tree-label.active {
   background: #e7f4ff;
   color: #1677ff;

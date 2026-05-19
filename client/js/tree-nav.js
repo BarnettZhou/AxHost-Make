@@ -260,6 +260,8 @@
       arrowIcon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'down' : 'right');
       arrowIcon.setAttribute('size', '12');
       arrowIcon.setAttribute('color', 'currentColor');
+      arrowIcon.setAttribute('stroke', 'currentColor');
+      arrowIcon.setAttribute('fill', 'currentColor');
       arrow.appendChild(arrowIcon);
     }
 
@@ -341,7 +343,7 @@
         loadTree(currentTab);
       });
 
-      const iconEl = label.querySelector('iconpark-icon');
+      const iconEl = label.querySelector(':scope > iconpark-icon');
       if (iconEl) {
         iconEl.setAttribute('icon-id', expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
         iconEl.setAttribute('color', 'currentColor');

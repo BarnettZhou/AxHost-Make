@@ -209,6 +209,8 @@
       icon.setAttribute('icon-id', expandedPaths.has(node.path) ? 'down' : 'right');
       icon.setAttribute('size', '12');
       icon.setAttribute('color', 'currentColor');
+      icon.setAttribute('stroke', 'currentColor');
+      icon.setAttribute('fill', 'currentColor');
       arrow.appendChild(icon);
     }
 
