@@ -177,17 +177,22 @@ class AxhostModal {
     const fn = this._options.onConfirm;
     if (!fn) { this.close(); return; }
 
-    // If onConfirm returns a Promise, auto-manage loading state
-    const result = fn();
-    if (result && typeof result.then === 'function') {
-      this.setLoading(true);
-      try {
-        await result;
-        this.setLoading(false);
+    try {
+      const result = fn();
+      if (result && typeof result.then === 'function') {
+        this.setLoading(true);
+        try {
+          await result;
+          this.setLoading(false);
+          this.close();
+        } catch (_) {
+          this.setLoading(false);
+        }
+      } else {
         this.close();
-      } catch (_) {
-        this.setLoading(false);
       }
+    } catch (_) {
+      // onConfirm threw synchronously — validation failed, keep modal open
     }
   }
 
@@ -264,13 +269,13 @@ class AxhostModal {
           const value = (input ? input.value : '').trim();
           if (!value) {
             window.showToast && window.showToast('名称不能为空', 'error');
-            return;
+            throw new Error();
           }
           if (validator) {
             const err = validator(value);
             if (err) {
               window.showToast && window.showToast(err, 'error');
-              return;
+              throw new Error();
             }
           }
           submitted = true;
