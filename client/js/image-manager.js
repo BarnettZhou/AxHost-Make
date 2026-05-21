@@ -12,7 +12,7 @@
     container.innerHTML = '';
     if (images.length === 0) {
       container.classList.remove('img-gallery-grid');
-      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;">暂无图片，在编辑器中粘贴图片即可自动上传。</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 0;">暂无图片，拖入图片或点击右上角上传</div>';
       return;
     }
     container.classList.add('img-gallery-grid');
@@ -76,6 +76,32 @@
     return String(str).replace(/[&<>"']/g, function (m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
   }
 
+  function uploadImageFile(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      window.apiClient.postUploadImage({
+        name: file.name,
+        data: reader.result
+      }).then(function (res) {
+        if (res.code !== 0) { callback(new Error(res.message || '上传失败')); return; }
+        callback(null, res.filename);
+      }).catch(function (err) {
+        callback(err);
+      });
+    };
+    reader.onerror = function () { callback(new Error('读取文件失败')); };
+    reader.readAsDataURL(file);
+  }
+
+  function refreshGallery(galleryModal) {
+    window.apiClient.getImagesList().then(function (res) {
+      if (res.code === 0) {
+        galleryModal._images = res.data || [];
+        buildGalleryBody(galleryModal.getBody(), galleryModal._images, doRename);
+      }
+    });
+  }
+
   // Cleanup unused images sub-flow
   function showCleanupModal(galleryModal) {
     var images = galleryModal._images;
@@ -101,7 +127,6 @@
     });
     scanModal.open();
 
-    // Simulate progress then do the real scan
     var progressBar = scanModal.getBody().querySelector('.img-cleanup-progress-bar');
     var progressText = scanModal.getBody().querySelector('.img-cleanup-progress-text');
     var progress = 0;
@@ -127,7 +152,6 @@
           return;
         }
 
-        // Show unreferenced list + confirm
         var listHtml = unused.map(function (img) {
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:13px;">' +
             '<span>' + escapeHtml(img.name) + '</span>' +
@@ -147,7 +171,6 @@
           onConfirm: function () {
             var hashes = unused.map(function (img) { return img.hash; });
             return window.apiClient.postImagesDelete({ hashes: hashes }).then(function () {
-              // Remove from gallery images
               var hashSet = {};
               hashes.forEach(function (h) { hashSet[h] = true; });
               galleryModal._images = galleryModal._images.filter(function (img) { return !hashSet[img.hash]; });
@@ -180,24 +203,94 @@
     window.apiClient.getImagesList().then(function (res) {
       if (res.code !== 0) { window.showToast('加载图片列表失败', 'error'); return; }
       var images = res.data || [];
+      var uploadInput = document.createElement('input');
+      uploadInput.type = 'file';
+      uploadInput.accept = '.jpg,.jpeg,.png,.webp,.gif,.svg';
+      uploadInput.multiple = true;
+
       var modal = new AxhostModal({
         title: '',
-        width: '680px',
+        width: '960px',
         hideCancel: true,
         hideConfirm: true,
         header: function (container) {
           container.innerHTML =
             '<span style="font-size:18px;font-weight:600;">图片管理</span>' +
-            '<button class="img-gallery-cleanup-btn" title="清理未引用的图片">清理未引用</button>';
+            '<div style="margin-left:auto;display:flex;gap:8px;">' +
+              '<button class="img-gallery-upload-btn" title="上传图片">上传</button>' +
+              '<button class="img-gallery-cleanup-btn" title="清理未引用的图片">清理未引用</button>' +
+            '</div>';
+          container.querySelector('.img-gallery-upload-btn').addEventListener('click', function () {
+            uploadInput.click();
+          });
           container.querySelector('.img-gallery-cleanup-btn').addEventListener('click', function () {
             showCleanupModal(modal);
           });
         },
         body: function (container) {
+          container.style.height = '560px';
+          container.style.overflowY = 'auto';
           buildGalleryBody(container, images, doRename);
+
+          // Drag-and-drop upload
+          container.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            container.classList.add('img-gallery-dragover');
+          });
+          container.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            container.classList.remove('img-gallery-dragover');
+          });
+          container.addEventListener('drop', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            container.classList.remove('img-gallery-dragover');
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (!files || files.length === 0) return;
+            var pending = files.length;
+            var hasError = false;
+            Array.prototype.forEach.call(files, function (file) {
+              if (!/^image\/(png|jpeg|gif|webp|svg\+xml)$/i.test(file.type) && !/\.(png|jpe?g|gif|webp|svg)$/i.test(file.name)) {
+                pending--;
+                return;
+              }
+              uploadImageFile(file, function (err) {
+                if (err) hasError = true;
+                pending--;
+                if (pending === 0) {
+                  refreshGallery(modal);
+                  if (hasError) window.showToast('部分图片上传失败', 'error');
+                  else window.showToast('上传完成', 'success');
+                }
+              });
+            });
+            if (pending === 0) window.showToast('不支持的文件类型', 'error');
+          });
         }
       });
-      modal._images = images; // attach for later access
+      modal._images = images;
+
+      uploadInput.addEventListener('change', function () {
+        var files = uploadInput.files;
+        if (!files || files.length === 0) return;
+        var pending = files.length;
+        var hasError = false;
+        Array.prototype.forEach.call(files, function (file) {
+          uploadImageFile(file, function (err) {
+            if (err) hasError = true;
+            pending--;
+            if (pending === 0) {
+              refreshGallery(modal);
+              if (hasError) window.showToast('部分图片上传失败', 'error');
+              else window.showToast('上传完成', 'success');
+            }
+          });
+        });
+        uploadInput.value = '';
+      });
+
       modal.open();
     }).catch(function (err) {
       window.showToast('加载图片列表失败: ' + err.message, 'error');

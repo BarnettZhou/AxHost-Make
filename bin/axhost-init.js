@@ -92,6 +92,43 @@ async function init(projectRoot) {
     }
   }
 
+  // Create shared resource files (icon-loader.js / navigate.js) if not exists
+  const resJsDir = path.join(projectRoot, 'prototype', 'resources', 'js');
+  await fs.mkdir(resJsDir, { recursive: true });
+
+  const iconLoader = path.join(resJsDir, 'icon-loader.js');
+  if (!await exists(iconLoader)) {
+    await fs.writeFile(iconLoader, '', 'utf-8');
+  }
+
+  const navigateJs = path.join(resJsDir, 'navigate.js');
+  if (!await exists(navigateJs)) {
+    await fs.writeFile(navigateJs, [
+      '(function() {',
+      "  'use strict';",
+      '',
+      '  window.AxUtils = window.AxUtils || {};',
+      '',
+      '  /**',
+      '   * 通过 postMessage 通知父页面导航',
+      '   * @param {string} targetHash - 目标页面的 8 位 hash 目录名',
+      '   * @param {string} [tab="pages"] - 标签类型：pages | components',
+      '   */',
+      '  window.AxUtils.navigate = function(targetHash, tab) {',
+      '    tab = tab || "pages";',
+      '    if (window.parent && targetHash) {',
+      '      window.parent.postMessage({',
+      "        type: 'axhost-navigate',",
+      '        path: targetHash,',
+      '        tab: tab',
+      "      }, '*');",
+      '    }',
+      '  };',
+      '})();',
+      ''
+    ].join('\n'), 'utf-8');
+  }
+
   // 框架资源由 /client/ 统一提供，不再复制到项目
 
   console.log('Axhost-Make project initialized successfully.');

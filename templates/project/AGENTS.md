@@ -39,6 +39,10 @@
 | 框架系统规则 | `../../axhost-make/system-rules/` | 只读，禁止修改 |
 
 > **框架 Shell 资源**：shell.css、icon-loader-shell.js、marked.min.js 等框架运行时文件，dev 模式下由 `/client/` 统一提供，导出/发布时框架自动打包并重写路径，页面开发无需关心。`resources/` 存放项目自己的公共资源（跨页面复用的 CSS/JS/组件），由开发者维护。
+>
+> **icon-loader.js**：`prototype/resources/js/icon-loader.js`，原型页面使用的图标加载器。由 `init`/`update` 自动创建空文件，Agent 按需填入加载逻辑。
+>
+> **navigate.js**：`prototype/resources/js/navigate.js`，页面间导航工具。提供 `window.AxUtils.navigate(hash, tab)` 方法，通过 `postMessage` 通知 Shell 切换页面，保持目录树同步。由 `init`/`update` 自动创建，无需手动维护。
 
 目录名为 8 位 hash（人类不可读），用 CLI 获取映射，**禁止**手动 `ls prototype/pages/` 猜测结构。
 
