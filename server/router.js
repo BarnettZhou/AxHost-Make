@@ -15,7 +15,7 @@ function createRouter(workspaceRoot) {
     if (urlPath === '/' || urlPath === '/index.html') {
       return path.join(CLIENT_ROOT, 'home.html');
     }
-    if (urlPath === '/shell' || urlPath === '/shell.html') {
+    if (urlPath === '/shell.html') {
       return path.join(CLIENT_ROOT, 'shell.html');
     }
     if (urlPath.startsWith('/client/')) {
