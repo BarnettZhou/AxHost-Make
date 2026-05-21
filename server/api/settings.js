@@ -46,6 +46,23 @@ async function handleSettingsPost(req, res, projectRoot) {
       if (link !== undefined) {
         await writeLink(projectRoot, link);
       }
+
+      // Sync name to workspace .projects.json so home page list stays in sync
+      if (name !== undefined) {
+        try {
+          const workspaceRoot = path.resolve(projectRoot, '../..');
+          const metaPath = path.join(workspaceRoot, 'projects', '.projects.json');
+          const raw = await fs.readFile(metaPath, 'utf-8');
+          const meta = JSON.parse(raw);
+          const projects = meta.projects || [];
+          const entry = projects.find(p => p.id === path.basename(projectRoot));
+          if (entry) {
+            entry.name = name.trim() || 'Prototype';
+            await fs.writeFile(metaPath, JSON.stringify(meta, null, 2) + '\n', 'utf-8');
+          }
+        } catch (e) {}
+      }
+
       const savedLink = await readLink(projectRoot);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: { name: data.name, link: savedLink } }));

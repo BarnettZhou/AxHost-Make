@@ -95,15 +95,22 @@
   // ===== Toast =====
   function showToast(message, type) {
     type = type || 'info';
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const el = document.createElement('div');
-    el.className = 'toast ' + type;
-    el.textContent = message;
-    container.appendChild(el);
-    setTimeout(() => {
-      if (el.parentNode) el.parentNode.removeChild(el);
-    }, 3000);
+    let toast = document.getElementById('axhost-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'axhost-toast';
+      toast.className = 'axhost-toast';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.className = 'axhost-toast ' + type;
+    requestAnimationFrame(function () {
+      toast.classList.add('show');
+    });
+    if (toast._timer) clearTimeout(toast._timer);
+    toast._timer = setTimeout(function () {
+      toast.classList.remove('show');
+    }, 2500);
   }
 
   // ===== API Helpers =====
@@ -353,6 +360,129 @@
     }
   }
 
+  var activeDropdownId = null;
+
+  function closeDropdown() {
+    if (activeDropdownId) {
+      var dd = document.querySelector('.card-dropdown.open');
+      if (dd) dd.remove();
+      var btn = document.querySelector('.card-hamburger.active, .list-hamburger.active');
+      if (btn) btn.classList.remove('active');
+      activeDropdownId = null;
+    }
+  }
+
+  function toggleDropdown(projectId, anchorEl) {
+    if (activeDropdownId === projectId) { closeDropdown(); return; }
+    closeDropdown();
+    activeDropdownId = projectId;
+    anchorEl.classList.add('active');
+
+    var dd = document.createElement('div');
+    dd.className = 'card-dropdown open';
+    dd.innerHTML =
+      '<button class="card-dropdown-item" data-action="rename">重命名</button>' +
+      '<button class="card-dropdown-item" data-action="copy">复制项目</button>' +
+      '<button class="card-dropdown-item danger" data-action="delete">删除项目</button>';
+    document.body.appendChild(dd);
+
+    var rect = anchorEl.getBoundingClientRect();
+    dd.style.position = 'fixed';
+    dd.style.top = (rect.bottom + 4) + 'px';
+    dd.style.right = (window.innerWidth - rect.right) + 'px';
+
+    function onAction(e) {
+      var btn = e.target.closest('.card-dropdown-item');
+      if (!btn) return;
+      e.stopPropagation();
+      var action = btn.dataset.action;
+      closeDropdown();
+      if (action === 'rename') renameProject(projectId);
+      else if (action === 'copy') copyProject(projectId);
+      else if (action === 'delete') deleteProject(projectId);
+    }
+
+    dd.addEventListener('click', onAction);
+
+    // Close on doc click
+    setTimeout(function () {
+      document.addEventListener('click', function handler(e) {
+        if (!dd.contains(e.target) && !anchorEl.contains(e.target)) {
+          document.removeEventListener('click', handler);
+          closeDropdown();
+        }
+      });
+    }, 0);
+  }
+
+  async function renameProject(projectId) {
+    var project = state.projects.find(function(p) { return p.id === projectId; });
+    if (!project) return;
+    var name = await AxhostModal.prompt({
+      title: '重命名项目',
+      placeholder: '请输入新名称',
+      defaultValue: project.name
+    });
+    if (!name || name === project.name) return;
+    try {
+      var res = await fetch('/api/projects/rename', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: projectId, name: name })
+      });
+      var data = await res.json();
+      if (data.code !== 0) { showToast(data.message || '重命名失败', 'error'); return; }
+      project.name = name;
+      // Update tab if open
+      var tab = state.tabs.find(function(t) { return t.projectId === projectId; });
+      if (tab) { tab.projectName = name; renderTabs(); }
+      saveTabs();
+      filterAndSort();
+      showToast('重命名成功', 'success');
+    } catch (err) { showToast('重命名失败: ' + err.message, 'error'); }
+  }
+
+  async function copyProject(projectId) {
+    var name = await AxhostModal.prompt({
+      title: '复制项目',
+      placeholder: '请输入新项目名称'
+    });
+    if (!name) return;
+    try {
+      var res = await fetch('/api/projects/copy', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: projectId, name: name })
+      });
+      var data = await res.json();
+      if (data.code !== 0) { showToast(data.message || '复制失败', 'error'); return; }
+      await loadProjects();
+      showToast('复制成功', 'success');
+    } catch (err) { showToast('复制失败: ' + err.message, 'error'); }
+  }
+
+  async function deleteProject(projectId) {
+    var project = state.projects.find(function(p) { return p.id === projectId; });
+    if (!project) return;
+    var ok = await AxhostModal.confirm({
+      title: '删除项目',
+      message: '确认删除项目 "' + escapeHtml(project.name) + '" 吗？删除后数据无法恢复。'
+    });
+    if (!ok) return;
+    try {
+      var res = await fetch('/api/projects/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: projectId })
+      });
+      var data = await res.json();
+      if (data.code !== 0) { showToast(data.message || '删除失败', 'error'); return; }
+      // Close tab if open
+      if (state.tabs.some(function(t) { return t.projectId === projectId; })) {
+        closeTab(projectId);
+      }
+      await loadProjects();
+      showToast('删除成功', 'success');
+    } catch (err) { showToast('删除失败: ' + err.message, 'error'); }
+  }
+
   function renderGallery() {
     const grid = document.createElement('div');
     grid.className = 'project-grid';
@@ -366,9 +496,19 @@
         <div class="card-info">
           <div class="card-title" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
           <div class="card-meta">${escapeHtml(formatDate(p.lastModified))}</div>
+          <button class="card-hamburger" data-project="${escapeHtml(p.id)}" title="更多操作">
+            <iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon>
+          </button>
         </div>
       `;
-      card.addEventListener('click', () => openTab(p.id, p.name));
+      card.addEventListener('click', function(e) {
+        if (e.target.closest('.card-hamburger') || e.target.closest('.card-dropdown')) return;
+        openTab(p.id, p.name);
+      });
+      card.querySelector('.card-hamburger').addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleDropdown(p.id, this);
+      });
       grid.appendChild(card);
     });
     els.projectListBody.innerHTML = '';
@@ -384,8 +524,18 @@
       item.innerHTML = `
         <span class="list-item-name">${escapeHtml(p.name)}</span>
         <span class="list-item-time">${escapeHtml(formatDate(p.lastModified))}</span>
+        <button class="list-hamburger" data-project="${escapeHtml(p.id)}" title="更多操作">
+          <iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon>
+        </button>
       `;
-      item.addEventListener('click', () => openTab(p.id, p.name));
+      item.addEventListener('click', function(e) {
+        if (e.target.closest('.list-hamburger') || e.target.closest('.card-dropdown')) return;
+        openTab(p.id, p.name);
+      });
+      item.querySelector('.list-hamburger').addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleDropdown(p.id, this);
+      });
       list.appendChild(item);
     });
     els.projectListBody.innerHTML = '';
@@ -604,11 +754,19 @@
       }
     }
 
-    // Listen for login request from iframe (e.g. export-modal publish)
+    // Listen for messages from iframe shells
     window.addEventListener('message', (e) => {
-      if (e.data && e.data.type === 'axhost-request-login') {
-        if (!isLoggedIn()) {
-          els.btnLogin.click();
+      if (!e.data) return;
+      if (e.data.type === 'axhost-request-login') {
+        if (!isLoggedIn()) els.btnLogin.click();
+      } else if (e.data.type === 'axhost-project-renamed') {
+        var name = e.data.name;
+        var projectId = state.activeTabId;
+        if (projectId && name) {
+          var tab = state.tabs.find(function(t) { return t.projectId === projectId; });
+          if (tab) { tab.projectName = name; renderTabs(); saveTabs(); }
+          var proj = state.projects.find(function(p) { return p.id === projectId; });
+          if (proj) { proj.name = name; renderProjects(); }
         }
       }
     });

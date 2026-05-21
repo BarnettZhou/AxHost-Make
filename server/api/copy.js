@@ -84,7 +84,7 @@ function insertNodeAfterSitemap(sitemap, tab, sourceId, newNode) {
   };
 }
 
-async function copyItem(projectRoot, sourcePath, type) {
+async function copyItem(projectRoot, sourcePath, type, customName) {
   const tab = type;
   const sourceDir = path.join(projectRoot, 'prototype', tab, sourcePath);
   if (!(await exists(sourceDir))) {
@@ -93,7 +93,7 @@ async function copyItem(projectRoot, sourcePath, type) {
 
   const meta = await readMeta(sourceDir);
   const originalName = meta.name || '未命名';
-  const newName = `${originalName}-副本`;
+  const newName = (customName && customName.trim()) || `${originalName}-副本`;
 
   const existingIds = await collectExistingIds(projectRoot);
   const newHash = generateId(newName, existingIds);
@@ -131,13 +131,13 @@ async function handleCopy(req, res, projectRoot) {
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { sourcePath, type } = JSON.parse(body || '{}');
+      const { sourcePath, type, newName } = JSON.parse(body || '{}');
       if (!sourcePath || !type || !['pages', 'components', 'flowcharts'].includes(type)) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 400, message: 'Invalid parameters' }));
         return;
       }
-      const result = await copyItem(projectRoot, sourcePath, type);
+      const result = await copyItem(projectRoot, sourcePath, type, newName || null);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: result }));
     } catch (err) {

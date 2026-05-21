@@ -97,7 +97,21 @@
     treeRoot.addEventListener('dragover', (e) => {
       e.preventDefault();
       if (!draggedItem) return;
-      const targetLi = e.target.closest('.tree-item');
+
+      // If cursor is in the gap below the last item in a list, target that last item
+      let targetLi = e.target.closest('.tree-item');
+      if (!targetLi) {
+        const treeList = e.target.closest('.tree-list');
+        if (treeList) {
+          const items = treeList.querySelectorAll(':scope > .tree-item');
+          if (items.length > 0) {
+            const lastItem = items[items.length - 1];
+            if (e.clientY > lastItem.getBoundingClientRect().bottom) {
+              targetLi = lastItem;
+            }
+          }
+        }
+      }
       if (!targetLi || targetLi === draggedItem) return;
 
       document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
@@ -125,7 +139,8 @@
       e.preventDefault();
       if (!draggedItem || !draggedParentUl) return;
 
-      const targetLi = e.target.closest('.tree-item');
+      // Use the same target that dragover indicated, not re-derived from e.target
+      const targetLi = treeRoot.querySelector('.tree-item.drop-before, .tree-item.drop-after, .tree-item.drop-into');
       if (!targetLi || targetLi === draggedItem) return;
 
       try {
@@ -724,6 +739,7 @@
           });
           nodePropsModalNode.page_type = newType;
           nodePropsModal.close();
+          loadTree(nodePropsModalType);
           window.showToast('保存成功', 'success');
         } catch (e) {
           window.showToast('保存失败：' + e.message, 'error');
@@ -918,8 +934,28 @@
   }
 
   async function handleCopy(nodePath, type) {
+    // Find display name for default value
+    let displayName = nodePath.split('/').pop();
+    function findNodeByPath(nodes, targetPath) {
+      for (const n of nodes) {
+        if (n.path === targetPath) return n;
+        if (n.children) {
+          const f = findNodeByPath(n.children, targetPath);
+          if (f) return f;
+        }
+      }
+      return null;
+    }
+    const node = findNodeByPath(treeData, nodePath);
+    if (node) displayName = node.name;
+
+    const labelMap = { pages: '页面', components: '组件', flowcharts: '流程图' };
+    const defaultName = displayName + '-副本';
+    const newName = await window.showPrompt('复制' + (labelMap[type] || ''), '请输入新名称', defaultName);
+    if (!newName || !newName.trim()) return;
+
     try {
-      const result = await window.apiClient.postCopy({ sourcePath: nodePath, type });
+      const result = await window.apiClient.postCopy({ sourcePath: nodePath, type, newName: newName.trim() });
       await loadTree(currentTab);
       window.showToast('复制成功', 'success');
       if (result && result.data && result.data.id) {

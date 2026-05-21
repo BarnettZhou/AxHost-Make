@@ -168,9 +168,138 @@ async function handleProjectsPost(req, res, workspaceRoot) {
   });
 }
 
-module.exports = { handleProjectsGet, handleProjectsPost,
+// POST /api/projects/rename
+async function handleProjectsRename(req, res, workspaceRoot) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const { id, name } = JSON.parse(body || '{}');
+      if (!id || !name || !name.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'id and name are required' }));
+        return;
+      }
+      const metas = await readProjectsMeta(workspaceRoot);
+      const meta = metas.find(m => m.id === id);
+      if (!meta) {
+        res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 404, message: 'Project not found' }));
+        return;
+      }
+      meta.name = name.trim();
+      await writeProjectsMeta(workspaceRoot, metas);
+
+      // Also update project's internal sitemap name
+      try {
+        const projectsDir = getProjectsDir(workspaceRoot);
+        const sitemapPath = path.join(projectsDir, id, 'prototype', 'sitemap.js');
+        const content = await fs.readFile(sitemapPath, 'utf-8');
+        const jsonPart = content.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
+        const data = JSON.parse(jsonPart);
+        data.name = name.trim();
+        await fs.writeFile(sitemapPath, `window.__axhostSitemap = ${JSON.stringify(data, null, 2)};\n`, 'utf-8');
+      } catch (e) {}
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 0 }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 500, message: err.message }));
+    }
+  });
+}
+
+// POST /api/projects/copy
+async function handleProjectsCopy(req, res, workspaceRoot) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const { id, name } = JSON.parse(body || '{}');
+      if (!id || !name || !name.trim()) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'id and name are required' }));
+        return;
+      }
+      const projectsDir = getProjectsDir(workspaceRoot);
+      const srcDir = path.join(projectsDir, id);
+      if (!await exists(srcDir)) {
+        res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 404, message: 'Source project not found' }));
+        return;
+      }
+
+      const metas = await readProjectsMeta(workspaceRoot);
+      const existingIds = new Set(metas.map(m => m.id.toLowerCase()));
+      const newId = generateId(name.trim(), existingIds);
+      const dstDir = path.join(projectsDir, newId);
+
+      await fs.cp(srcDir, dstDir, { recursive: true });
+
+      // Update sitemap name in copied project
+      try {
+        const sitemapPath = path.join(dstDir, 'prototype', 'sitemap.js');
+        const content = await fs.readFile(sitemapPath, 'utf-8');
+        const jsonPart = content.replace(/^window\.__axhostSitemap\s*=\s*/, '').replace(/;\s*$/, '');
+        const data = JSON.parse(jsonPart);
+        data.name = name.trim();
+        await fs.writeFile(sitemapPath, `window.__axhostSitemap = ${JSON.stringify(data, null, 2)};\n`, 'utf-8');
+      } catch (e) {}
+
+      const now = new Date().toISOString();
+      metas.push({ id: newId, name: name.trim(), createdAt: now, lastModified: now });
+      await writeProjectsMeta(workspaceRoot, metas);
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 0, data: { id: newId, name: name.trim() } }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 500, message: err.message }));
+    }
+  });
+}
+
+// POST /api/projects/delete
+async function handleProjectsDelete(req, res, workspaceRoot) {
+  let body = '';
+  req.on('data', chunk => body += chunk);
+  req.on('end', async () => {
+    try {
+      const { id } = JSON.parse(body || '{}');
+      if (!id) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: 'id is required' }));
+        return;
+      }
+      const projectsDir = getProjectsDir(workspaceRoot);
+      const projectDir = path.join(projectsDir, id);
+      if (await exists(projectDir)) {
+        await fs.rm(projectDir, { recursive: true, force: true });
+      }
+
+      const metas = await readProjectsMeta(workspaceRoot);
+      const idx = metas.findIndex(m => m.id === id);
+      if (idx !== -1) {
+        metas.splice(idx, 1);
+        await writeProjectsMeta(workspaceRoot, metas);
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 0 }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ code: 500, message: err.message }));
+    }
+  });
+}
+
+module.exports = { handleProjectsGet, handleProjectsPost, handleProjectsRename, handleProjectsCopy, handleProjectsDelete,
   routes: [
     { method: 'GET', path: '/api/projects', handler: handleProjectsGet, scope: 'workspace' },
-    { method: 'POST', path: '/api/projects', handler: handleProjectsPost, scope: 'workspace' }
+    { method: 'POST', path: '/api/projects', handler: handleProjectsPost, scope: 'workspace' },
+    { method: 'POST', path: '/api/projects/rename', handler: handleProjectsRename, scope: 'workspace' },
+    { method: 'POST', path: '/api/projects/copy', handler: handleProjectsCopy, scope: 'workspace' },
+    { method: 'POST', path: '/api/projects/delete', handler: handleProjectsDelete, scope: 'workspace' },
   ]
 };

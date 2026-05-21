@@ -567,6 +567,10 @@
               currentSettingsLink = payload.link || null;
               updateOpenOnlineButton();
               if (hostProjectDropdown) hostProjectDropdown.classList.remove('open');
+              // Notify parent home page to update tab name
+              if (window.parent && window.parent !== window) {
+                window.parent.postMessage({ type: 'axhost-project-renamed', name: name }, '*');
+              }
               window.showToast('设置保存成功', 'success');
             } catch (err) {
               window.showToast('保存失败: ' + err.message, 'error');
