@@ -74,6 +74,24 @@ async function init(projectRoot) {
     }
   }
 
+  // Copy RESOURCES.md template
+  const resourcesMdPath = path.join(projectRoot, 'RESOURCES.md');
+  if (!await exists(resourcesMdPath)) {
+    const resourcesTpl = path.join(projectTplRoot, 'RESOURCES.md');
+    if (await exists(resourcesTpl)) {
+      await fs.copyFile(resourcesTpl, resourcesMdPath);
+    }
+  }
+
+  // Copy COMPONENTS.md template
+  const componentsMdPath = path.join(projectRoot, 'COMPONENTS.md');
+  if (!await exists(componentsMdPath)) {
+    const componentsTpl = path.join(projectTplRoot, 'COMPONENTS.md');
+    if (await exists(componentsTpl)) {
+      await fs.copyFile(componentsTpl, componentsMdPath);
+    }
+  }
+
   // 框架资源由 /client/ 统一提供，不再复制到项目
 
   console.log('Axhost-Make project initialized successfully.');

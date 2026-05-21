@@ -95,6 +95,23 @@
     postOpenWslTerminal: () => request('/api/terminal/open-wsl', {
       method: 'POST',
       body: JSON.stringify({})
+    }),
+    postUploadImage: (data) => request('/api/images/upload', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    getImagesList: () => request('/api/images/list'),
+    postImagesRename: (data) => request('/api/images/rename', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    postImagesDelete: (data) => request('/api/images/delete', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    }),
+    postImagesScanUnused: () => request('/api/images/scan-unused', {
+      method: 'POST',
+      body: JSON.stringify({})
     })
   };
 })();

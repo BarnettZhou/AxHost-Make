@@ -27,7 +27,8 @@ const modules = [
   require('./api/move.js'),
   require('./api/copy.js'),
   require('./api/export-component.js'),
-  require('./api/upload-image.js'),
+  require('./api/prompt-upload.js'),
+  require('./api/images.js'),
   require('./api/cache-cleanup.js'),
 ];
 

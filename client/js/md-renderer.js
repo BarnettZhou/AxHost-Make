@@ -112,6 +112,16 @@
     });
   }
 
+  function resolveImagePath(filename) {
+    if (window.__axhostBasePath) {
+      return window.__axhostBasePath + 'images/' + filename;
+    }
+    if (window.__axhostProjectId) {
+      return '/projects/' + window.__axhostProjectId + '/prototype/images/' + filename;
+    }
+    return '/prototype/images/' + filename;
+  }
+
   function renderMarkdown(mdText) {
     if (!window.marked) return '<p>marked.js not loaded</p>';
     ensureColorExt();
@@ -119,6 +129,7 @@
     const renderer = new window.marked.Renderer();
     const originalLink = renderer.link.bind(renderer);
     const originalBlockquote = renderer.blockquote.bind(renderer);
+    const originalImage = renderer.image.bind(renderer);
 
     renderer.blockquote = function (token) {
       if (token._alertType) {
@@ -140,8 +151,17 @@
         if (parsed.path) attrs.push(`data-doc-path="${escapeHtml(parsed.path)}"`);
         return `<a ${attrs.join(' ')}>${this.parser.parseInline(token.tokens)}</a>`;
       }
-      // Fall back to standard link rendering
       return originalLink(token);
+    };
+
+    renderer.image = function (token) {
+      const href = token.href;
+      if (href && href.startsWith('$')) {
+        const src = resolveImagePath(href.slice(1));
+        const alt = token.text || '';
+        return `<img src="${escapeHtml(src)}" alt="${escapeHtml(alt)}">`;
+      }
+      return originalImage(token);
     };
 
     return window.marked.parse(mdText || '', {

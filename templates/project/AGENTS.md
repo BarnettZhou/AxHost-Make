@@ -14,6 +14,7 @@
 6. **容器加 id**：独立区块容器元素必须添加有意义的 `id`，方便后续精确定位。
 7. **精准修改**：只修改与需求相关的文件，不重构未涉及的部分。
 8. **Git 安全**：未经允许禁止 `git push`、`git reset`、`git rebase`。不跳过 hooks。禁止删除用户数据。
+9. **维护索引**：新增/删除/重大变更组件后，**必须**更新项目根目录下的 `COMPONENTS.md`；新增/删除/重大变更公共资源后，**必须**更新项目根目录下的 `RESOURCES.md`。
 
 ## 目录规则
 
@@ -33,11 +34,11 @@
 |---------|---------|-------------|
 | 页面私有 JS/CSS | `pages/{hash}/resources/` | `resources/js/xxx.js` |
 | 组件私有 JS/CSS | `components/{hash}/resources/` | `resources/js/xxx.js`（组件内） |
-| 框架 Shell 资源 | `prototype/shell-resources/` | `../../shell-resources/js/xxx.js`（只读，禁止修改） |
+| 框架 Shell 资源 | `/client/`（dev 模式由框架提供） | 无需手动引用，导出时框架自动打包并重写路径 |
 | 项目公共资源 | `prototype/resources/` | `../../resources/js/xxx.js`（从 pages 下引用） |
 | 框架系统规则 | `../../axhost-make/system-rules/` | 只读，禁止修改 |
 
-> **shell-resources vs resources**：`shell-resources/` 存放框架提供的运行时文件（shell.css、icon-loader-shell.js、marked.min.js、preview-app.js 等），由 `axhost-make update` 自动维护，**禁止手动修改**。`resources/` 存放项目自己的公共资源（跨页面复用的 CSS/JS/组件），由开发者维护。
+> **框架 Shell 资源**：shell.css、icon-loader-shell.js、marked.min.js 等框架运行时文件，dev 模式下由 `/client/` 统一提供，导出/发布时框架自动打包并重写路径，页面开发无需关心。`resources/` 存放项目自己的公共资源（跨页面复用的 CSS/JS/组件），由开发者维护。
 
 目录名为 8 位 hash（人类不可读），用 CLI 获取映射，**禁止**手动 `ls prototype/pages/` 猜测结构。
 
@@ -56,7 +57,7 @@ flowchart/{hash}/
 
 - dir 节点是逻辑分组，无物理目录，仅存在于 `sitemap.js`。
 - 页面级资源（仅该页面使用）→ 页面 `resources/` 下；跨页面共享 → `prototype/resources/` 下。
-- 框架 Shell 资源统一在 `prototype/shell-resources/`，路径与项目资源分离，避免误改。
+- 框架 Shell 资源（shell.css、icon-loader-shell.js 等）dev 模式下由 `/client/` 统一提供，导出时自动打包，页面开发无需关心。
 
 ## 按需阅读
 
@@ -66,6 +67,7 @@ flowchart/{hash}/
 
 | 场景 | 文件 |
 |------|------|
+| **开始任何工作前** | 本项目 `RESOURCES.md`、`COMPONENTS.md`、`rules/design.md` |
 | **所有原型开发** | `../../axhost-make/system-rules/dev-spec.md` |
 | **创建/复用组件** | `../../axhost-make/system-rules/components-spec.md` |
 | **手机端/小程序原型** | `../../axhost-make/system-rules/mobile-frame-spec.md` |
@@ -99,8 +101,10 @@ node axhost-make/bin/axhost-make.js add-doc <name> --to <hash>
 ## 修改后
 
 1. 告知用户修改了哪些文件、各文件主要改动点。
-2. 询问是否需要 Git 提交。若用户确认：`git add -A` → `git commit -m "..."`。
-3. 自检：路径拼写正确、资源引用匹配、浏览器可打开、未破坏已有功能。
+2. 若涉及公共资源（`prototype/resources/`）的增删或重大变更，更新项目根目录 `RESOURCES.md`。
+3. 若涉及组件（`prototype/components/`）的增删或重大变更，更新项目根目录 `COMPONENTS.md`。
+4. 询问是否需要 Git 提交。若用户确认：`git add -A` → `git commit -m "..."`。
+5. 自检：路径拼写正确、资源引用匹配、浏览器可打开、未破坏已有功能。
 
 ## Compaction 恢复
 

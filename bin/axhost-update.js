@@ -104,6 +104,22 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Created rules/design.md');
   }
 
+  // Copy RESOURCES.md if not exists (agent-maintained, don't overwrite)
+  const resourcesMdSrc = path.join(projectTplRoot, 'RESOURCES.md');
+  const resourcesMdDest = path.join(projectRoot, 'RESOURCES.md');
+  if (await exists(resourcesMdSrc) && !await exists(resourcesMdDest)) {
+    await fs.copyFile(resourcesMdSrc, resourcesMdDest);
+    console.log('  - Created RESOURCES.md');
+  }
+
+  // Copy COMPONENTS.md if not exists (agent-maintained, don't overwrite)
+  const componentsMdSrc = path.join(projectTplRoot, 'COMPONENTS.md');
+  const componentsMdDest = path.join(projectRoot, 'COMPONENTS.md');
+  if (await exists(componentsMdSrc) && !await exists(componentsMdDest)) {
+    await fs.copyFile(componentsMdSrc, componentsMdDest);
+    console.log('  - Created COMPONENTS.md');
+  }
+
   // Ensure missing page resources
   await ensurePageResources(projectRoot);
 

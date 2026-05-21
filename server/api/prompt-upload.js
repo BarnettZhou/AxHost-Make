@@ -1,7 +1,7 @@
 const fs = require('fs/promises');
 const path = require('path');
 
-async function handleUploadImage(req, res, projectRoot) {
+async function handlePromptUpload(req, res, projectRoot) {
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
@@ -13,7 +13,6 @@ async function handleUploadImage(req, res, projectRoot) {
         return;
       }
 
-      // Determine extension from mimeType or fallback to png
       let ext = 'png';
       if (mimeType) {
         const subtype = mimeType.split('/')[1];
@@ -50,8 +49,9 @@ async function handleUploadImage(req, res, projectRoot) {
   });
 }
 
-module.exports = { handleUploadImage,
+module.exports = {
+  handlePromptUpload,
   routes: [
-    { method: 'POST', path: '/api/upload-image', handler: handleUploadImage, scope: 'project' }
+    { method: 'POST', path: '/api/prompt-upload', handler: handlePromptUpload, scope: 'project' }
   ]
 };

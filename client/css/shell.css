@@ -694,19 +694,24 @@ body.dark #prompt-box:focus-within {
   overflow-y: auto;
 }
 .attach-thumb {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 80px;
-  height: 80px;
   border-radius: 4px;
   border: 1px solid var(--border);
   flex-shrink: 0;
+  overflow: hidden;
 }
-.attach-thumb img {
+.attach-thumb-img {
+  width: 80px;
+  height: 56px;
+  position: relative;
+}
+.attach-thumb-img img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 4px;
 }
 .attach-thumb-close {
   position: absolute;
@@ -727,6 +732,22 @@ body.dark #prompt-box:focus-within {
 }
 .attach-thumb-close:hover {
   background: rgba(0,0,0,0.75);
+}
+.attach-thumb-footer {
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-hover);
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-muted);
+  user-select: none;
+}
+.attach-thumb-footer:hover {
+  color: var(--accent);
+  background: var(--bg-active);
 }
 #btn-attach-toggle {
   background: none;
@@ -2053,4 +2074,137 @@ body.dark .prompt-autocomplete {
   font-size: 12px;
   color: var(--text-main);
   box-shadow: 0 1px 0 var(--border);
+}
+
+/* Thin auto-hide scrollbar for tree nav / doc content / export tree / autocomplete */
+#tree-root,
+#doc-content,
+.export-tree,
+.prompt-autocomplete {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+#tree-root:hover,
+#doc-content:hover,
+.export-tree:hover,
+.prompt-autocomplete:hover {
+  scrollbar-color: var(--border) transparent;
+}
+
+#tree-root::-webkit-scrollbar,
+#doc-content::-webkit-scrollbar,
+.export-tree::-webkit-scrollbar,
+.prompt-autocomplete::-webkit-scrollbar {
+  width: 6px;
+}
+#tree-root::-webkit-scrollbar-button,
+#doc-content::-webkit-scrollbar-button,
+.export-tree::-webkit-scrollbar-button,
+.prompt-autocomplete::-webkit-scrollbar-button {
+  display: none;
+}
+#tree-root::-webkit-scrollbar-track,
+#doc-content::-webkit-scrollbar-track,
+.export-tree::-webkit-scrollbar-track,
+.prompt-autocomplete::-webkit-scrollbar-track {
+  background: transparent;
+}
+#tree-root::-webkit-scrollbar-thumb,
+#doc-content::-webkit-scrollbar-thumb,
+.export-tree::-webkit-scrollbar-thumb,
+.prompt-autocomplete::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+#tree-root:hover::-webkit-scrollbar-thumb,
+#doc-content:hover::-webkit-scrollbar-thumb,
+.export-tree:hover::-webkit-scrollbar-thumb,
+.prompt-autocomplete:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* Image gallery modal */
+.img-gallery-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 8px 24px;
+}
+.img-gallery-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg-body);
+}
+.img-gallery-thumb {
+  width: 100%;
+  height: 100px;
+  overflow: hidden;
+  background: var(--bg-hover);
+}
+.img-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.img-gallery-info {
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.img-gallery-name {
+  font-size: 12px;
+  color: var(--text-main);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.img-gallery-name:hover {
+  color: var(--accent);
+}
+.img-gallery-hash {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: Consolas, monospace;
+}
+.img-gallery-name-input {
+  font-size: 12px;
+  padding: 1px 4px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: var(--bg-panel);
+  color: var(--text-main);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+.img-gallery-cleanup-btn {
+  margin-left: auto;
+  font-size: 12px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-body);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.img-gallery-cleanup-btn:hover {
+  color: #ff4d4f;
+  border-color: #ff4d4f;
+}
+.img-cleanup-progress-wrap {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-hover);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.img-cleanup-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.15s ease;
 }

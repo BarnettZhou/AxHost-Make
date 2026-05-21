@@ -6,7 +6,7 @@
 
 ### Shell 与页面分离
 
-- **Shell**（`prototype/index.html`）使用 `shell-resources/js/icon-loader-shell.js`。
+- **Shell 宿主页面**（`client/shell.html`、`client/home.html` 等）使用 `/client/js/icon-loader-shell.js`。
 - **原型页面**（`pages/`、`components/`）使用 `resources/js/icon-loader.js`，禁止引用 Shell 的 `icon-loader-shell.js`，确保解耦。
 
 ### icon-loader.js 要求

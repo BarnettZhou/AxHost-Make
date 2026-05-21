@@ -121,6 +121,13 @@
     dropdown.style.top = coords.top + 'px';
     dropdown.style.minWidth = taRect.width + 'px';
     dropdown.classList.add('open');
+
+    // If dropdown overflows right edge, align to right side of window
+    var dr = dropdown.getBoundingClientRect();
+    var margin = 12;
+    if (dr.right > window.innerWidth - margin) {
+      dropdown.style.left = (window.innerWidth - dr.width - margin) + 'px';
+    }
   }
 
   function filterItems(items, keyword, maxItems) {

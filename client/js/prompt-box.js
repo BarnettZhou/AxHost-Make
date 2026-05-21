@@ -141,7 +141,7 @@
       reader.onload = async () => {
         try {
           const base64 = reader.result.split(',')[1];
-          const res = await fetch(`/api/upload-image?project=${encodeURIComponent(projectId)}`, {
+          const res = await fetch(`/api/prompt-upload?project=${encodeURIComponent(projectId)}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -217,18 +217,38 @@
       attachList.innerHTML = '<div style="color:var(--text-muted);font-size:12px;">暂无附件</div>';
       return;
     }
-    attachedImages.forEach(img => {
+    attachedImages.forEach((img, idx) => {
+      const num = String(idx + 1).padStart(2, '0');
       const thumb = document.createElement('div');
       thumb.className = 'attach-thumb';
       thumb.innerHTML = `
-        <img src="${img.url}" alt="">
-        <button class="attach-thumb-close" data-path="${escapeHtml(img.path)}" title="删除">
-          <iconpark-icon icon-id="close-small" size="10"></iconpark-icon>
-        </button>
+        <div class="attach-thumb-img">
+          <img src="${img.url}" alt="">
+          <button class="attach-thumb-close" data-path="${escapeHtml(img.path)}" title="删除">
+            <iconpark-icon icon-id="close-small" size="10"></iconpark-icon>
+          </button>
+        </div>
+        <div class="attach-thumb-footer" title="点击复制 image-${num}">${num}</div>
       `;
       thumb.querySelector('.attach-thumb-close').addEventListener('click', (e) => {
         e.stopPropagation();
         deleteAttachedImage(img.path);
+      });
+      thumb.querySelector('.attach-thumb-footer').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const text = `image-${num}`;
+        navigator.clipboard.writeText(text).then(() => {
+          window.showToast && window.showToast(`已复制 ${text}`, 'success');
+        }).catch(() => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          window.showToast && window.showToast(`已复制 ${text}`, 'success');
+        });
       });
       attachList.appendChild(thumb);
     });

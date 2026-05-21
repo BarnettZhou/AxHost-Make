@@ -86,6 +86,52 @@
     });
   }
 
+  function bindImagePaste(textarea) {
+    textarea.addEventListener('paste', async function(e) {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.indexOf('image') === -1) continue;
+        e.preventDefault();
+        const blob = item.getAsFile();
+        if (!blob) continue;
+        try {
+          const reader = new FileReader();
+          const dataUrl = await new Promise(function(resolve, reject) {
+            reader.onload = function() { resolve(reader.result); };
+            reader.onerror = function() { reject(new Error('读取图片失败')); };
+            reader.readAsDataURL(blob);
+          });
+          var result = await window.apiClient.postUploadImage({
+            name: blob.name || 'image.png',
+            data: dataUrl
+          });
+          if (result.code !== 0) {
+            window.showToast('图片上传失败', 'error');
+            return;
+          }
+          var filename = result.filename;
+          var mdImage = '![image]($' + filename + ')';
+          var start = textarea.selectionStart;
+          var end = textarea.selectionEnd;
+          var text = textarea.value;
+          textarea.value = text.substring(0, start) + mdImage + text.substring(end);
+          var newPos = start + mdImage.length;
+          textarea.setSelectionRange(newPos, newPos);
+          textarea.focus();
+          // Trigger input event for live preview update
+          textarea.dispatchEvent(new Event('input', { bubbles: true }));
+          window.showToast('图片已上传', 'success');
+        } catch (err) {
+          console.error('Image paste error:', err);
+          window.showToast('图片上传失败: ' + (err.message || '未知错误'), 'error');
+        }
+        break;
+      }
+    });
+  }
+
   function renderContent() {
     if (currentDocs.length === 0) {
       docContent.innerHTML = '<p style="color:#858585">该页面暂无文档。</p>';
@@ -112,6 +158,7 @@
           previewWrap.innerHTML = window.mdRenderer.renderMarkdown(textarea.value);
         });
         bindDocLinkAutocomplete(textarea);
+        bindImagePaste(textarea);
       } else {
         docContent.classList.remove('split');
         const textarea = document.createElement('textarea');
@@ -119,6 +166,7 @@
         textarea.value = currentDocs[activeDocIndex].content;
         docContent.appendChild(textarea);
         bindDocLinkAutocomplete(textarea);
+        bindImagePaste(textarea);
       }
     } else {
       docContent.classList.remove('split');
