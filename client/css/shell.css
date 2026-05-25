@@ -876,6 +876,25 @@ body.dark .doc-tab.active {
 .doc-content img {
   max-width: 100%;
 }
+.doc-content a,
+.doc-view a,
+.doc-preview a,
+.rule-viewer-content a {
+  color: #1677ff;
+  text-decoration: none;
+}
+.doc-content a:hover,
+.doc-view a:hover,
+.doc-preview a:hover,
+.rule-viewer-content a:hover {
+  color: #4096ff;
+}
+.doc-content a:visited,
+.doc-view a:visited,
+.doc-preview a:visited,
+.rule-viewer-content a:visited {
+  color: #1677ff;
+}
 .doc-content ul, .doc-content ol {
   padding-left: 20px;
   margin: 8px 0;
