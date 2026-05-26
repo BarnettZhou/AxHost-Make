@@ -15,6 +15,8 @@
   const btnToggleNav = document.getElementById('btn-toggle-nav');
   const docTabs = document.getElementById('doc-tabs-scroll');
   const docContent = document.getElementById('doc-content');
+  const btnScrollLeft = document.getElementById('btn-doc-scroll-left');
+  const btnScrollRight = document.getElementById('btn-doc-scroll-right');
   const treeRoot = document.getElementById('tree-root');
   const projectNameEl = document.getElementById('project-name');
   let expandedPaths = new Set();
@@ -25,6 +27,8 @@
   if (docsResizer && docsPanel && docsPanel.classList.contains('hidden')) {
     docsResizer.classList.add('hidden');
   }
+
+  setupTabsScroll();
 
   function freezePanelChildren(panel) {
     var children = panel.children;
@@ -115,6 +119,32 @@
         renderDocContent();
       };
       docTabs.appendChild(tab);
+    });
+    updateScrollButtons();
+  }
+
+  function updateScrollButtons() {
+    if (!docTabs || !btnScrollLeft || !btnScrollRight) return;
+    var atStart = docTabs.scrollLeft <= 1;
+    var atEnd = docTabs.scrollLeft + docTabs.clientWidth >= docTabs.scrollWidth - 1;
+    btnScrollLeft.classList.toggle('hidden', atStart);
+    btnScrollRight.classList.toggle('hidden', atEnd);
+  }
+
+  function setupTabsScroll() {
+    if (!docTabs) return;
+    docTabs.addEventListener('wheel', function(e) {
+      if (!e.shiftKey) return;
+      e.preventDefault();
+      docTabs.scrollLeft += e.deltaY;
+      updateScrollButtons();
+    }, { passive: false });
+    docTabs.addEventListener('scroll', updateScrollButtons);
+    btnScrollLeft.addEventListener('click', function() {
+      docTabs.scrollBy({ left: -200, behavior: 'smooth' });
+    });
+    btnScrollRight.addEventListener('click', function() {
+      docTabs.scrollBy({ left: 200, behavior: 'smooth' });
     });
   }
 

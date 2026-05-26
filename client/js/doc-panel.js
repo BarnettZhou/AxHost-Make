@@ -6,6 +6,8 @@
   let isPreviewMode = true;
   const btnAdd = document.getElementById('btn-doc-add');
   const btnSort = document.getElementById('btn-doc-sort');
+  const btnScrollLeft = document.getElementById('btn-doc-scroll-left');
+  const btnScrollRight = document.getElementById('btn-doc-scroll-right');
 
   let currentDocs = [];
   let activeDocIndex = 0;
@@ -83,6 +85,38 @@
         showDocContextMenu(e, doc, idx);
       });
       docTabs.appendChild(tab);
+    });
+    updateScrollButtons();
+  }
+
+  function updateScrollButtons() {
+    if (!docTabs) return;
+    const atStart = docTabs.scrollLeft <= 1;
+    const atEnd = docTabs.scrollLeft + docTabs.clientWidth >= docTabs.scrollWidth - 1;
+    btnScrollLeft.classList.toggle('hidden', atStart);
+    btnScrollRight.classList.toggle('hidden', atEnd);
+  }
+
+  function setupTabsScroll() {
+    if (!docTabs) return;
+
+    // Shift + wheel → horizontal scroll
+    docTabs.addEventListener('wheel', (e) => {
+      if (!e.shiftKey) return;
+      e.preventDefault();
+      docTabs.scrollLeft += e.deltaY;
+      updateScrollButtons();
+    }, { passive: false });
+
+    // Native scroll → update button state
+    docTabs.addEventListener('scroll', updateScrollButtons);
+
+    // Scroll buttons
+    btnScrollLeft.addEventListener('click', () => {
+      docTabs.scrollBy({ left: -200, behavior: 'smooth' });
+    });
+    btnScrollRight.addEventListener('click', () => {
+      docTabs.scrollBy({ left: 200, behavior: 'smooth' });
     });
   }
 
@@ -679,5 +713,6 @@
   });
 
 
+  setupTabsScroll();
   window.docPanel = { load, isEditing: () => isEditMode };
 })();

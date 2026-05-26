@@ -803,6 +803,24 @@ body.dark #prompt-box:focus-within {
   gap: 4px;
   overflow-x: auto;
   flex: 1;
+  scrollbar-width: none;
+}
+.doc-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+.doc-tab-scroll-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.doc-tab-scroll-btn:hover {
+  color: var(--text-main);
 }
 .doc-tab-add {
   background: transparent;
@@ -970,6 +988,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   resize: none;
   font-family: Consolas, monospace;
   font-size: 13px;
+  line-height: 1.8;
   outline: none;
 }
 .doc-actions {
