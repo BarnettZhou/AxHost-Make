@@ -229,6 +229,7 @@ async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selec
   for (const flowPath of (selectedFlowcharts || [])) {
     await copyPageOrComponent(flowchartsDir, destFlowchartsDir, flowPath);
   }
+
 }
 
 async function handleExportPost(req, res, workspaceRoot) {
@@ -300,7 +301,7 @@ async function handleExportPublish(req, res, workspaceRoot) {
       // 2. Copy files
       await prepareExportDir(srcPrototypeDir, cacheDir, selectedPages, selectedComponents, selectedFlowcharts);
 
-      // 3. Pack to zip (Windows bsdtar supports zip; Linux uses zip command)
+      // 3. Pack to zip
       try { await fs.rm(zipPath, { force: true }); } catch (e) {}
       if (process.platform === 'win32' || !hasZipCommand()) {
         execSync(`tar -acf "${zipPath}" -C "${cacheDir}" .`, { timeout: 30000 });

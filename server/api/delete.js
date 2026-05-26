@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
+const { readSitemap, writeSitemap, refreshSitemapDocs } = require('../lib/sitemap-io.js');
 const { removeFromOrder } = require('../lib/order.js');
 
 function removeNodeFromTree(nodes, id) {
@@ -103,6 +103,7 @@ async function handleDelete(req, res, projectRoot) {
       const targetDir = path.dirname(absPath);
       if (path.basename(targetDir) === 'docs' && targetName.endsWith('.md')) {
         await removeFromOrder(targetDir, targetName);
+        await refreshSitemapDocs(projectRoot, targetPath);
       }
 
       // 3. Clean up mermaid.min.js if no flowcharts remain

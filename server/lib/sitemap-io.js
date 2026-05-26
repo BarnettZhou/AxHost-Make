@@ -48,4 +48,32 @@ function addNodeToSitemap(sitemap, tab, parentId, node) {
   };
 }
 
-module.exports = { readSitemap, writeSitemap, addNodeToSitemap };
+async function refreshSitemapDocs(projectRoot, filePathInput) {
+  const match = filePathInput.match(/^prototype\/(pages|components|flowcharts)\/(.+)\/docs\/.+\.md$/);
+  if (!match) return;
+  const [, tab, nodePath] = match;
+
+  const sitemap = await readSitemap(projectRoot);
+  const { ensureOrder } = require('./order.js');
+
+  async function updateNode(nodes) {
+    for (const n of nodes) {
+      if ((n.type === 'page' || n.type === 'component' || n.type === 'flowchart') && n.path === nodePath) {
+        const absPath = path.join(projectRoot, 'prototype', tab, n.path, 'docs');
+        try {
+          const entries = await fs.readdir(absPath, { withFileTypes: true });
+          const files = entries.filter(e => e.isFile() && e.name.endsWith('.md')).map(e => e.name);
+          n.docs = await ensureOrder(absPath, files);
+        } catch { n.docs = []; }
+        return true;
+      }
+      if (n.children && await updateNode(n.children)) return true;
+    }
+    return false;
+  }
+
+  await updateNode(sitemap[tab] || []);
+  await writeSitemap(projectRoot, sitemap);
+}
+
+module.exports = { readSitemap, writeSitemap, addNodeToSitemap, refreshSitemapDocs };

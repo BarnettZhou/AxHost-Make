@@ -1,6 +1,6 @@
 const fs = require('fs/promises');
 const path = require('path');
-const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
+const { readSitemap, writeSitemap, refreshSitemapDocs } = require('../lib/sitemap-io.js');
 const { renameInOrder } = require('../lib/order.js');
 
 function updateNodeName(nodes, id, newName) {
@@ -19,13 +19,14 @@ async function handleRename(req, res, projectRoot) {
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { path: targetPath, newName } = JSON.parse(body || '{}');
-      if (!targetPath || !newName) {
+      const { path: targetPath, oldPath, newName } = JSON.parse(body || '{}');
+      const resolvedPath = targetPath || oldPath;
+      if (!resolvedPath || !newName) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 400, message: 'Invalid parameters' }));
         return;
       }
-      const absPath = path.resolve(projectRoot, targetPath);
+      const absPath = path.resolve(projectRoot, resolvedPath);
       if (!absPath.startsWith(path.resolve(projectRoot))) {
         res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 403, message: 'Forbidden path' }));
@@ -55,7 +56,7 @@ async function handleRename(req, res, projectRoot) {
       } catch {}
 
       // Update sitemap
-      const tab = targetPath.includes('flowcharts') ? 'flowcharts' : targetPath.includes('components') ? 'components' : 'pages';
+      const tab = resolvedPath.includes('flowcharts') ? 'flowcharts' : resolvedPath.includes('components') ? 'components' : 'pages';
       const sitemap = await readSitemap(projectRoot);
       const tree = sitemap[tab] || [];
       const id = path.basename(absPath);
@@ -65,15 +66,19 @@ async function handleRename(req, res, projectRoot) {
       }
       await writeSitemap(projectRoot, sitemap);
 
-      // Sync docs order if renaming a .md file inside docs/
+      // Sync docs order and rename file if renaming a .md file inside docs/
       const oldName = path.basename(absPath);
       const parentDir = path.dirname(absPath);
       if (path.basename(parentDir) === 'docs' && oldName.endsWith('.md')) {
+        // Actually rename the file on disk
+        const newAbsPath = path.join(parentDir, newName);
+        await fs.rename(absPath, newAbsPath);
         await renameInOrder(parentDir, oldName, newName);
+        await refreshSitemapDocs(projectRoot, resolvedPath);
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ code: 0, data: { path: targetPath } }));
+      res.end(JSON.stringify({ code: 0, data: { path: resolvedPath } }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 500, message: err.message }));
