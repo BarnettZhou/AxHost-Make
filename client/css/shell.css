@@ -6,6 +6,8 @@
   --text-main: #333333;
   --text-muted: #666666;
   --accent: #1677ff;
+  --input-bg: #f5f5f5;
+  --input-focus-bg: #ffffff;
 }
 
 body.dark {
@@ -16,6 +18,8 @@ body.dark {
   --text-main: #cccccc;
   --text-muted: #858585;
   --accent: #1677ff;
+  --input-bg: #252526;
+  --input-focus-bg: #1e1e1e;
 }
 
 * { box-sizing: border-box; }
@@ -1130,7 +1134,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .host-project-select-wrap input[type="text"] {
   width: 100%; box-sizing: border-box;
-  background: var(--bg-body);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-main);
   border-radius: 6px;
@@ -1138,6 +1142,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   font-size: 13px; outline: none;
 }
 .host-project-select-wrap input[type="text"]:focus {
+  background: var(--input-focus-bg);
   border-color: #1677ff;
 }
 #host-project-search,
@@ -1241,7 +1246,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 .axhost-modal-body input[type="password"],
 .axhost-modal-input {
   width: 100%;
-  background: var(--bg-body);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-main);
   border-radius: 6px;
@@ -1251,6 +1256,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .axhost-modal-body input:focus,
 .axhost-modal-input:focus {
+  background: var(--input-focus-bg);
   border-color: #1677ff;
 }
 
@@ -1318,7 +1324,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .modal-body input[type="text"] {
   width: 100%;
-  background: var(--bg-body);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-main);
   border-radius: 8px;
@@ -1328,6 +1334,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   outline: none;
 }
 .modal-body input[type="text"]:focus {
+  background: var(--input-focus-bg);
   border-color: #1677ff;
 }
 .form-error {
@@ -1707,7 +1714,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .export-field input[type="text"] {
   width: 100%;
-  background: var(--bg-body);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text-main);
   padding: 0 10px; height: 32px;
@@ -1715,6 +1722,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   font-size: 13px; outline: none;
 }
 .export-field input[type="text"]:focus {
+  background: var(--input-focus-bg);
   border-color: #1677ff;
 }
 .export-preview-url {
@@ -1739,6 +1747,16 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 }
 .export-dir-row input[type="text"] {
   flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  padding: 0 10px; height: 32px;
+  border-radius: 6px;
+  font-size: 13px; outline: none;
+}
+.export-dir-row input[type="text"]:focus {
+  background: var(--input-focus-bg);
+  border-color: #1677ff;
 }
 .export-dir-row button {
   background: var(--bg-body);

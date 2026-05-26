@@ -151,13 +151,19 @@ body.dark #home-main { background: #1a1a1a; }
   width: 100%; height: 36px;
   padding: 0 12px 0 32px;
   border: 1px solid #ddd; border-radius: 8px;
-  background: #fff; font-size: 14px; outline: none;
-  transition: border-color 0.2s;
+  background: #f5f5f5; font-size: 14px; outline: none;
+  transition: border-color 0.2s, background 0.2s;
 }
 body.dark .search-box input {
-  background: #2a2a2a; border-color: #444; color: #e0e0e0;
+  background: #252526; border-color: #444; color: #e0e0e0;
 }
-.search-box input:focus { border-color: #4a90d9; }
+.search-box input:focus {
+  background: #fff;
+  border-color: #4a90d9;
+}
+body.dark .search-box input:focus {
+  background: #1e1e1e;
+}
 .search-box .search-icon {
   position: absolute; left: 10px; top: 50%;
   transform: translateY(-50%);
@@ -379,7 +385,7 @@ body.dark .axhost-modal-body label { color: #aaa; }
 .axhost-modal-body input[type="password"],
 .axhost-modal-input {
   width: 100%;
-  background: var(--bg-body, #fff);
+  background: #f5f5f5;
   border: 1px solid var(--border, #ddd);
   color: var(--text-main, #333);
   border-radius: 8px;
@@ -389,11 +395,16 @@ body.dark .axhost-modal-body label { color: #aaa; }
 }
 body.dark .axhost-modal-body input,
 body.dark .axhost-modal-input {
-  background: #333; border-color: #555; color: #eee;
+  background: #252526; border-color: #555; color: #eee;
 }
 .axhost-modal-body input:focus,
 .axhost-modal-input:focus {
+  background: #fff;
   border-color: #4a90d9;
+}
+body.dark .axhost-modal-body input:focus,
+body.dark .axhost-modal-input:focus {
+  background: #1e1e1e;
 }
 
 .axhost-modal-footer {
