@@ -194,6 +194,30 @@
   });
 
   // ===== Attach popup =====
+  const btnAttachClear = document.getElementById('btn-attach-clear');
+
+  async function clearAllAttachments() {
+    if (attachedImages.length === 0) return;
+    // Delete all files on server in parallel
+    const projectId = getProjectId();
+    const deletePromises = attachedImages.map(img =>
+      fetch('/api/cache-file-delete?project=' + encodeURIComponent(projectId), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: img.path })
+      }).catch(err => console.error('Delete cache file error:', err))
+    );
+    await Promise.all(deletePromises);
+    attachedImages.forEach(img => URL.revokeObjectURL(img.url));
+    attachedImages.length = 0;
+    renderAttachPopup();
+    updateStatus('已清除全部附件');
+  }
+
+  if (btnAttachClear) {
+    btnAttachClear.addEventListener('click', clearAllAttachments);
+  }
+
   function toggleAttachPopup() {
     const isHidden = attachPopup.classList.contains('hidden');
     if (isHidden) {

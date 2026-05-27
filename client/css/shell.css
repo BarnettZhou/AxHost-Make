@@ -687,6 +687,11 @@ body.dark #prompt-box:focus-within {
   display: flex;
   align-items: center;
 }
+.attach-popup-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .attach-popup-header button:hover {
   color: var(--text-main);
 }
