@@ -6,8 +6,22 @@
   <title>{{PAGE_NAME}} Component</title>
   <link rel="stylesheet" href="resources/css/style.css">
   <style>
+    :root {
+      --demo-bg: #ebe7f3;
+      --demo-surface: #fff;
+      --demo-border: #f0f0f0;
+      --demo-text: #333;
+      --demo-dark: #000;
+    }
+    body.dark {
+      --demo-bg: #1e1e1e;
+      --demo-surface: #252526;
+      --demo-border: #3e3e42;
+      --demo-text: #ccc;
+      --demo-dark: #ccc;
+    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; background: #ebe7f3; }
+    html, body { width: 100%; height: 100%; background: var(--demo-bg); }
     body {
       display: flex;
       align-items: center;
@@ -23,7 +37,7 @@
     .phone {
       width: 375px;
       height: 812px;
-      background: #fff;
+      background: var(--demo-surface);
       position: relative;
       overflow: hidden;
       display: flex;
@@ -43,7 +57,7 @@
     .status-time {
       font-size: 14px;
       font-weight: 600;
-      color: #000;
+      color: var(--demo-dark);
     }
     .dynamic-island {
       position: absolute;
@@ -52,7 +66,7 @@
       transform: translate(-50%, -50%);
       width: 110px;
       height: 32px;
-      background: #000;
+      background: var(--demo-dark);
       border-radius: 16px;
     }
     .status-icons {
@@ -68,7 +82,7 @@
     }
     .signal span {
       width: 3px;
-      background: #000;
+      background: var(--demo-dark);
       border-radius: 1px;
     }
     .signal span:nth-child(1) { height: 4px; }
@@ -78,7 +92,7 @@
     .battery {
       width: 22px;
       height: 11px;
-      border: 1px solid #000;
+      border: 1px solid var(--demo-dark);
       border-radius: 2px;
       position: relative;
       padding: 1px;
@@ -91,13 +105,13 @@
       transform: translateY(-50%);
       width: 2px;
       height: 5px;
-      background: #000;
+      background: var(--demo-dark);
       border-radius: 0 1px 1px 0;
     }
     .battery-level {
       width: 70%;
       height: 100%;
-      background: #000;
+      background: var(--demo-dark);
       border-radius: 1px;
     }
 
@@ -123,16 +137,16 @@
     .indicator-bar {
       width: 134px;
       height: 4px;
-      background: #000;
+      background: var(--demo-dark);
       border-radius: 2px;
     }
 
     .control-panel {
       width: 280px;
       height: 812px;
-      background: #fff;
+      background: var(--demo-surface);
       border-radius: 0;
-      border-left: 1px solid #e0e0e0;
+      border-left: 1px solid var(--demo-border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -140,13 +154,13 @@
     }
     .control-panel-header {
       padding: 16px;
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid var(--demo-border);
       flex-shrink: 0;
     }
     .control-panel-header h2 {
       font-size: 16px;
       font-weight: 600;
-      color: #333;
+      color: var(--demo-text);
       margin: 0;
     }
     .control-panel-body {
@@ -194,6 +208,19 @@
       </div>
     </div>
   </div>
+  <script>
+    (function() {
+      function setTheme(dark) {
+        document.body.classList.toggle('dark', dark);
+        localStorage.setItem('axhost-theme', dark ? 'dark' : 'light');
+      }
+      var stored = localStorage.getItem('axhost-theme');
+      if (stored === 'dark') setTheme(true);
+      window.addEventListener('message', function(e) {
+        if (e.data && e.data.type === 'axhost-theme') setTheme(e.data.theme === 'dark');
+      });
+    })();
+  </script>
   <script src="resources/js/main.js"></script>
 </body>
 </html>

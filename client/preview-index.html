@@ -87,6 +87,26 @@
       const isDark = localStorage.getItem('axhost-theme') === 'dark';
       if (isDark) document.body.classList.add('dark');
       if (icon) icon.setAttribute('icon-id', document.body.classList.contains('dark') ? 'dome-light' : 'moon');
+      function syncThemeToIframe(dark) {
+        const preview = document.getElementById('preview-frame');
+        if (!preview) return;
+        try {
+          const doc = preview.contentDocument;
+          if (doc && doc.body) {
+            const demoContainer = doc.querySelector('.demo-container');
+            const deviceWrapper = doc.querySelector('.device-wrapper');
+            const controlPanel = doc.querySelector('.control-panel');
+            doc.body.style.background = dark ? '#1e1e1e' : '';
+            if (demoContainer) demoContainer.style.background = dark ? '#252526' : '';
+            if (deviceWrapper) deviceWrapper.style.background = dark ? '#252526' : '';
+            if (controlPanel) controlPanel.style.background = dark ? '#252526' : '';
+          }
+        } catch (e) {}
+        try {
+          preview.contentWindow.postMessage({ type: 'axhost-theme', theme: dark ? 'dark' : 'light' }, '*');
+        } catch (e) {}
+      }
+
       btnTheme.addEventListener('click', () => {
         document.body.classList.toggle('dark');
         const dark = document.body.classList.contains('dark');
@@ -97,6 +117,7 @@
           el.setAttribute('stroke', 'currentColor');
           el.setAttribute('fill', 'currentColor');
         });
+        syncThemeToIframe(dark);
       });
     })();
   </script>

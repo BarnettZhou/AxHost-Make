@@ -95,7 +95,11 @@
   function updateActiveItem(el, state) {
     if (!state || !el) return;
     el.querySelectorAll('.prompt-ac-item').forEach(function (item, idx) {
-      item.classList.toggle('active', idx === state.selectedIndex);
+      var isActive = idx === state.selectedIndex;
+      item.classList.toggle('active', isActive);
+      if (isActive) {
+        item.scrollIntoView({ block: 'nearest' });
+      }
     });
   }
 

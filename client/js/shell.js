@@ -1007,8 +1007,19 @@
   if (previewFrame) {
     previewFrame.addEventListener('load', () => {
       try {
+        const dark = document.body.classList.contains('dark');
         const doc = previewFrame.contentDocument;
         if (doc) {
+          if (doc.body) {
+            const demoContainer = doc.querySelector('.demo-container');
+            const deviceWrapper = doc.querySelector('.device-wrapper');
+            const controlPanel = doc.querySelector('.control-panel');
+            doc.body.style.background = dark ? '#1e1e1e' : '';
+            if (demoContainer) demoContainer.style.background = dark ? '#252526' : '';
+            if (deviceWrapper) deviceWrapper.style.background = dark ? '#252526' : '';
+            if (controlPanel) controlPanel.style.background = dark ? '#252526' : '';
+          }
+          previewFrame.contentWindow.postMessage({ type: 'axhost-theme', theme: dark ? 'dark' : 'light' }, '*');
           doc.removeEventListener('keydown', onShortcutKeyDown);
           doc.addEventListener('keydown', onShortcutKeyDown);
         }

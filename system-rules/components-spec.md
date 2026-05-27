@@ -94,6 +94,13 @@
 | `.component-wrapper { ... }` | 演示容器，引用页面有自己的壳 | `index.html` 内联 `<style>` |
 | 组件 demo 自动初始化 | 引用页面需自己控制时机和参数 | `index.html` 内联 `<script>` |
 
+### 3.3 演示外壳主题
+
+1. 演示外壳通过 CSS 变量 `--demo-bg` / `--demo-surface` / `--demo-border` / `--demo-text` 控制主题颜色
+2. 亮色模式（默认）：`--demo-bg: #ebe7f3; --demo-surface: #fff; --demo-border: #f0f0f0; --demo-text: #333`
+3. 暗黑模式（`body.dark`）：`--demo-bg: #1e1e1e; --demo-surface: #252526; --demo-border: #3e3e42; --demo-text: #ccc`
+4. 页面通过 `postMessage({ type: 'axhost-theme', theme: 'dark'|'light' })` 接收主题切换，设置 `body.dark` class
+
 **正确示例**：
 
 ```css
