@@ -18,15 +18,27 @@
 
 ## 目录规则
 
-**项目目录**
+**工作区布局**
 
-- 即本项目所在的目录，也为本 AGENTS.md 文件所在的目录：`{workspace}/projects/{project_hash}/`
-- 你当前所需要修改的代码文件也位于项目目录下
+```
+{workspace}/
+├── axhost-make/              ← 框架目录（只读，禁止修改）
+│   └── system-rules/         ← 框架规范文件
+└── projects/
+    └── {hash}/               ← 项目目录（本 AGENTS.md 所在目录）
+        ├── prototype/
+        │   ├── pages/
+        │   ├── components/
+        │   └── resources/
+        ├── RESOURCES.md
+        ├── COMPONENTS.md
+        └── rules/
+```
 
-**框架目录**
+- **项目目录** = 本 AGENTS.md 所在的目录（`{workspace}/projects/{hash}/`），你要修改的文件都在这里
+- **框架目录** = `{workspace}/axhost-make/`
 
-- 框架目录位于 `{workspace}/axhost-make/`，若以项目目录出发，相对位置位于 `../../axhost-make/`
-- 框架目录内为 axhost 前后端代码、必要的规则文件（axhost-make/system-rules/）等
+> **路径解析铁律**：下文所有 `../../axhost-make/` 开头的路径，**必须以项目目录为起点**拼接。无论你当前 `cd` 到了哪个子目录，读取框架文件时请先定位到 AGENTS.md 所在目录，再拼接相对路径。**禁止**从 `prototype/pages/xxx/` 等子目录直接拼接 `../../axhost-make/`，那样会解析到错误的 `prototype/axhost-make/`。
 
 ## 路径速查
 
@@ -65,11 +77,10 @@ flowchart/{hash}/
 
 ## 按需阅读
 
-**注意**
+> **路径起点**：以下 `../../axhost-make/` 路径均以**项目目录**（AGENTS.md 所在目录）为起点。
+> 读取时请从项目目录出发，不要从 `prototype/pages/xxx/` 深处直接拼 `../../`。
 
-- 本节内的相对路径以项目根目录为起点（即本 AGENTS.md 文件所在的目录）
-
-| 场景 | 文件 |
+| 场景 | 文件（以项目目录为起点） |
 |------|------|
 | **开始任何工作前** | 本项目 `RESOURCES.md`、`COMPONENTS.md`、`rules/design.md` |
 | **所有原型开发** | `../../axhost-make/system-rules/dev-spec.md` |

@@ -639,6 +639,8 @@
       return;
     }
 
+    if (!acState) acCache = {};
+
     var items = [];
     if (trigger.stage === 1) {
       var type = trigger.char === '@' ? 'pages' : 'components';
