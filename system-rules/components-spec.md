@@ -132,7 +132,21 @@
 
 如果某个功能可能在多个组件/页面中使用，**必须**将其提取到 `prototype/resources/` 下。
 
-### 3.4 组件化方案
+### 3.4 导出自包含（跨项目复用）
+
+组件可通过「导出到其他项目」功能整体迁移到另一个项目。导出时只复制 `components/{hash}/` 下的文件，**不会**带上项目级公共资源或框架 Shell 样式。
+
+因此 `index.html` 必须是一个**完全自包含**的演示页面：
+
+1. **尽量减少项目级依赖**：`index.html` 中引用 `../../resources/` 的路径应尽量少。`../../resources/js/icon-loader.js`（图标加载器）属于必要例外，允许引用。其他项目级依赖（如 `theme.css`、`toast.js` 等）必须在 `docs/readme.md` 中说明。
+2. **演示外壳样式必须内联**：`.demo-container`、`.demo-header`、`.demo-body`、`.demo-footer`、`.device-wrapper`、`.phone`、`.control-panel` 等所有演示外壳的 CSS **全部写在 `index.html` 的内联 `<style>` 中**，不得依赖外部样式表。
+3. **只引用组件私有资源**：`index.html` 唯一允许的外部引用是 `resources/css/style.css` 和 `resources/js/main.js`（组件自身的 CSS/JS）。
+4. **CSS 变量自声明**：演示外壳使用的 `--demo-bg`、`--demo-surface`、`--demo-border`、`--demo-text`、`--demo-dark` 等变量必须在 `index.html` 内联 `<style>` 的 `:root` 中声明，不得依赖外部文件定义。
+5. **若依赖项目公共资源**：组件文档 `docs/readme.md` 中必须明确列出所有外部依赖项（如 `prototype/resources/css/theme.css`、`prototype/resources/js/toast.js` 等），并说明导出后需手动复制这些文件。
+
+> **自检方式**：将 `components/{hash}/` 目录单独复制到一个空项目中，用浏览器打开 `index.html`，如果样式/交互正常，说明组件是自包含的。
+
+### 3.5 组件化方案
 
 #### 方案 A：Web Components（推荐）
 

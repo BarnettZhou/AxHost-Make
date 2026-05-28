@@ -460,9 +460,36 @@
     });
   }
 
-  function showExportComponentModal(node) {
+  async function showExportComponentModal(node) {
     let projectList = [];
     let selectedProjectId = null;
+
+    // Scan component index.html for external resource references
+    var externalRefs = [];
+    try {
+      var content = await window.apiClient.getFile('prototype/components/' + node.path + '/index.html');
+      if (content && typeof content === 'string') {
+        var matches = content.match(/["'(]\.\.\/\.\.\/resources\/[^"') ]+/g);
+        if (matches) {
+          var seen = {};
+          matches.forEach(function(m) {
+            var ref = m.replace(/^["'(]/, '');
+            if (!seen[ref]) { seen[ref] = true; externalRefs.push(ref); }
+          });
+        }
+      }
+    } catch (e) { /* ignore, show generic warning */ }
+
+    var warningHtml;
+    if (externalRefs.length > 0) {
+      warningHtml = '<div style="font-size:12px;background:var(--bg-hover);padding:8px 10px;border-radius:4px;line-height:1.6;">' +
+        '<div style="color:var(--text-main);font-weight:600;margin-bottom:4px;">该组件引用以下全局资源：</div>' +
+        externalRefs.map(function(r) { return '<div style="color:var(--text-muted);padding-left:8px;">• ' + r.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>'; }).join('') +
+        '<div style="color:var(--text-muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px;">导出后请在目标项目中检查适配。</div>' +
+        '</div>';
+    } else {
+      warningHtml = '<div style="font-size:12px;color:var(--text-muted);background:var(--bg-hover);padding:8px 10px;border-radius:4px;line-height:1.5;">未检测到项目级全局资源引用，导出后可直接使用。</div>';
+    }
 
     var modal = new AxhostModal({
       title: '导出组件 — ' + (node.name || ''),
@@ -477,7 +504,7 @@
           '</div>' +
           '<label>导出文档</label>' +
           '<div id="export-modal-docs" style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px 8px;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-body);margin-bottom:12px;"></div>' +
-          '<div style="font-size:12px;color:var(--text-muted);background:var(--bg-hover);padding:8px 10px;border-radius:4px;line-height:1.5;">组件样式依赖项目全局 CSS，且可能引用其他组件，导出后请在目标项目中检查适配。</div>';
+          warningHtml;
       },
       onConfirm: function() {
         var targetProjectId = selectedProjectId;

@@ -663,14 +663,13 @@ body.dark .card-dropdown-item.danger:hover { background: #3a1f1f; }
 .cover-upload-preview { max-width: 100%; max-height: 200px; border-radius: 4px; object-fit: contain; }
 
 /* Generate tab */
-.cover-gen-layout { display: flex; gap: 20px; }
-.cover-gen-controls { flex: 0 0 200px; }
+.cover-gen-layout { display: block; }
 .cover-gen-label {
   display: block; font-size: 12px; font-weight: 600;
-  color: var(--text-muted); margin: 12px 0 6px;
+  color: var(--text-muted); margin: 16px 0 8px;
 }
 .cover-gen-label:first-child { margin-top: 0; }
-.cover-gradients { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.cover-gradients { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
 .cover-gradient-swatch {
   width: 100%; aspect-ratio: 16/10;
   border: 2px solid var(--border); border-radius: 6px;
@@ -680,7 +679,16 @@ body.dark .card-dropdown-item.danger:hover { background: #3a1f1f; }
 .cover-gradient-swatch.active { border-color: var(--accent); transform: scale(1.05); }
 .cover-gradient-swatch:hover { border-color: var(--text-muted); }
 
-.cover-text-options { display: flex; align-items: center; gap: 12px; }
+.cover-options { display: flex; gap: 10px; }
+.cover-option-col {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cover-option-label {
+  font-size: 13px; color: var(--text-main);
+}
 
 /* Color picker */
 .cover-color-picker {
@@ -743,7 +751,7 @@ body.dark .cover-toggle-track { background: #555; }
 .cover-text-input {
   width: 100%; padding: 10px 12px; border: 1px solid var(--border);
   border-radius: 8px; font-size: 13px; line-height: 1.5;
-  resize: vertical; min-height: 72px;
+  resize: none; height: 80px;
   background: var(--bg-body); color: var(--text-main);
   box-sizing: border-box;
   font-family: inherit;
@@ -752,10 +760,10 @@ body.dark .cover-toggle-track { background: #555; }
 .cover-text-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.08); }
 body.dark .cover-text-input:focus { box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.15); }
 
-.cover-gen-preview-wrap { flex: 1; }
 .cover-preview-canvas {
   max-width: 100%; border: 1px solid var(--border);
   border-radius: 8px; display: block;
+  margin: 0 auto;
 }
 
 /* Cover image in project cards */

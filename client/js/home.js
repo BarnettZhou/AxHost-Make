@@ -624,27 +624,28 @@
             '</div>' +
             '<div class="cover-tab-content hidden" data-tab-content="generate">' +
               '<div class="cover-gen-layout">' +
-                '<div class="cover-gen-controls">' +
-                  '<label class="cover-gen-label">主题色</label>' +
-                  '<div class="cover-gradients" id="cover-gradients"></div>' +
-                  '<label class="cover-gen-label">文字颜色</label>' +
-                  '<div class="cover-text-options">' +
+                '<label class="cover-gen-label">主题色</label>' +
+                '<div class="cover-gradients" id="cover-gradients"></div>' +
+                '<label class="cover-gen-label">文字选项</label>' +
+                '<div class="cover-options">' +
+                  '<div class="cover-option-col">' +
                     '<div class="cover-color-picker">' +
                       '<input type="color" id="cover-text-color" value="' + cs.textColor + '">' +
                     '</div>' +
+                    '<span class="cover-option-label">文字颜色</span>' +
+                  '</div>' +
+                  '<div class="cover-option-col">' +
                     '<label class="cover-toggle">' +
                       '<input type="checkbox" id="cover-text-shadow">' +
                       '<span class="cover-toggle-track"></span>' +
-                      '<span class="cover-toggle-text">阴影</span>' +
                     '</label>' +
+                    '<span class="cover-option-label">文字阴影</span>' +
                   '</div>' +
-                  '<label class="cover-gen-label">文字内容</label>' +
-                  '<textarea id="cover-text-input" class="cover-text-input" rows="3">' + escapeHtml(cs.text) + '</textarea>' +
                 '</div>' +
-                '<div class="cover-gen-preview-wrap">' +
-                  '<label class="cover-gen-label">预览</label>' +
-                  '<canvas id="cover-preview-canvas" class="cover-preview-canvas"></canvas>' +
-                '</div>' +
+                '<label class="cover-gen-label">文字内容</label>' +
+                '<textarea id="cover-text-input" class="cover-text-input">' + escapeHtml(cs.text) + '</textarea>' +
+                '<label class="cover-gen-label">预览</label>' +
+                '<canvas id="cover-preview-canvas" class="cover-preview-canvas"></canvas>' +
               '</div>' +
             '</div>' +
           '</div>';
