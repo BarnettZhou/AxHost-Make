@@ -15,7 +15,8 @@
     sortDir: localStorage.getItem(STORAGE_SORT_DIR) || 'desc',
     tabs: [],
     activeTabId: null,
-    searchKeyword: ''
+    searchKeyword: '',
+    coverUrls: {}
   };
 
   const els = {
@@ -306,6 +307,7 @@
       if (data.code === 0) {
         state.projects = data.data || [];
         filterAndSort();
+        loadCoverInfo();
       }
     } catch (err) {
       console.error('Failed to load projects:', err);
@@ -382,6 +384,7 @@
     dd.className = 'card-dropdown open';
     dd.innerHTML =
       '<button class="card-dropdown-item" data-action="rename">重命名</button>' +
+      '<button class="card-dropdown-item" data-action="set-cover">设置封面</button>' +
       '<button class="card-dropdown-item" data-action="copy">复制项目</button>' +
       '<button class="card-dropdown-item danger" data-action="delete">删除项目</button>';
     document.body.appendChild(dd);
@@ -398,6 +401,7 @@
       var action = btn.dataset.action;
       closeDropdown();
       if (action === 'rename') renameProject(projectId);
+      else if (action === 'set-cover') setCover(projectId);
       else if (action === 'copy') copyProject(projectId);
       else if (action === 'delete') deleteProject(projectId);
     }
@@ -483,24 +487,305 @@
     } catch (err) { showToast('删除失败: ' + err.message, 'error'); }
   }
 
+  // ===== Cover setting =====
+  var COVER_GRADIENTS = [
+    { css: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%)', label: '#ff9a9e → #fad0c4' },
+    { css: 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)', label: '#a18cd1 → #fbc2eb' },
+    { css: 'linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%)', label: '#fbc2eb → #a6c1ee' },
+    { css: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)', label: '#30cfd0 → #330867' },
+    { css: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', label: '#89f7fe → #66a6ff' },
+    { css: 'linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%)', label: '#fdfcfb → #e2d1c3' },
+    { css: 'linear-gradient(135deg, #6a85b6 0%, #bac8e0 100%)', label: '#6a85b6 → #bac8e0' },
+  ];
+
+  async function loadCoverInfo() {
+    var ids = state.projects.map(function(p) { return p.id; });
+    if (!ids.length) return;
+    try {
+      var res = await fetch('/api/cover?ids=' + encodeURIComponent(ids.join(',')));
+      var data = await res.json();
+      if (data.code === 0) state.coverUrls = data.data || {};
+    } catch (e) { /* ignore */ }
+    filterAndSort();
+  }
+
+  function setCover(projectId) {
+    var project = state.projects.find(function(p) { return p.id === projectId; });
+    if (!project) return;
+
+    var cs = {
+      tab: 'upload',
+      uploadFile: null,
+      uploadDataUrl: null,
+      uploadExt: null,
+      gradientIdx: 0,
+      textColor: '#ffffff',
+      textShadow: false,
+      text: project.name,
+    };
+
+    function drawPreview(canvas) {
+      if (!canvas) return;
+      var dpr = window.devicePixelRatio || 1;
+      var w = 300, h = 192;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + 'px';
+      canvas.style.height = h + 'px';
+      var ctx = canvas.getContext('2d');
+      ctx.scale(dpr, dpr);
+      var gradCss = COVER_GRADIENTS[cs.gradientIdx].css;
+      var m = gradCss.match(/linear-gradient\((\d+)deg,\s*(#[^ ]+)\s+(\d+)%,\s*(#[^ ]+)\s+(\d+)%\)/);
+      var angle = m ? parseInt(m[1]) : 135;
+      var c1 = m ? m[2] : '#ff9a9e';
+      var c2 = m ? m[4] : '#fad0c4';
+      var rad = angle * Math.PI / 180;
+      var x1 = w/2 - Math.cos(rad) * w/2;
+      var y1 = h/2 - Math.sin(rad) * h/2;
+      var x2 = w/2 + Math.cos(rad) * w/2;
+      var y2 = h/2 + Math.sin(rad) * h/2;
+      var grad = ctx.createLinearGradient(x1, y1, x2, y2);
+      grad.addColorStop(0, c1);
+      grad.addColorStop(1, c2);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      var lines = cs.text.split('\n');
+      var padding = 24;
+      var maxWidth = w - padding * 2;
+      var totalHeight = 0;
+      var lineHeights = [];
+
+      var fontSize = 60;
+      ctx.font = 'bold ' + fontSize + 'px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+      var needResize = false;
+      for (var i = 0; i < lines.length; i++) {
+        if (ctx.measureText(lines[i]).width > maxWidth) { needResize = true; break; }
+      }
+      if (needResize) {
+        var lo = 8, hi = 60;
+        for (var k = 0; k < 20; k++) {
+          var mid = (lo + hi) / 2;
+          ctx.font = 'bold ' + mid + 'px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+          var fits = true;
+          for (var j = 0; j < lines.length; j++) {
+            if (ctx.measureText(lines[j]).width > maxWidth) { fits = false; break; }
+          }
+          if (fits) lo = mid; else hi = mid;
+        }
+        fontSize = lo;
+      }
+
+      ctx.font = 'bold ' + fontSize + 'px "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      for (var i2 = 0; i2 < lines.length; i2++) {
+        var metrics = ctx.measureText(lines[i2]);
+        var lh = (metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent) || fontSize * 1.3;
+        lineHeights.push(lh);
+        totalHeight += lh;
+      }
+
+      var startY = (h - totalHeight) / 2;
+      var curY = startY;
+
+      for (var i3 = 0; i3 < lines.length; i3++) {
+        curY += lineHeights[i3] / 2;
+        if (cs.textShadow) {
+          ctx.fillStyle = 'rgba(0,0,0,0.5)';
+          ctx.fillText(lines[i3], padding + 2, curY + 2);
+        }
+        ctx.fillStyle = cs.textColor;
+        ctx.fillText(lines[i3], padding, curY);
+        curY += lineHeights[i3] / 2;
+      }
+    }
+
+    var modal = new AxhostModal({
+      title: '设置封面',
+      width: '560px',
+      hideConfirm: true,
+      hideCancel: true,
+      body: function(bodyEl) {
+        bodyEl.innerHTML =
+          '<div class="cover-modal">' +
+            '<div class="cover-tabs">' +
+              '<button class="cover-tab active" data-tab="upload">上传封面</button>' +
+              '<button class="cover-tab" data-tab="generate">生成封面</button>' +
+            '</div>' +
+            '<div class="cover-tab-content" data-tab-content="upload">' +
+              '<div class="cover-upload-area" id="cover-upload-area">' +
+                '<div class="cover-upload-hint">' +
+                  '<p>点击或拖拽上传封面图片</p>' +
+                  '<p class="cover-upload-size-hint">建议尺寸 300×192 或相近比例</p>' +
+                '</div>' +
+                '<img id="cover-upload-preview" class="cover-upload-preview" style="display:none">' +
+              '</div>' +
+            '</div>' +
+            '<div class="cover-tab-content hidden" data-tab-content="generate">' +
+              '<div class="cover-gen-layout">' +
+                '<div class="cover-gen-controls">' +
+                  '<label class="cover-gen-label">主题色</label>' +
+                  '<div class="cover-gradients" id="cover-gradients"></div>' +
+                  '<label class="cover-gen-label">文字颜色</label>' +
+                  '<div class="cover-text-options">' +
+                    '<div class="cover-color-picker">' +
+                      '<input type="color" id="cover-text-color" value="' + cs.textColor + '">' +
+                    '</div>' +
+                    '<label class="cover-toggle">' +
+                      '<input type="checkbox" id="cover-text-shadow">' +
+                      '<span class="cover-toggle-track"></span>' +
+                      '<span class="cover-toggle-text">阴影</span>' +
+                    '</label>' +
+                  '</div>' +
+                  '<label class="cover-gen-label">文字内容</label>' +
+                  '<textarea id="cover-text-input" class="cover-text-input" rows="3">' + escapeHtml(cs.text) + '</textarea>' +
+                '</div>' +
+                '<div class="cover-gen-preview-wrap">' +
+                  '<label class="cover-gen-label">预览</label>' +
+                  '<canvas id="cover-preview-canvas" class="cover-preview-canvas"></canvas>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        var gradContainer = bodyEl.querySelector('#cover-gradients');
+        COVER_GRADIENTS.forEach(function(g, idx) {
+          var swatch = document.createElement('button');
+          swatch.className = 'cover-gradient-swatch' + (idx === cs.gradientIdx ? ' active' : '');
+          swatch.style.background = g.css;
+          swatch.title = g.label;
+          swatch.addEventListener('click', function() {
+            cs.gradientIdx = idx;
+            gradContainer.querySelectorAll('.cover-gradient-swatch').forEach(function(b) { b.classList.remove('active'); });
+            swatch.classList.add('active');
+            drawPreview(canvas);
+          });
+          gradContainer.appendChild(swatch);
+        });
+
+        bodyEl.querySelectorAll('.cover-tab').forEach(function(tab) {
+          tab.addEventListener('click', function() {
+            cs.tab = tab.dataset.tab;
+            bodyEl.querySelectorAll('.cover-tab').forEach(function(t) { t.classList.toggle('active', t === tab); });
+            bodyEl.querySelectorAll('.cover-tab-content').forEach(function(c) {
+              c.classList.toggle('hidden', c.dataset.tabContent !== cs.tab);
+            });
+          });
+        });
+
+        var uploadArea = bodyEl.querySelector('#cover-upload-area');
+        var uploadPreview = bodyEl.querySelector('#cover-upload-preview');
+        var uploadHint = uploadArea.querySelector('.cover-upload-hint');
+
+        function handleFile(file) {
+          if (!file || !file.type.startsWith('image/')) return;
+          cs.uploadFile = file;
+          cs.uploadExt = file.name.split('.').pop() || 'png';
+          var reader = new FileReader();
+          reader.onload = function(e) {
+            cs.uploadDataUrl = e.target.result;
+            uploadPreview.src = e.target.result;
+            uploadPreview.style.display = 'block';
+            uploadHint.style.display = 'none';
+          };
+          reader.readAsDataURL(file);
+        }
+
+        uploadArea.addEventListener('click', function() {
+          var input = document.getElementById('cover-file-input');
+          input.value = '';
+          input.onchange = function() {
+            if (input.files && input.files[0]) handleFile(input.files[0]);
+          };
+          input.click();
+        });
+
+        uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+        uploadArea.addEventListener('dragleave', function() { uploadArea.classList.remove('drag-over'); });
+        uploadArea.addEventListener('drop', function(e) {
+          e.preventDefault();
+          uploadArea.classList.remove('drag-over');
+          if (e.dataTransfer.files && e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+
+        var canvas = bodyEl.querySelector('#cover-preview-canvas');
+        drawPreview(canvas);
+
+        bodyEl.querySelector('#cover-text-color').addEventListener('input', function() {
+          cs.textColor = this.value;
+          drawPreview(canvas);
+        });
+        bodyEl.querySelector('#cover-text-shadow').addEventListener('change', function() {
+          cs.textShadow = this.checked;
+          drawPreview(canvas);
+        });
+        bodyEl.querySelector('#cover-text-input').addEventListener('input', function() {
+          cs.text = this.value;
+          drawPreview(canvas);
+        });
+      },
+      footer: function(footerEl) {
+        footerEl.innerHTML =
+          '<button class="axhost-modal-btn axhost-modal-btn-cancel">取消</button>' +
+          '<button class="axhost-modal-btn axhost-modal-btn-primary">确定</button>';
+        footerEl.querySelector('.axhost-modal-btn-cancel').addEventListener('click', function() { modal.close(); });
+        footerEl.querySelector('.axhost-modal-btn-primary').addEventListener('click', async function() {
+          var btn = footerEl.querySelector('.axhost-modal-btn-primary');
+          btn.disabled = true;
+          btn.textContent = '保存中...';
+          try {
+            var data, ext;
+            if (cs.tab === 'upload') {
+              if (!cs.uploadDataUrl) { showToast('请选择封面图片', 'error'); btn.disabled = false; btn.textContent = '确定'; return; }
+              data = cs.uploadDataUrl.split(',')[1];
+              ext = cs.uploadExt || 'png';
+            } else {
+              var canvas = modal.getBody().querySelector('#cover-preview-canvas');
+              data = canvas.toDataURL('image/png').split(',')[1];
+              ext = 'png';
+            }
+            var res = await fetch('/api/cover/upload', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ id: projectId, data: data, ext: ext })
+            });
+            var result = await res.json();
+            if (result.code !== 0) { showToast(result.message || '保存失败', 'error'); btn.disabled = false; btn.textContent = '确定'; return; }
+            state.coverUrls[projectId] = '/api/cover-file?file=' + encodeURIComponent(result.filename) + '&t=' + Date.now();
+            filterAndSort();
+            showToast('封面设置成功', 'success');
+            modal.close();
+          } catch (err) {
+            showToast('保存失败: ' + err.message, 'error');
+            btn.disabled = false;
+            btn.textContent = '确定';
+          }
+        });
+      }
+    });
+    modal.open();
+  }
+
   function renderGallery() {
     const grid = document.createElement('div');
     grid.className = 'project-grid';
     state.filteredProjects.forEach(p => {
       const card = document.createElement('div');
       card.className = 'project-card';
-      card.innerHTML = `
-        <div class="card-cover">
-          <div class="card-cover-placeholder">📐</div>
-        </div>
-        <div class="card-info">
-          <div class="card-title" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</div>
-          <div class="card-meta">${escapeHtml(formatDate(p.lastModified))}</div>
-          <button class="card-hamburger" data-project="${escapeHtml(p.id)}" title="更多操作">
-            <iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon>
-          </button>
-        </div>
-      `;
+      var coverHtml;
+      if (state.coverUrls[p.id]) {
+        coverHtml = '<div class="card-cover"><img class="card-cover-img" src="' + escapeHtml(state.coverUrls[p.id]) + '" alt="' + escapeHtml(p.name) + '"></div>';
+      } else {
+        coverHtml = '<div class="card-cover"><div class="card-cover-placeholder">📐</div></div>';
+      }
+      card.innerHTML = coverHtml +
+        '        <div class="card-info">' +
+        '          <div class="card-title" title="' + escapeHtml(p.name) + '">' + escapeHtml(p.name) + '</div>' +
+        '          <div class="card-meta">' + escapeHtml(formatDate(p.lastModified)) + '</div>' +
+        '          <button class="card-hamburger" data-project="' + escapeHtml(p.id) + '" title="更多操作">' +
+        '            <iconpark-icon icon-id="hamburger-button" size="14" color="currentColor"></iconpark-icon>' +
+        '          </button>' +
+        '        </div>';
       card.addEventListener('click', function(e) {
         if (e.target.closest('.card-hamburger') || e.target.closest('.card-dropdown')) return;
         openTab(p.id, p.name);

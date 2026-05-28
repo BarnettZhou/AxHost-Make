@@ -30,6 +30,7 @@ const modules = [
   require('./api/prompt-upload.js'),
   require('./api/images.js'),
   require('./api/cache-cleanup.js'),
+  require('./api/cover.js'),
 ];
 
 const workspaceRoutes = {};      // key → handler (req, res, workspaceRoot?) — scope: workspace|none
