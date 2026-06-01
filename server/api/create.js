@@ -50,7 +50,7 @@ async function writeMeta(absPath, meta) {
   );
 }
 
-async function createItem(projectRoot, parentPath, name, kind, template = 'default') {
+async function createItem(projectRoot, parentPath, name, kind, template = 'default', theme = 'light') {
   if (!isSafePath(projectRoot, parentPath)) {
     throw new Error('Forbidden parent path');
   }
@@ -97,7 +97,7 @@ async function createItem(projectRoot, parentPath, name, kind, template = 'defau
   if (parentId) meta.parentId = parentId;
   await writeMeta(targetDir, meta);
 
-  const vars = { PAGE_NAME: name, DATE: new Date().toISOString().slice(0, 10) };
+  const vars = { PAGE_NAME: name, PAGE_THEME: theme || 'light', DATE: new Date().toISOString().slice(0, 10) };
   let templateName, tplPath;
   if (kind === 'flowchart') {
     templateName = 'flowchart';
@@ -173,13 +173,13 @@ async function handleCreate(req, res, projectRoot) {
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { parentPath, name, kind, template } = JSON.parse(body || '{}');
+      const { parentPath, name, kind, template, theme } = JSON.parse(body || '{}');
       if (!parentPath || !name || !kind || !['folder', 'page', 'component', 'flowchart'].includes(kind)) {
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 400, message: 'Invalid parameters' }));
         return;
       }
-      const result = await createItem(projectRoot, parentPath, name, kind, template);
+      const result = await createItem(projectRoot, parentPath, name, kind, template, theme);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 0, data: result }));
     } catch (err) {

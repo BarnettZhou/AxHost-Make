@@ -1209,10 +1209,12 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 /* ===== Unified Modal (.axhost-modal) ===== */
 .axhost-modal {
   position: fixed; inset: 0;
-  display: none; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
 }
-.axhost-modal.open { display: flex; }
+.axhost-modal.open { opacity: 1; pointer-events: auto; }
 
 .axhost-modal-overlay {
   position: absolute; inset: 0;
@@ -1226,7 +1228,11 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   border-radius: 10px;
   max-width: 90vw;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  transform: translateY(8px);
+  transition: transform 0.2s ease;
 }
+
+.axhost-modal.open .axhost-modal-content { transform: translateY(0); }
 
 .axhost-modal-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -1604,12 +1610,14 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   position: fixed;
   inset: 0;
   z-index: 1002;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 .export-modal.open {
-  display: flex;
+  opacity: 1; pointer-events: auto;
 }
 .export-modal-overlay {
   position: absolute;
@@ -1625,9 +1633,13 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   max-width: 95vw;
   height: 600px;
   display: flex;
+  transform: translateY(8px);
+  transition: transform 0.2s ease;
   flex-direction: column;
   z-index: 1;
 }
+
+.export-modal.open .export-modal-content { transform: translateY(0); }
 .export-modal-header {
   display: flex;
   align-items: center;

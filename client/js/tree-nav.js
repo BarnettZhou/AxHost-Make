@@ -717,8 +717,8 @@
         },
         footer: function(container) {
           container.innerHTML =
-            '<button class="axhost-modal-btn axhost-modal-btn-primary prop-modal-save" style="display:none;">保存</button>' +
-            '<button class="axhost-modal-btn prop-modal-close">关闭</button>';
+            '<button class="axhost-modal-btn prop-modal-close">关闭</button>' +
+            '<button class="axhost-modal-btn axhost-modal-btn-primary prop-modal-save" style="display:none;">保存</button>';
           container.querySelector('.prop-modal-close').addEventListener('click', function() {
             nodePropsModal.close();
           });
@@ -736,7 +736,25 @@
     var pathTag = el.querySelector('#prop-modal-path-tag');
     if (isPage) {
       pathTag.textContent = 'pages/' + node.path;
-      pathTag.style.display = '';
+    pathTag.style.display = '';
+    pathTag.style.cursor = 'pointer';
+    pathTag.title = '点击复制ID';
+    pathTag.onclick = async function() {
+      var id = node.path;
+      try {
+        await navigator.clipboard.writeText(id);
+        window.showToast('项目ID已复制', 'success');
+      } catch (err) {
+        var ta = document.createElement('textarea');
+        ta.value = id;
+        ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        window.showToast(ok ? '项目ID已复制' : '项目ID复制失败', ok ? 'success' : 'error');
+      }
+    };
     } else {
       pathTag.style.display = 'none';
     }
@@ -811,6 +829,11 @@
       menu.appendChild(div);
     });
     document.body.appendChild(menu);
+    const menuHeight = menu.offsetHeight;
+    const viewportH = window.innerHeight;
+    if (event.clientY + menuHeight > viewportH) {
+      menu.style.top = Math.max(0, event.clientY - menuHeight) + 'px';
+    }
     setTimeout(() => {
       document.addEventListener('click', removeExistingMenu, { once: true });
     }, 0);
@@ -820,7 +843,7 @@
     document.querySelectorAll('.context-menu').forEach(el => el.remove());
   }
 
-  function _createTypeSelectPrompt(title, typeCards, placeholder) {
+  function _createTypeSelectPrompt(title, typeCards, placeholder, extraBody, collectExtra) {
     return new Promise(function(resolve) {
       var submitted = false;
       var modal = new AxhostModal({
@@ -834,14 +857,17 @@
           });
           container.innerHTML =
             '<div class="page-type-cards">' + cardsHtml + '</div>' +
-            '<input type="text" class="axhost-modal-input create-page-name-input" placeholder="' + placeholder + '" style="margin-top:12px;">';
+            '<input type="text" class="axhost-modal-input create-page-name-input" placeholder="' + placeholder + '" style="margin-top:12px;">' +
+            (extraBody || '');
 
-          var cards = container.querySelectorAll('.page-type-card');
-          cards.forEach(function(c) {
-            c.onclick = function() {
-              cards.forEach(function(x) { x.classList.remove('active'); });
-              c.classList.add('active');
-            };
+          container.querySelectorAll('.page-type-cards, [data-select-group]').forEach(function(group) {
+            var items = group.querySelectorAll('.page-type-card, .theme-chip');
+            group.addEventListener('click', function(e) {
+              var chip = e.target.closest('.page-type-card, .theme-chip');
+              if (!chip) return;
+              items.forEach(function(x) { x.classList.remove('active'); });
+              chip.classList.add('active');
+            });
           });
         },
         confirmText: '确认',
@@ -850,8 +876,9 @@
           var name = input.value.trim();
           if (!name) { window.showToast('名称不能为空', 'error'); throw new Error(); }
           var selected = modal.getBody().querySelector('.page-type-card.active');
+          var extra = collectExtra ? collectExtra(modal.getBody()) : {};
           submitted = true;
-          resolve({ name: name, template: selected ? selected.dataset.value : 'default' });
+          resolve(Object.assign({ name: name, template: selected ? selected.dataset.value : 'default' }, extra));
         },
         onCancel: function() { if (!submitted) resolve(null); },
         onClose: function() { if (!submitted) resolve(null); }
@@ -878,7 +905,25 @@
     return _createTypeSelectPrompt(title || '新建组件', [
       { value: 'default', icon: 'browser', label: '默认页面' },
       { value: 'mobile', icon: 'iphone', label: '手机页面' }
-    ], '请输入组件名称');
+    ], '请输入组件名称',
+    '<style>.theme-chip{display:flex;align-items:center;gap:4px;padding:6px 10px;border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:13px;flex:1;justify-content:center;}.theme-chip.active{border-color:var(--accent,#4a9eff);background:#e7f4ff;}</style>' +
+      '<div style="margin-top:12px;">' +
+      '<label style="font-size:13px;color:var(--text-secondary);display:block;margin-bottom:6px;">页面主题</label>' +
+      '<div id="theme-select-group" data-select-group style="display:flex;gap:8px;">' +
+        '<div class="theme-chip active" data-value="light">' +
+          '<iconpark-icon icon-id="dome-light" size="14"></iconpark-icon>' +
+          '<span>明亮</span>' +
+        '</div>' +
+        '<div class="theme-chip" data-value="dark">' +
+          '<iconpark-icon icon-id="moon" size="14"></iconpark-icon>' +
+          '<span>暗黑</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>',
+    function(body) {
+      var active = body.querySelector('#theme-select-group .theme-chip.active');
+      return { theme: active ? active.dataset.value : 'light' };
+    });
   }
 
   async function handleCreate(parentPath, kind) {
@@ -894,6 +939,7 @@
       if (!result) return;
       name = result.name;
       template = result.template;
+      var theme = result.theme || 'light';
     } else {
       name = await window.showPrompt(`请输入${labelMap[kind]}名称`);
       if (!name) return;
@@ -908,7 +954,7 @@
     }
     try {
       const parent = `prototype/${currentTab}${parentPath ? '/' + parentPath : ''}`;
-      await window.apiClient.postCreate({ parentPath: parent, name, kind, template });
+      await window.apiClient.postCreate({ parentPath: parent, name, kind, template, theme: theme || 'light' });
       if (parentPath) {
         expandedPaths.add(parentPath);
       }

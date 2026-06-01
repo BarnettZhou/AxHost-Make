@@ -98,8 +98,8 @@
 
 1. 演示外壳通过 CSS 变量 `--demo-bg` / `--demo-surface` / `--demo-border` / `--demo-text` 控制主题颜色
 2. 亮色模式（默认）：`--demo-bg: #ebe7f3; --demo-surface: #fff; --demo-border: #f0f0f0; --demo-text: #333`
-3. 暗黑模式（`body.dark`）：`--demo-bg: #1e1e1e; --demo-surface: #252526; --demo-border: #3e3e42; --demo-text: #ccc`
-4. 页面通过 `postMessage({ type: 'axhost-theme', theme: 'dark'|'light' })` 接收主题切换，设置 `body.dark` class
+3. **演示外壳主题由组件自身控制，不跟随 Shell 主题切换。** Shell 仅控制 iframe `body` 的背景色，不应影响 `demo-container` 等演示外壳元素。
+4. **禁止**在组件中监听 `postMessage({ type: 'axhost-theme' })` 或通过 `body.dark` 切换 CSS 变量来响应 Shell 主题。若组件需要暗色模式，应由组件自身提供独立的切换机制。
 
 **正确示例**：
 

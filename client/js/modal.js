@@ -108,16 +108,19 @@ class AxhostModal {
   /* ---- Show / Hide ---- */
 
   open() {
-    this._el.classList.add('open');
     document.addEventListener('keydown', this._onKeyDown);
-
-    // Focus the first input/textarea in body
-    const input = this._bodyEl.querySelector('input, textarea, select');
-    if (input) setTimeout(() => input.focus(), 50);
 
     if (this._options.closeOnMask && this._overlay) {
       this._overlay.addEventListener('click', this._onOverlayClick);
     }
+
+    // Defer adding .open to next frame so the browser paints opacity:0 first,
+    // otherwise the transition from 0→1 is skipped.
+    requestAnimationFrame(() => {
+      this._el.classList.add('open');
+      const input = this._bodyEl.querySelector('input, textarea, select');
+      if (input) setTimeout(() => input.focus(), 50);
+    });
   }
 
   close() {
@@ -127,7 +130,22 @@ class AxhostModal {
     if (this._overlay) {
       this._overlay.removeEventListener('click', this._onOverlayClick);
     }
-    if (this._options.onClose) this._options.onClose();
+    // Wait for CSS transition to complete before calling onClose
+    const onClose = this._options.onClose;
+    if (onClose) {
+      var closed = false;
+      const el = this._el;
+      const done = function() {
+        if (closed) return;
+        closed = true;
+        el.removeEventListener('transitionend', handler);
+        onClose();
+      };
+      const handler = function() { done(); };
+      this._el.addEventListener('transitionend', handler);
+      // Fallback: if transitionend doesn't fire, call after 250ms
+      setTimeout(done, 250);
+    }
   }
 
   /* ---- Loading ---- */

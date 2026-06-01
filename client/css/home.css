@@ -339,10 +339,12 @@ body.dark .list-item-time { color: #777; }
 /* ===== Unified Modal (.axhost-modal) ===== */
 .axhost-modal {
   position: fixed; inset: 0;
-  display: none; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
 }
-.axhost-modal.open { display: flex; }
+.axhost-modal.open { opacity: 1; pointer-events: auto; }
 
 .axhost-modal-overlay {
   position: absolute; inset: 0;
@@ -356,7 +358,11 @@ body.dark .list-item-time { color: #777; }
   border-radius: 12px;
   max-width: 90vw;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  transform: translateY(8px);
+  transition: transform 0.2s ease;
 }
+
+.axhost-modal.open .axhost-modal-content { transform: translateY(0); }
 
 body.dark .axhost-modal-content { background: #2a2a2a; }
 
@@ -520,10 +526,12 @@ body.dark .card-dropdown-item.danger:hover { background: #3a1f1f; }
 /* ===== AxhostModal (same as shell.css, compact) ===== */
 .axhost-modal {
   position: fixed; inset: 0;
-  display: none; align-items: center; justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
 }
-.axhost-modal.open { display: flex; }
+.axhost-modal.open { opacity: 1; pointer-events: auto; }
 
 .axhost-modal-overlay {
   position: absolute; inset: 0;
@@ -537,7 +545,11 @@ body.dark .card-dropdown-item.danger:hover { background: #3a1f1f; }
   border-radius: 10px;
   max-width: 90vw;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  transform: translateY(8px);
+  transition: transform 0.2s ease;
 }
+
+.axhost-modal.open .axhost-modal-content { transform: translateY(0); }
 
 .axhost-modal-header {
   display: flex; align-items: center; justify-content: space-between;

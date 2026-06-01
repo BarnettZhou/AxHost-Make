@@ -55,7 +55,8 @@
         if (t !== currentTab) preloadTree(t);
       }
     });
-    modal.classList.add('open');
+    // Defer to next frame so the browser paints opacity:0 first
+    requestAnimationFrame(() => { modal.classList.add('open'); });
   }
   function close() {
     modal.classList.remove('open');

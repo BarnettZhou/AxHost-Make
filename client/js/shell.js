@@ -277,6 +277,26 @@
     var projectIdEl = document.getElementById('settings-header-id');
     if (projectIdEl) {
       projectIdEl.textContent = projectId || '-';
+      projectIdEl.style.cursor = 'pointer';
+      projectIdEl.title = '点击复制项目ID';
+      projectIdEl.addEventListener('click', async function() {
+        var id = projectIdEl.textContent;
+        if (!id || id === '-') return;
+        try {
+          await navigator.clipboard.writeText(id);
+          window.showToast('项目ID已复制', 'success');
+        } catch (err) {
+          // Fallback for older browsers
+          var ta = document.createElement('textarea');
+          ta.value = id;
+          ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          var ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          window.showToast(ok ? '项目ID已复制' : '项目ID复制失败', ok ? 'success' : 'error');
+        }
+      });
     }
   }
 
@@ -615,9 +635,9 @@
     const url = `${prototypeBase}/${tab}/${pagePath}/index.html`;
     previewFrame.src = url;
     const info = window.__axhostProjectInfo || {};
-    const pageRelativePath = `prototype\\${tab}\\${pagePath}`;
+    const pageRelativePath = `prototype/${tab}/${pagePath}`;
     const pageAbsolutePath = info.projectAbsolutePath
-      ? `${info.projectAbsolutePath}\\prototype\\${tab}\\${pagePath}`
+      ? `${info.projectAbsolutePath}/prototype/${tab}/${pagePath}`
       : '';
     window.__axhostState.currentPage = { type, path: pagePath, pageRelativePath, pageAbsolutePath };
     if (window.docPanel && window.docPanel.load) {
@@ -1011,13 +1031,7 @@
         const doc = previewFrame.contentDocument;
         if (doc) {
           if (doc.body) {
-            const demoContainer = doc.querySelector('.demo-container');
-            const deviceWrapper = doc.querySelector('.device-wrapper');
-            const controlPanel = doc.querySelector('.control-panel');
             doc.body.style.background = dark ? '#1e1e1e' : '';
-            if (demoContainer) demoContainer.style.background = dark ? '#252526' : '';
-            if (deviceWrapper) deviceWrapper.style.background = dark ? '#252526' : '';
-            if (controlPanel) controlPanel.style.background = dark ? '#252526' : '';
           }
           previewFrame.contentWindow.postMessage({ type: 'axhost-theme', theme: dark ? 'dark' : 'light' }, '*');
           doc.removeEventListener('keydown', onShortcutKeyDown);
