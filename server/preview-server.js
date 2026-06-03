@@ -47,7 +47,26 @@ async function staticHandler(req, res, root) {
   }
 }
 
-function startPreviewServer({ port = 8080, host = '127.0.0.1', root }) {
+function tryListen(server, host, port, maxTries) {
+  return new Promise((resolve, reject) => {
+    const attempt = (tryPort, remaining) => {
+      server.once('error', (err) => {
+        if (err.code === 'EADDRINUSE' && remaining > 0) {
+          console.log(`Port ${tryPort} in use, trying ${tryPort + 1}...`);
+          attempt(tryPort + 1, remaining - 1);
+        } else {
+          reject(err);
+        }
+      });
+      server.listen(tryPort, host, () => {
+        resolve(tryPort);
+      });
+    };
+    attempt(port, maxTries);
+  });
+}
+
+async function startPreviewServer({ port = 8080, host = '127.0.0.1', root }) {
   const server = http.createServer((req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     if (req.method === 'OPTIONS') {
@@ -63,10 +82,9 @@ function startPreviewServer({ port = 8080, host = '127.0.0.1', root }) {
     });
   });
 
-  server.listen(port, host, () => {
-    console.log(`Preview server running at http://${host}:${port}`);
-    console.log(`Serving: ${root}`);
-  });
+  const actualPort = await tryListen(server, host, port, 10);
+  console.log(`Preview server running at http://${host}:${actualPort}`);
+  console.log(`Serving: ${root}`);
 
   return server;
 }
