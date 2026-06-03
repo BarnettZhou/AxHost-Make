@@ -13,6 +13,7 @@
   const docsResizer = document.getElementById('docs-resizer');
   const btnDocs = document.getElementById('btn-toggle-docs');
   const btnToggleNav = document.getElementById('btn-toggle-nav');
+  const btnRefreshPreview = document.getElementById('btn-refresh-preview');
   const docTabs = document.getElementById('doc-tabs-scroll');
   const docContent = document.getElementById('doc-content');
   const btnScrollLeft = document.getElementById('btn-doc-scroll-left');
@@ -57,6 +58,16 @@
       var hide = sidebar.classList.contains('hidden') ? false : true;
       if (hide) freezePanelChildren(sidebar);
       sidebar.classList.toggle('hidden');
+    });
+  }
+  if (btnRefreshPreview) {
+    btnRefreshPreview.addEventListener('click', () => {
+      const doc = preview.contentDocument;
+      if (doc && doc.location) {
+        doc.location.reload();
+      } else {
+        preview.src = preview.src;
+      }
     });
   }
 
