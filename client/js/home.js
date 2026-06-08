@@ -992,6 +992,7 @@
           if (!projectName) { showToast('请输入项目名称', 'error'); return; }
           if (!htmlPath) { showToast('请输入 HTML 目录路径', 'error'); return; }
 
+          var serverPort = window.location.port || '3820';
           var promptText =
             '**Prompt**\n\n' +
             '请仔细阅读如下文档，并严格按照「第〇步」创建新项目后执行导入\n\n' +
@@ -1001,7 +1002,8 @@
             '资源路径：' + htmlPath + '\n\n' +
             '**目录指引**\n\n' +
             '- AxHost-Make 工作目录：' + workspaceRoot + '\n' +
-            '- AxHost-Make 框架目录：' + axhostMakeRoot + '\n';
+            '- AxHost-Make 框架目录：' + axhostMakeRoot + '\n' +
+            '- API 地址：http://127.0.0.1:' + serverPort + '\n';
 
           try {
             await navigator.clipboard.writeText(promptText);

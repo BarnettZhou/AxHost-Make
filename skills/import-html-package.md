@@ -21,10 +21,11 @@
 
 ### 通过 API 创建新项目
 
-AxHost-Make 开发服务器始终在 `http://127.0.0.1:3820` 运行。直接调用其 API 创建项目（不依赖 node 路径，dev / 整合包模式均可用）：
+使用 prompt 末尾「目录指引」中的 **API 地址**（如 `http://127.0.0.1:3820`）。不依赖 node 路径，dev / 整合包模式均可用：
 
 ```bash
-curl -s -X POST http://127.0.0.1:3820/api/projects \
+API_BASE="<从目录指引中获取的 API 地址>"
+curl -s -X POST "$API_BASE/api/projects" \
   -H 'Content-Type: application/json' \
   -d '{"name":"<用户指定的项目名称>"}'
 ```
