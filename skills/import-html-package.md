@@ -4,11 +4,93 @@
 
 ---
 
-## 第〇步：创建新项目（必须首先执行）
+## 第0步：创建新项目（必须首先执行）
 
 **本任务必须在全新的空项目中执行，严禁在已有项目中原位修改文件。**
 
 你应自行创建新项目，不要依赖用户手动操作。
+
+### 0.0 检测当前 Shell 环境
+
+在执行任何命令之前，必须明确当前运行环境。不同环境的命令语法、引号规则和字符编码处理方式不同，用错会导致 JSON 解析失败或中文乱码。
+
+#### 检测方法
+
+执行以下命令判断环境类型：
+
+```bash
+# 方法 1：查看 SHELL 环境变量（Linux/macOS/Git Bash）
+echo "$SHELL"
+
+# 方法 2：Windows 专用检测
+echo "$PSVersionTable"   # 仅 PowerShell 能执行
+echo %COMSPEC%           # 仅 cmd 能执行
+```
+
+#### 五种常见环境及特征
+
+| 环境 | 判定依据 | 变量语法 | curl 可用性 | 字符编码 |
+|------|---------|---------|------------|---------|
+| **bash (Linux)** | `$SHELL` = `/bin/bash` 且 `uname` = `Linux` | `$VAR` | ✅ 原生支持 | UTF-8 默认 |
+| **zsh (macOS)** | `$SHELL` = `/bin/zsh` 且 `uname` = `Darwin` | `$VAR` | ✅ 原生支持 | UTF-8 默认 |
+| **Git Bash (Windows)** | `$SHELL` 含 `bash` 且 `uname` 含 `MINGW` | `$VAR` | ✅ 通常可用 | UTF-8，注意路径转换 |
+| **PowerShell (Windows)** | `$PSVersionTable` 可执行 | `$env:VAR` | ⚠️ `curl` 是 `Invoke-WebRequest` 别名 | UTF-8，`>` 输出默认 UTF-16 LE |
+| **cmd (Windows)** | `%COMSPEC%` 含 `cmd.exe` 且无 `$SHELL` | `%VAR%` | ⚠️ curl 可能不可用 | GBK/CP936 默认 |
+
+#### 命令适配规则
+
+**bash / zsh / Git Bash**（三类环境语法基本一致）：
+
+所有 curl 命令使用**单引号**包裹 JSON body，内部 JSON 键值用双引号，**无需转义**：
+
+```bash
+curl -s -X POST "$API_BASE/api/projects" \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"我的项目"}'
+```
+
+**PowerShell**：
+
+- curl 是 `Invoke-WebRequest` 的别名，参数不同。建议使用 `curl.exe` 调用真正的 curl，或改用 `Invoke-RestMethod`。
+- 若必须用 `curl` 别名，注意 `-d` 无效，需用 `-Body`。
+- JSON 体内的双引号需转义为 `` `" `` 或使用 here-string。
+- **推荐写法**（使用 curl.exe，与 bash 语法一致，最可靠）：
+
+```powershell
+curl.exe -s -X POST "$env:API_BASE/api/projects" `
+  -H 'Content-Type: application/json' `
+  -d '{"name":"我的项目"}'
+```
+
+- 写入文件内容时，PowerShell 的 `Out-File` / `>` 默认使用 UTF-16 LE 编码。若需直接写入文件（非通过 API），使用 `Set-Content -Encoding UTF8`。
+
+**cmd**：
+
+- 不支持单引号包裹字符串，JSON 内双引号必须转义为 `\"`。
+- 不支持 `\` 换行续行。
+- 变量使用 `%VAR%`。
+- **不推荐**在 cmd 中执行复杂 curl 命令。若检测到 cmd 环境，建议提示用户改用 Git Bash 或 PowerShell，或使用以下写法：
+
+```cmd
+curl.exe -s -X POST "%API_BASE%/api/projects" -H "Content-Type: application/json" -d "{\"name\":\"我的项目\"}"
+```
+
+#### 文件写入编码注意事项
+
+- 通过 API (`POST /api/file`) 写入文件时，JSON body 自动处理编码，**无需**担心环境编码差异。
+- 若某些步骤必须用 shell 直接写文件（如 `echo` > 文件）：
+  - **bash/zsh/macOS**：默认 UTF-8，无问题。
+  - **PowerShell**：`Set-Content -Encoding UTF8` 避免 BOM；`Out-File -Encoding utf8` 会产生 BOM。
+  - **cmd**：`chcp 65001` 切换到 UTF-8 代码页后再操作。
+- 所有 HTML/CSS/JS/MD 文件内容必须使用 **UTF-8 无 BOM** 编码。中文内容不应出现乱码。
+
+#### 检测后必须明确声明
+
+确定环境后，在回复中明确告知用户当前检测到的环境，例如：
+
+> **检测到环境：zsh (macOS)** — 以下所有命令将使用 bash/zsh 兼容语法。
+
+这确保用户知道你在用什么语法执行命令。
 
 ### 获取路径信息
 
@@ -78,14 +160,14 @@ cd $WORKSPACE/projects/$PROJECT
 
 ## 工作流程
 
-### 第一步：分析输入
+### 第1步：分析输入
 
 1. **了解包的结构**：列出所有文件，识别 HTML 页面、CSS 样式、JS 脚本、图片资源。
 2. **确认页面数量**：有几个 `.html` 文件就是几个页面（排除 `index.html` 可能的主入口歧义，所有 HTML 都应视为独立页面）。
 3. **识别资源依赖关系**：HTML 中 `link`/`script`/`img` 等标签引用了哪些外部资源。
 4. **阅读项目现有资源**：先查阅 `RESOURCES.md`、`COMPONENTS.md`、`rules/design.md`，了解已有的公共样式和组件，优先复用。
 
-### 第二步：创建页面骨架
+### 第2步：创建页面骨架
 
 对每个 HTML 页面，使用 API 创建页面：
 
@@ -101,7 +183,7 @@ curl -s -X POST "$API_BASE/api/create?project=$PROJECT" \
 - **层级关系**：若多个 HTML 之间有层级关系（如列表页 → 详情页），将子页面的 `parentPath` 设置为 `prototype/pages/<父级hash>`。
 - 创建后你会得到每个页面的 8 位 hash。记录「页面名称 → hash」的映射表，后续步骤会用到。
 
-### 第三步：处理 CSS
+### 第3步：处理 CSS
 
 #### 3.1 嵌入式样式（`<style>` 标签内）
 
@@ -130,7 +212,7 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 - 若 CSS 中包含绝对 URL（如 CDN 字体、图标），保留不变。
 - 若 CSS 中使用 `url()` 引用了图片，确保图片路径在迁移后依然正确。
 
-### 第四步：处理 JavaScript
+### 第4步：处理 JavaScript
 
 #### 4.1 内嵌脚本（`<script>` 标签内，非外部引用）
 
@@ -151,7 +233,7 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 - 若脚本依赖全局变量（如 `$`），在页面中添加对应的 CDN 引用或确保公共 JS 已加载。
 - 若脚本包含自动初始化（DOMContentLoaded 中自动执行），保留在页面内联 `<script>` 而非提取到 `main.js`（遵循组件纯净原则）。
 
-### 第五步：处理图片和其他静态资源
+### 第5步：处理图片和其他静态资源
 
 #### 5.1 图片
 
@@ -164,7 +246,7 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 - 放在 `prototype/resources/fonts/`（如目录不存在则创建）
 - 更新 CSS 中的 `@font-face` `url()` 路径
 
-### 第六步：组装页面 HTML
+### 第6步：组装页面 HTML
 
 通过 API 读取页面当前的 `index.html`，将 `<body>` 内容替换为原 HTML 包中对应页面的 body 内容，然后通过 API 写回。每个页面最终结构：
 
@@ -202,7 +284,7 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 - `<meta charset="UTF-8">` 和 `<meta name="viewport">` 必须保留。
 - 语言设置为 `zh-CN`。
 
-### 第七步：编写页面文档
+### 第7步：编写页面文档
 
 通过 API 为每个页面写入 `docs/readme.md`：
 
@@ -233,7 +315,7 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 （描述从哪些页面可跳转到此页面，以及从此页面可跳转到哪些页面）
 ```
 
-### 第八步：更新项目索引
+### 第8步：更新项目索引
 
 1. **更新 `RESOURCES.md`**：若新增了 `prototype/resources/` 下的公共 CSS/JS/字体/图片，记录新增内容及用途。
 2. **更新 `COMPONENTS.md`**：若从包中提取了可复用组件（放入 `prototype/components/`），记录组件信息和复用方式。

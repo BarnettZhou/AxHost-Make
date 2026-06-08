@@ -995,7 +995,7 @@
           var serverPort = window.location.port || '3820';
           var promptText =
             '**Prompt**\n\n' +
-            '请仔细阅读如下文档，并严格按照「第〇步」创建新项目后执行导入\n\n' +
+            '请仔细阅读如下文档，并严格按照「第0步」创建新项目后执行导入\n\n' +
             skillPath + '\n\n' +
             '根据文档指导，将如下网页资源导入 AxHost-Make 工作目录\n\n' +
             '项目名称：' + projectName + '\n' +
