@@ -962,12 +962,17 @@
       width: '520px',
       body: function(container) {
         container.innerHTML =
-          '<label for="import-html-path">HTML 目录路径</label>' +
+          '<div style="background:#fff7e6;border:1px solid #ffd591;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#ad6800;line-height:1.6;">' +
+            '⚠️ 请确保在 <strong>全新的空项目</strong> 中执行导入，不要在已有项目中使用此提示词。' +
+          '</div>' +
+          '<label for="import-html-name">项目名称</label>' +
+          '<input type="text" id="import-html-name" placeholder="请输入项目名称" autocomplete="off">' +
+          '<label for="import-html-path" style="margin-top:8px;">HTML 目录路径</label>' +
           '<input type="text" id="import-html-path" placeholder="请输入或拖拽 HTML 包所在的本地目录路径，如 /Users/xxx/downloads/my-package" autocomplete="off">' +
           '<div id="html-import-hint" style="font-size:12px;color:var(--text-muted);margin-top:-4px;margin-bottom:8px;">' +
             '输入包含 HTML/CSS/JS 文件的本地目录绝对路径' +
           '</div>';
-        setTimeout(function() { container.querySelector('#import-html-path').focus(); }, 50);
+        setTimeout(function() { container.querySelector('#import-html-name').focus(); }, 50);
       },
       footer: function(footerEl) {
         footerEl.innerHTML =
@@ -982,15 +987,19 @@
         });
         footerEl.querySelector('#btn-html-import-copy').addEventListener('click', async function() {
           var bodyEl = modal.getBody();
+          var projectName = bodyEl.querySelector('#import-html-name').value.trim();
           var htmlPath = bodyEl.querySelector('#import-html-path').value.trim();
+          if (!projectName) { showToast('请输入项目名称', 'error'); return; }
           if (!htmlPath) { showToast('请输入 HTML 目录路径', 'error'); return; }
 
           var promptText =
             '**Prompt**\n\n' +
+            '> ⚠️ 请在一个**全新的空 AxHost-Make 项目**中执行以下操作。如果当前项目已有页面，请先在首页创建新项目。\n\n' +
             '请仔细阅读如下文档\n\n' +
             skillPath + '\n\n' +
             '根据文档指导，将如下网页资源导入 AxHost-Make 工作目录\n\n' +
-            htmlPath + '\n\n' +
+            '项目名称：' + projectName + '\n' +
+            '资源路径：' + htmlPath + '\n\n' +
             '**目录指引**\n\n' +
             '- AxHost-Make 工作目录：' + workspaceRoot + '\n' +
             '- AxHost-Make 框架目录：' + axhostMakeRoot + '\n';
