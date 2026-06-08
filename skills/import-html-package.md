@@ -12,19 +12,17 @@
 
 ### 获取路径信息
 
-用户给出的 prompt 末尾有「**目录指引**」段落，包含两条关键路径：
+用户给出的 prompt 末尾有「**目录指引**」段落，包含以下关键信息：
 
 - **AxHost-Make 工作目录**（下文简称 `$WORKSPACE`）
 - **AxHost-Make 框架目录**（下文简称 `$FRAMEWORK`）
+- **API 地址**（下文简称 `$API_BASE`，如 `http://127.0.0.1:3820`）
 
-首先从 prompt 中提取这两个路径，后续所有操作都基于它们。
+首先从 prompt 中提取这三项，后续所有操作都基于它们。
 
-### 通过 API 创建新项目
-
-使用 prompt 末尾「目录指引」中的 **API 地址**（如 `http://127.0.0.1:3820`）。不依赖 node 路径，dev / 整合包模式均可用：
+### 创建项目
 
 ```bash
-API_BASE="<从目录指引中获取的 API 地址>"
 curl -s -X POST "$API_BASE/api/projects" \
   -H 'Content-Type: application/json' \
   -d '{"name":"<用户指定的项目名称>"}'
@@ -32,12 +30,12 @@ curl -s -X POST "$API_BASE/api/projects" \
 
 返回：`{"code":0,"data":{"id":"a1b2c3d4","name":"我的项目"}}`
 
-记下返回的 `id`（8 位 hash）。
+记下返回的项目 `id`（8 位 hash），下文简称 `$PROJECT`。后续所有 API 调用都需要带上 `?project=$PROJECT` 参数。
 
 ### 进入新项目目录
 
 ```bash
-cd $WORKSPACE/projects/<上一步返回的id>
+cd $WORKSPACE/projects/$PROJECT
 ```
 
 ### 验证
@@ -45,6 +43,24 @@ cd $WORKSPACE/projects/<上一步返回的id>
 确认当前目录下存在 `prototype/`、`AGENTS.md` 等文件，且 `prototype/pages/` 下仅有空目录（无 hash 子目录）。
 
 > **导入 HTML 包会创建多个页面、提取公共资源、修改项目索引文件。必须在新项目中执行，严禁污染已有项目。**
+
+---
+
+## API 速查表
+
+后续所有操作通过 `$API_BASE` 的 HTTP API 完成，不再依赖 `node` CLI。以下为常用 API：
+
+| 操作 | API |
+|------|-----|
+| 创建页面 | `POST $API_BASE/api/create?project=$PROJECT` `{"parentPath":"prototype/pages","name":"名称","kind":"page"}` |
+| 创建组件 | `POST $API_BASE/api/create?project=$PROJECT` `{"parentPath":"prototype/components","name":"名称","kind":"component"}` |
+| 创建目录 | `POST $API_BASE/api/create?project=$PROJECT` `{"parentPath":"prototype/pages/<hash>","name":"名称","kind":"folder"}` |
+| 读取文件 | `GET $API_BASE/api/file?project=$PROJECT&path=prototype/pages/<hash>/index.html` |
+| 写入文件 | `POST $API_BASE/api/file?project=$PROJECT` `{"path":"prototype/pages/<hash>/index.html","content":"..."}` |
+| 读取 sitemap | `GET $API_BASE/api/sitemap?project=$PROJECT` |
+| 移动/重命名 | `POST $API_BASE/api/move?project=$PROJECT` `{"srcPath":"...","destPath":"..."}` |
+
+> **注意**：parentPath 中如需指定父级，在路径末尾追加父级 hash，如 `prototype/pages/a1b2c3d4`。创建顶级页面则用 `prototype/pages`。
 
 ---
 
@@ -56,7 +72,7 @@ cd $WORKSPACE/projects/<上一步返回的id>
 - **多文件包**：多个 `.html` 文件 + `.css` + `.js` + 图片等资源文件
 - **目录结构**：一个包含 `index.html` + `css/` + `js/` + `images/` 等子目录的文件夹
 
-你需要将这个包**完整、准确地**导入到当前 AxHost-Make 项目中，生成符合框架规范的原型页面和资源。
+你需要将这个包**完整、准确地**导入到新创建的 AxHost-Make 项目中，生成符合框架规范的原型页面和资源。
 
 ---
 
@@ -71,22 +87,32 @@ cd $WORKSPACE/projects/<上一步返回的id>
 
 ### 第二步：创建页面骨架
 
-对每个 HTML 页面，使用 CLI 命令创建页面：
+对每个 HTML 页面，使用 API 创建页面：
 
 ```bash
-node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级hash或路径>]
+curl -s -X POST "$API_BASE/api/create?project=$PROJECT" \
+  -H 'Content-Type: application/json' \
+  -d '{"parentPath":"prototype/pages","name":"<页面名称>","kind":"page"}'
 ```
 
+返回：`{"code":0,"data":{"id":"a1b2c3d4","name":"页面名称","path":"a1b2c3d4","kind":"page"}}`
+
 - **页面命名**：根据 HTML 的 `<title>` 或文件名推断有意义的中文名称。若无法推断，让用户确认后再操作。
-- **层级关系**：若多个 HTML 之间有层级关系（如列表页 → 详情页），用 `--parent` 建立父子结构。
+- **层级关系**：若多个 HTML 之间有层级关系（如列表页 → 详情页），将子页面的 `parentPath` 设置为 `prototype/pages/<父级hash>`。
 - 创建后你会得到每个页面的 8 位 hash。记录「页面名称 → hash」的映射表，后续步骤会用到。
 
 ### 第三步：处理 CSS
 
 #### 3.1 嵌入式样式（`<style>` 标签内）
 
-- 将 `<style>` 标签内的 CSS 提取到该页面私有样式文件：`pages/{hash}/resources/css/style.css`
+- 将 `<style>` 标签内的 CSS 通过 API 写入页面私有样式文件。
 - 在 `index.html` 中将 `<style>` 替换为 `<link rel="stylesheet" href="resources/css/style.css">`
+
+```bash
+curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
+  -H 'Content-Type: application/json' \
+  -d '{"path":"prototype/pages/<hash>/resources/css/style.css","content":"<CSS 内容>"}'
+```
 
 #### 3.2 外部样式文件（`.css` 文件）
 
@@ -108,7 +134,7 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 #### 4.1 内嵌脚本（`<script>` 标签内，非外部引用）
 
-- 将 `<script>` 标签内的 JS 提取到 `pages/{hash}/resources/js/main.js`
+- 将 `<script>` 标签内的 JS 通过 API 写入 `pages/{hash}/resources/js/main.js`
 - 在 `index.html` 中将 `<script>` 替换为 `<script src="resources/js/main.js"></script>`
 - 保持脚本在 HTML 中的位置不变（`<body>` 底部 vs `<head>` 中）
 
@@ -121,7 +147,7 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 #### 4.3 脚本适配
 
-- 若脚本中有 `window.location.href` 跳转，**必须**改为 `window.parent.postMessage({ type: 'axhost-navigate', path: '目标hash', tab: 'pages' }, '*')`。参考 `../../axhost-make/system-rules/dev-spec.md`。
+- 若脚本中有 `window.location.href` 跳转，**必须**改为 `window.parent.postMessage({ type: 'axhost-navigate', path: '目标hash', tab: 'pages' }, '*')`。参考 `$FRAMEWORK/system-rules/dev-spec.md`。
 - 若脚本依赖全局变量（如 `$`），在页面中添加对应的 CDN 引用或确保公共 JS 已加载。
 - 若脚本包含自动初始化（DOMContentLoaded 中自动执行），保留在页面内联 `<script>` 而非提取到 `main.js`（遵循组件纯净原则）。
 
@@ -140,7 +166,7 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 ### 第六步：组装页面 HTML
 
-每个页面的 `index.html` 最终结构：
+通过 API 读取页面当前的 `index.html`，将 `<body>` 内容替换为原 HTML 包中对应页面的 body 内容，然后通过 API 写回。每个页面最终结构：
 
 ```html
 <!DOCTYPE html>
@@ -178,7 +204,15 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 ### 第七步：编写页面文档
 
-为每个页面编写 `pages/{hash}/docs/readme.md`，包含：
+通过 API 为每个页面写入 `docs/readme.md`：
+
+```bash
+curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
+  -H 'Content-Type: application/json' \
+  -d '{"path":"prototype/pages/<hash>/docs/readme.md","content":"<文档内容>"}'
+```
+
+文档内容参考结构：
 
 ```markdown
 # 页面名称
@@ -203,7 +237,7 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 1. **更新 `RESOURCES.md`**：若新增了 `prototype/resources/` 下的公共 CSS/JS/字体/图片，记录新增内容及用途。
 2. **更新 `COMPONENTS.md`**：若从包中提取了可复用组件（放入 `prototype/components/`），记录组件信息和复用方式。
-3. **验证 sitemap**：确认 `prototype/sitemap.js` 中已包含所有新增页面，且层级关系正确。如 CLI 已自动更新则无需手动修改。
+3. **验证 sitemap**：调用 `GET $API_BASE/api/sitemap?project=$PROJECT` 确认所有新增页面已注册，层级关系正确。
 
 ---
 
@@ -225,31 +259,31 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 ### 单 HTML 文件（无外部 CSS/JS）
 
-1. 创建页面：`add-page <名称>`
-2. 将 `<style>` 内容 → `resources/css/style.css`
-3. 将 `<script>` 内容 → `resources/js/main.js`
-4. 将 `<body>` 内容 → `index.html` 的 `<body>` 中
+1. 创建页面：`POST /api/create` `{"kind":"page"}`
+2. 将 `<style>` 内容 → `resources/css/style.css`（通过 `/api/file` 写入）
+3. 将 `<script>` 内容 → `resources/js/main.js`（通过 `/api/file` 写入）
+4. 将 `<body>` 内容 → 读取 `index.html` 后替换 body 内容，通过 `/api/file` 写回
 5. 添加必要的 meta 标签和资源引用
 
 ### 多个 HTML 共享同一套 CSS/JS
 
-1. 公共 CSS → `prototype/resources/css/<包名>.css`
-2. 公共 JS → `prototype/resources/js/<包名>.js`
+1. 公共 CSS → `prototype/resources/css/<包名>.css`（通过 `/api/file` 写入）
+2. 公共 JS → `prototype/resources/js/<包名>.js`（通过 `/api/file` 写入）
 3. 每个 HTML 创建独立页面，引用公共资源
 4. 各页面私有样式/脚本放在各自的 `resources/` 下
 
 ### HTML 包中包含 index.html 入口
 
 如果包中有一个 `index.html` 作为主入口，其他 HTML 为子页面：
-1. `index.html` → 创建为根页面（无 `--parent`）
-2. 子页面 → 使用 `--parent <主页hash>` 建立层级
+1. `index.html` → 创建为根页面（`parentPath` 为 `prototype/pages`）
+2. 子页面 → `parentPath` 设为 `prototype/pages/<主页hash>`
 3. 更新主页中的链接为 `postMessage` 导航
 
 ### 响应式/移动端页面
 
 若检测到页面包含移动端适配（viewport 为 device-width、触摸事件、手机尺寸样式）：
-- 创建页面时选择手机端模板（需要时手动替换 `index.html` 为 `templates/project/pages/mobile.html` 结构）
-- 参考 `../../axhost-make/system-rules/mobile-frame-spec.md`
+- 创建页面时添加 `"template":"mobile"` 参数
+- 参考 `$FRAMEWORK/system-rules/mobile-frame-spec.md`
 
 ---
 
@@ -261,7 +295,7 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 - [ ] 页面间的链接/跳转已改为 `postMessage` 方式
 - [ ] 公共资源已提取到 `prototype/resources/` 并更新 `RESOURCES.md`
 - [ ] 页面文档 `docs/readme.md` 已编写
-- [ ] `prototype/sitemap.js` 包含所有新增页面，name 字段正确
+- [ ] sitemap 包含所有新增页面，可通过 API 验证
 - [ ] 在浏览器中打开各页面，确认样式正常、脚本无报错
 - [ ] 图片/字体等静态资源可正常加载
 
@@ -269,9 +303,10 @@ node axhost-make/bin/axhost-make.js add-page <页面名称> [--parent <父级has
 
 ## 注意事项
 
-- **绝对不要**修改 `axhost-make/` 框架源码。
+- **绝对不要**修改 `$FRAMEWORK` 下的框架源码。
 - **绝对不要**使用 `/prototype/` 开头的绝对路径。
 - **禁止**引入 Vue/React/Angular 等框架（除非用户明确要求且仅限单页面）。
 - 所有代码使用原生 HTML/CSS/JS（ES6）。
 - 注释和文案保持中文。
+- 所有文件读写通过 API 完成，不依赖 `node` CLI。
 - 操作前先向用户确认页面命名和层级结构，获得同意后再执行。
