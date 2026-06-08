@@ -112,6 +112,7 @@
     postImagesScanUnused: () => request('/api/images/scan-unused', {
       method: 'POST',
       body: JSON.stringify({})
-    })
+    }),
+    getGitStatus: () => request('/api/git-status')
   };
 })();

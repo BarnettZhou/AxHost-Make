@@ -32,6 +32,7 @@ const modules = [
   require('./api/cache-cleanup.js'),
   require('./api/cover.js'),
   require('./api/import-project.js'),
+  require('./api/git-status.js'),
 ];
 
 const workspaceRoutes = {};      // key → handler (req, res, workspaceRoot?) — scope: workspace|none

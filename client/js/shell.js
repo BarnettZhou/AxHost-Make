@@ -401,25 +401,137 @@
 
   function buildSettingsModalBody(container) {
     container.innerHTML =
-      '<label for="project-name-input">项目名称</label>' +
-      '<input type="text" id="project-name-input" placeholder="Prototype">' +
-      '<label>托管项目</label>' +
-      '<div class="host-project-row">' +
-        '<div class="host-project-select-wrap" id="host-project-wrap" style="flex:1;">' +
-          '<input type="text" id="host-project-search" placeholder="搜索或选择项目..." autocomplete="off">' +
-          '<div class="host-project-dropdown" id="host-project-dropdown"></div>' +
-          '<div class="host-project-linked" id="host-project-linked" style="display:none;">' +
-            '<span id="host-project-linked-name"></span>' +
-            '<button class="text-btn" id="btn-unlink-project" title="解除关联">' +
-              '<iconpark-icon icon-id="close-small" size="12" color="currentColor"></iconpark-icon>' +
-            '</button>' +
-          '</div>' +
-        '</div>' +
-        '<button class="text-btn" id="btn-create-remote-project" title="创建新项目" style="white-space:nowrap;">' +
-          '<iconpark-icon icon-id="plus" size="14" color="currentColor"></iconpark-icon>' +
-        '</button>' +
+      // Tabs
+      '<div class="settings-tabs" style="display:flex;border-bottom:1px solid var(--border);margin-bottom:16px;">' +
+        '<button class="settings-tab active" data-tab="basic" style="flex:1;padding:8px 0;border:none;background:none;color:var(--text-main);font-size:13px;cursor:pointer;border-bottom:2px solid var(--accent);font-weight:600;">基本信息</button>' +
+        '<button class="settings-tab" data-tab="git" style="flex:1;padding:8px 0;border:none;background:none;color:var(--text-muted);font-size:13px;cursor:pointer;border-bottom:2px solid transparent;">git 仓库</button>' +
       '</div>' +
-      '<div class="host-project-hint" id="host-project-hint"></div>';
+      // Panel: basic
+      '<div class="settings-tab-panel" id="tab-basic">' +
+        '<label for="project-name-input">项目名称</label>' +
+        '<input type="text" id="project-name-input" placeholder="Prototype">' +
+        '<label>托管项目</label>' +
+        '<div class="host-project-row">' +
+          '<div class="host-project-select-wrap" id="host-project-wrap" style="flex:1;">' +
+            '<input type="text" id="host-project-search" placeholder="搜索或选择项目..." autocomplete="off">' +
+            '<div class="host-project-dropdown" id="host-project-dropdown"></div>' +
+            '<div class="host-project-linked" id="host-project-linked" style="display:none;">' +
+              '<span id="host-project-linked-name"></span>' +
+              '<button class="text-btn" id="btn-unlink-project" title="解除关联">' +
+                '<iconpark-icon icon-id="close-small" size="12" color="currentColor"></iconpark-icon>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<button class="text-btn" id="btn-create-remote-project" title="创建新项目" style="white-space:nowrap;">' +
+            '<iconpark-icon icon-id="plus" size="14" color="currentColor"></iconpark-icon>' +
+          '</button>' +
+        '</div>' +
+        '<div class="host-project-hint" id="host-project-hint"></div>' +
+      '</div>' +
+      // Panel: git
+      '<div class="settings-tab-panel" id="tab-git" style="display:none;">' +
+        '<div id="git-status-content" style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px 0;">加载中...</div>' +
+      '</div>';
+
+    // === Tab switching ===
+    var tabButtons = container.querySelectorAll('.settings-tab');
+    var tabBasic = container.querySelector('#tab-basic');
+    var tabGit = container.querySelector('#tab-git');
+    tabButtons.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tab = this.dataset.tab;
+        tabButtons.forEach(function(b) {
+          b.classList.remove('active');
+          b.style.color = 'var(--text-muted)';
+          b.style.borderBottomColor = 'transparent';
+          b.style.fontWeight = '400';
+        });
+        this.classList.add('active');
+        this.style.color = 'var(--text-main)';
+        this.style.borderBottomColor = 'var(--accent)';
+        this.style.fontWeight = '600';
+
+        if (tab === 'basic') {
+          tabBasic.style.display = '';
+          tabGit.style.display = 'none';
+          if (settingsModalInstance._btnConfirm) settingsModalInstance._btnConfirm.style.display = '';
+        } else {
+          tabBasic.style.display = 'none';
+          tabGit.style.display = '';
+          if (settingsModalInstance._btnConfirm) settingsModalInstance._btnConfirm.style.display = 'none';
+          loadGitStatus();
+        }
+      });
+    });
+
+    async function loadGitStatus() {
+      var content = container.querySelector('#git-status-content');
+      if (!content) return;
+      content.innerHTML = '<span style="color:var(--text-muted);">加载中...</span>';
+      try {
+        var res = await window.apiClient.getGitStatus();
+        var data = res.data;
+        if (!data || !data.initialized) {
+          content.innerHTML = '<div style="text-align:center;padding:32px 0;color:var(--text-muted);">' +
+            '<p style="margin:0;">未初始化 git 仓库</p>' +
+            '<p style="font-size:11px;margin-top:4px;">请在终端中使用 <code style="background:var(--bg-body);padding:1px 4px;border-radius:2px;">git init</code> 初始化</p>' +
+            '</div>';
+          return;
+        }
+        var html = '';
+        // Remotes
+        html += '<div style="margin-bottom:16px;">';
+        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;">远程列表</div>';
+        if (!data.remotes || data.remotes.length === 0) {
+          html += '<div style="color:var(--text-muted);font-size:12px;">暂无远程仓库</div>';
+        } else {
+          data.remotes.forEach(function(r) {
+            var statusHtml = '';
+            if (r.notFetched) {
+              statusHtml = '<span style="color:var(--text-muted);">未获取（请 git fetch）</span>';
+            } else if (r.ahead === 0 && r.behind === 0) {
+              statusHtml = '<span style="color:#52c41a;">已同步</span>';
+            } else {
+              var parts = [];
+              if (r.ahead > 0) parts.push('<span style="color:#1677ff;">领先 ' + r.ahead + ' commit</span>');
+              if (r.behind > 0) parts.push('<span style="color:#fa8c16;">落后 ' + r.behind + ' commit</span>');
+              statusHtml = parts.join(' / ');
+            }
+            html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-light, #f0f0f0);">' +
+              '<span style="display:inline-block;padding:1px 6px;background:var(--bg-body);border:1px solid var(--border);border-radius:3px;font-family:Consolas,monospace;font-size:11px;color:var(--text-main);white-space:nowrap;">' + r.name + '</span>' +
+              '<span style="font-size:12px;">' + statusHtml + '</span>' +
+              '<span style="flex:1;text-align:right;font-size:11px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + r.url.replace(/"/g, '&quot;') + '">' + r.url + '</span>' +
+              '</div>';
+          });
+        }
+        html += '</div>';
+
+        // Local status
+        html += '<div>';
+        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;">本地状态</div>';
+        var localLabel = '';
+        var localColor = '';
+        if (data.localStatus === 'clean') {
+          localLabel = '工作区干净';
+          localColor = '#52c41a';
+        } else if (data.localStatus === 'uncommitted') {
+          localLabel = '更改未提交';
+          localColor = '#fa8c16';
+        } else {
+          localLabel = '未知';
+          localColor = 'var(--text-muted)';
+        }
+        html += '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + localColor + ';"></span>' +
+          '<span style="color:' + localColor + ';font-size:12px;">[' + localLabel + ']</span>' +
+          '</div>';
+        html += '</div>';
+
+        content.innerHTML = html;
+      } catch (err) {
+        content.innerHTML = '<div style="color:#ff4d4f;text-align:center;padding:20px 0;">加载失败: ' + err.message + '</div>';
+      }
+    }
 
     // Re-query global refs to point to modal body elements
     projectNameInput = container.querySelector('#project-name-input');
@@ -601,6 +713,21 @@
       }
       // loadSettings after modal created so DOM refs are valid
       await loadSettings();
+      // Reset to basic tab on each open
+      var body = settingsModalInstance.getBody();
+      var tabs = body.querySelectorAll('.settings-tab');
+      tabs.forEach(function(t) {
+        var isBasic = t.dataset.tab === 'basic';
+        t.classList.toggle('active', isBasic);
+        t.style.color = isBasic ? 'var(--text-main)' : 'var(--text-muted)';
+        t.style.borderBottomColor = isBasic ? 'var(--accent)' : 'transparent';
+        t.style.fontWeight = isBasic ? '600' : '400';
+      });
+      var tabBasic = body.querySelector('#tab-basic');
+      var tabGit = body.querySelector('#tab-git');
+      if (tabBasic) tabBasic.style.display = '';
+      if (tabGit) tabGit.style.display = 'none';
+      if (settingsModalInstance._btnConfirm) settingsModalInstance._btnConfirm.style.display = '';
       settingsModalInstance.open();
     });
   }
@@ -875,6 +1002,21 @@
     }
   }
 
+  async function showDeleteRuleModal(fileName) {
+    const ok = await window.showConfirm('删除确认', `是否删除规则文件 "${fileName}"？`);
+    if (!ok) return;
+    try {
+      await window.apiClient.postDelete({ path: `rules/${fileName}` });
+      if (activeRuleItem && activeRuleItem.dataset.name === fileName) {
+        activeRuleItem = null;
+        exitRuleMode();
+      }
+      await loadRulesList();
+      window.showToast('删除成功', 'success');
+    } catch (err) {
+      window.showToast('删除失败: ' + err.message, 'error');
+    }
+  }
 
   function removeRulesContextMenu() {
     const menu = document.getElementById('rules-context-menu');
