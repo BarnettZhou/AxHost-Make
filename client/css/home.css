@@ -204,6 +204,15 @@ body.dark .dropdown-menu {
 .dropdown.open .dropdown-menu,
 .dropdown-menu.open { display: block; }
 
+/* Import dropdown: left-align since button is on the left */
+#import-dropdown .dropdown-menu {
+  left: 0; right: auto;
+}
+#import-dropdown .dropdown-item {
+  display: flex; align-items: center; gap: 8px;
+  justify-content: flex-start;
+}
+
 .dropdown-group-label {
   padding: 4px 12px; font-size: 11px;
   color: #999; text-transform: uppercase; letter-spacing: 0.5px;

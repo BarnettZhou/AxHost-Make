@@ -30,6 +30,7 @@
     viewIcon: document.getElementById('view-icon'),
     btnNewProject: document.getElementById('btn-new-project'),
     btnImportProject: document.getElementById('btn-import-project'),
+    importDropdown: document.getElementById('import-dropdown'),
     projectListBody: document.getElementById('project-list-body'),
     projectListView: document.getElementById('project-list-view'),
     shellContainer: document.getElementById('shell-container'),
@@ -828,6 +829,191 @@
     els.projectListBody.appendChild(list);
   }
 
+  // ===== Import =====
+  async function openGitImportModal() {
+    var modal = new AxhostModal({
+      title: '从 Git 仓库导入',
+      confirmText: '导入',
+      width: '440px',
+      body: function(container) {
+        container.innerHTML =
+          '<label for="import-project-name">项目名称</label>' +
+          '<input type="text" id="import-project-name" placeholder="请输入项目名称" autocomplete="off">' +
+          '<label for="import-git-url" style="margin-top:8px;">Git 仓库地址</label>' +
+          '<input type="url" id="import-git-url" placeholder="https://github.com/user/repo.git" autocomplete="off">';
+        setTimeout(function() { container.querySelector('#import-project-name').focus(); }, 50);
+      },
+      onConfirm: async function() {
+        var bodyEl = modal.getBody();
+        var name = bodyEl.querySelector('#import-project-name').value.trim();
+        var gitUrl = bodyEl.querySelector('#import-git-url').value.trim();
+        if (!name) { showToast('请输入项目名称', 'error'); throw new Error(); }
+        if (!gitUrl) { showToast('请输入 Git 仓库地址', 'error'); throw new Error(); }
+        try {
+          var res = await fetch('/api/projects/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, gitUrl: gitUrl })
+          });
+          var data = await res.json();
+          if (data.code !== 0) {
+            showToast(data.message || '导入失败', 'error');
+            throw new Error();
+          }
+          await loadProjects();
+          showToast('导入成功', 'success');
+        } catch (err) {
+          if (err.message !== '') showToast('导入失败: ' + err.message, 'error');
+          throw err;
+        }
+      }
+    });
+    modal.open();
+  }
+
+  async function openZipImportModal() {
+    var zipBase64 = null;
+    var zipFileName = '';
+    var modal = new AxhostModal({
+      title: '从文件导入',
+      confirmText: '导入',
+      width: '440px',
+      body: function(container) {
+        container.innerHTML =
+          '<label for="import-zip-name">项目名称</label>' +
+          '<input type="text" id="import-zip-name" placeholder="请输入项目名称" autocomplete="off">' +
+          '<label for="import-zip-file" style="margin-top:8px;">ZIP 文件</label>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<input type="file" id="import-zip-file" accept=".zip" style="display:none;">' +
+            '<button type="button" id="btn-select-zip" class="axhost-modal-btn" style="flex-shrink:0;">选择文件</button>' +
+            '<span id="import-zip-filename" style="font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">未选择文件</span>' +
+          '</div>';
+        setTimeout(function() { container.querySelector('#import-zip-name').focus(); }, 50);
+
+        var fileInput = container.querySelector('#import-zip-file');
+        var btnSelect = container.querySelector('#btn-select-zip');
+        var nameSpan = container.querySelector('#import-zip-filename');
+
+        btnSelect.addEventListener('click', function() { fileInput.click(); });
+
+        fileInput.addEventListener('change', function() {
+          var file = fileInput.files[0];
+          if (!file) return;
+          zipFileName = file.name;
+          nameSpan.textContent = file.name;
+          var reader = new FileReader();
+          reader.onload = function() {
+            zipBase64 = reader.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      },
+      onConfirm: async function() {
+        var bodyEl = modal.getBody();
+        var name = bodyEl.querySelector('#import-zip-name').value.trim();
+        if (!name) { showToast('请输入项目名称', 'error'); throw new Error(); }
+        if (!zipBase64) { showToast('请选择 ZIP 文件', 'error'); throw new Error(); }
+        try {
+          var res = await fetch('/api/projects/import-zip', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, data: zipBase64 })
+          });
+          var data = await res.json();
+          if (data.code !== 0) {
+            showToast(data.message || '导入失败', 'error');
+            throw new Error();
+          }
+          zipBase64 = null;
+          await loadProjects();
+          showToast('导入成功', 'success');
+        } catch (err) {
+          if (err.message !== '') showToast('导入失败: ' + err.message, 'error');
+          throw err;
+        }
+      }
+    });
+    modal.open();
+  }
+
+  async function openHtmlImportModal() {
+    var workspaceRoot = '';
+    var axhostMakeRoot = '';
+    var skillPath = '';
+
+    // 先获取工作空间路径
+    try {
+      var infoRes = await fetch('/api/workspace-info');
+      var infoData = await infoRes.json();
+      if (infoData.code === 0) {
+        workspaceRoot = infoData.data.workspaceRoot;
+        axhostMakeRoot = infoData.data.axhostMakeRoot;
+        skillPath = axhostMakeRoot + '/skills/import-html-package.md';
+      }
+    } catch (e) {
+      showToast('获取工作空间信息失败', 'error');
+      return;
+    }
+
+    var modal = new AxhostModal({
+      title: '从 HTML 目录导入',
+      hideConfirm: true,
+      hideCancel: true,
+      width: '520px',
+      body: function(container) {
+        container.innerHTML =
+          '<label for="import-html-path">HTML 目录路径</label>' +
+          '<input type="text" id="import-html-path" placeholder="请输入或拖拽 HTML 包所在的本地目录路径，如 /Users/xxx/downloads/my-package" autocomplete="off">' +
+          '<div id="html-import-hint" style="font-size:12px;color:var(--text-muted);margin-top:-4px;margin-bottom:8px;">' +
+            '输入包含 HTML/CSS/JS 文件的本地目录绝对路径' +
+          '</div>';
+        setTimeout(function() { container.querySelector('#import-html-path').focus(); }, 50);
+      },
+      footer: function(footerEl) {
+        footerEl.innerHTML =
+          '<span id="html-import-copy-msg" style="flex:1;font-size:12px;color:#52c41a;display:none;align-items:center;gap:4px;">' +
+            '<iconpark-icon icon-id="check-small" size="14" color="#52c41a"></iconpark-icon>' +
+            '已复制提示词，请粘贴给任意本地 AI-Agent 执行导入' +
+          '</span>' +
+          '<button class="axhost-modal-btn" id="btn-html-import-cancel">关闭</button>' +
+          '<button class="axhost-modal-btn axhost-modal-btn-primary" id="btn-html-import-copy">复制提示词</button>';
+        footerEl.querySelector('#btn-html-import-cancel').addEventListener('click', function() {
+          modal.close();
+        });
+        footerEl.querySelector('#btn-html-import-copy').addEventListener('click', async function() {
+          var bodyEl = modal.getBody();
+          var htmlPath = bodyEl.querySelector('#import-html-path').value.trim();
+          if (!htmlPath) { showToast('请输入 HTML 目录路径', 'error'); return; }
+
+          var promptText =
+            '**Prompt**\n\n' +
+            '请仔细阅读如下文档\n\n' +
+            skillPath + '\n\n' +
+            '根据文档指导，将如下网页资源导入 AxHost-Make 工作目录\n\n' +
+            htmlPath + '\n\n' +
+            '**目录指引**\n\n' +
+            '- AxHost-Make 工作目录：' + workspaceRoot + '\n' +
+            '- AxHost-Make 框架目录：' + axhostMakeRoot + '\n';
+
+          try {
+            await navigator.clipboard.writeText(promptText);
+            var copyBtn = footerEl.querySelector('#btn-html-import-copy');
+            var copyMsg = footerEl.querySelector('#html-import-copy-msg');
+            copyBtn.textContent = '已复制';
+            copyBtn.disabled = true;
+            copyMsg.style.display = 'flex';
+          } catch (e) {
+            var copyMsg = footerEl.querySelector('#html-import-copy-msg');
+            copyMsg.innerHTML = '<iconpark-icon icon-id="close-small" size="14" color="#ff4d4f"></iconpark-icon>复制失败，请手动复制';
+            copyMsg.style.color = '#ff4d4f';
+            copyMsg.style.display = 'flex';
+          }
+        });
+      }
+    });
+    modal.open();
+  }
+
   // ===== Events =====
   function bindEvents() {
     els.btnHome.addEventListener('click', showProjectList);
@@ -845,6 +1031,9 @@
     document.addEventListener('click', (e) => {
       if (!els.sortDropdown.contains(e.target)) {
         els.sortDropdown.classList.remove('open');
+      }
+      if (!els.importDropdown.contains(e.target)) {
+        els.importDropdown.classList.remove('open');
       }
     });
 
@@ -896,8 +1085,25 @@
     });
 
 
-    els.btnImportProject.addEventListener('click', () => {
-      alert('导入功能即将推出');
+    // Import dropdown toggle
+    els.btnImportProject.addEventListener('click', (e) => {
+      e.stopPropagation();
+      els.importDropdown.classList.toggle('open');
+    });
+
+    // Import dropdown item click
+    els.importDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+      item.addEventListener('click', async () => {
+        els.importDropdown.classList.remove('open');
+        const action = item.dataset.action;
+        if (action === 'git-import') {
+          await openGitImportModal();
+        } else if (action === 'zip-import') {
+          await openZipImportModal();
+        } else if (action === 'html-import') {
+          await openHtmlImportModal();
+        }
+      });
     });
 
     // Avatar dropdown

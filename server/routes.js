@@ -31,6 +31,7 @@ const modules = [
   require('./api/images.js'),
   require('./api/cache-cleanup.js'),
   require('./api/cover.js'),
+  require('./api/import-project.js'),
 ];
 
 const workspaceRoutes = {};      // key → handler (req, res, workspaceRoot?) — scope: workspace|none

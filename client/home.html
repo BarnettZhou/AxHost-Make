@@ -66,7 +66,23 @@
 
         <div class="action-bar">
           <button class="btn-primary" id="btn-new-project"><iconpark-icon icon-id="plus" size="14"></iconpark-icon>新建原型项目</button>
-          <button class="btn-secondary" id="btn-import-project"><iconpark-icon icon-id="download" size="14"></iconpark-icon>导入已有项目</button>
+          <div class="dropdown" id="import-dropdown">
+            <button class="btn-secondary" id="btn-import-project"><iconpark-icon icon-id="download" size="14"></iconpark-icon>导入已有项目</button>
+            <div class="dropdown-menu">
+              <div class="dropdown-item" data-action="git-import">
+                <iconpark-icon icon-id="github-one" size="14" color="currentColor"></iconpark-icon>
+                <span>从 Git 仓库导入</span>
+              </div>
+              <div class="dropdown-item" data-action="zip-import">
+                <iconpark-icon icon-id="file-zip" size="14" color="currentColor"></iconpark-icon>
+                <span>从文件导入</span>
+              </div>
+              <div class="dropdown-item" data-action="html-import">
+                <iconpark-icon icon-id="folder-code-one" size="14" color="currentColor"></iconpark-icon>
+                <span>从 HTML 目录导入</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div id="project-list-body">
