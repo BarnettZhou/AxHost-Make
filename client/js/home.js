@@ -963,7 +963,7 @@
       body: function(container) {
         container.innerHTML =
           '<div style="background:#fff7e6;border:1px solid #ffd591;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:12px;color:#ad6800;line-height:1.6;">' +
-            '⚠️ 请确保在 <strong>全新的空项目</strong> 中执行导入，不要在已有项目中使用此提示词。' +
+            '⚠️ Agent 将<strong>自动创建新项目</strong>并导入 HTML，不会影响已有项目。' +
           '</div>' +
           '<label for="import-html-name">项目名称</label>' +
           '<input type="text" id="import-html-name" placeholder="请输入项目名称" autocomplete="off">' +
@@ -994,8 +994,7 @@
 
           var promptText =
             '**Prompt**\n\n' +
-            '> ⚠️ 请在一个**全新的空 AxHost-Make 项目**中执行以下操作。如果当前项目已有页面，请先在首页创建新项目。\n\n' +
-            '请仔细阅读如下文档\n\n' +
+            '请仔细阅读如下文档，并严格按照「第〇步」创建新项目后执行导入\n\n' +
             skillPath + '\n\n' +
             '根据文档指导，将如下网页资源导入 AxHost-Make 工作目录\n\n' +
             '项目名称：' + projectName + '\n' +

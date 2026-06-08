@@ -4,17 +4,44 @@
 
 ---
 
-## ⚠️ 前置条件：必须在新项目中操作
+## 第〇步：创建新项目（必须首先执行）
 
 **本任务必须在全新的空项目中执行，严禁在已有项目中原位修改文件。**
 
-在开始任何导入工作前，请先执行以下检查：
+你应自行创建新项目，不要依赖用户手动操作。按以下步骤执行：
 
-1. **确认当前项目为空**：检查 `prototype/pages/` 和 `prototype/components/` 下是否无任何 hash 目录（8 位十六进制目录名）。若已有页面或组件，说明你在一个已有项目中，**立即停止并告知用户**：请先在 AxHost-Make 首页创建一个新的空项目，再重新执行本提示词。
-2. **确认项目名称匹配**：`prototype/sitemap.js` 中的 `name` 字段应与用户指定的项目名称一致。若不一致，更新 `sitemap.js` 中的 `name`。
-3. **阅读项目上下文**：先查阅当前项目的 `AGENTS.md`、`RESOURCES.md`、`COMPONENTS.md`、`rules/design.md`，了解框架规范。
+### 1. 确认工作空间根目录
 
-> **为什么必须用新项目？** 导入 HTML 包会创建多个页面、提取公共资源、修改 `sitemap.js` 和项目索引文件。在已有项目中执行会污染现有结构、覆盖已有样式、造成导航混乱。
+当前项目目录为 `{workspace}/projects/{project_hash}/`，工作空间根目录即 `../..`。通过以下命令确认：
+
+```bash
+WORKSPACE=$(cd ../.. && pwd)
+echo $WORKSPACE
+```
+
+### 2. 调用 API 创建新项目
+
+AxHost-Make 开发服务器默认运行在 `http://127.0.0.1:3820`。通过 API 创建项目，得到新项目的 8 位 hash：
+
+```bash
+curl -s -X POST http://127.0.0.1:3820/api/projects \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"<用户指定的项目名称>"}'
+```
+
+返回示例：`{"code":0,"data":{"id":"a1b2c3d4","name":"我的项目"}}`
+
+### 3. 进入新项目目录
+
+```bash
+cd $WORKSPACE/projects/<项目hash>
+```
+
+### 4. 验证
+
+确认当前目录下存在 `prototype/`、`AGENTS.md` 等文件，且 `prototype/pages/` 下仅有空目录（无 hash 子目录）。
+
+> **导入 HTML 包会创建多个页面、提取公共资源、修改项目索引文件。必须在新项目中执行，严禁污染已有项目。**
 
 ---
 
