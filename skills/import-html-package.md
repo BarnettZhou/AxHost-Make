@@ -8,36 +8,50 @@
 
 **本任务必须在全新的空项目中执行，严禁在已有项目中原位修改文件。**
 
-你应自行创建新项目，不要依赖用户手动操作。按以下步骤执行：
+你应自行创建新项目，不要依赖用户手动操作。
 
-### 1. 确认工作空间根目录
+### 切换到工作空间根目录并创建项目
 
-当前项目目录为 `{workspace}/projects/{project_hash}/`，工作空间根目录即 `../..`。通过以下命令确认：
-
-```bash
-WORKSPACE=$(cd ../.. && pwd)
-echo $WORKSPACE
-```
-
-### 2. 调用 API 创建新项目
-
-AxHost-Make 开发服务器默认运行在 `http://127.0.0.1:3820`。通过 API 创建项目，得到新项目的 8 位 hash：
+当前项目目录为 `{workspace}/projects/{project_hash}/`。先切换到工作空间根目录，然后通过 Node.js 调用框架的 `init` + `generateId` 模块创建新项目：
 
 ```bash
-curl -s -X POST http://127.0.0.1:3820/api/projects \
-  -H 'Content-Type: application/json' \
-  -d '{"name":"<用户指定的项目名称>"}'
+cd ../..
+node << 'EOF'
+const { init } = require('./axhost-make/bin/axhost-init.js');
+const { generateId } = require('./axhost-make/server/lib/ids.js');
+const fs = require('fs').promises;
+const path = require('path');
+(async () => {
+  const name = '<用户指定的项目名称>';
+  const projectsDir = path.join(process.cwd(), 'projects');
+  await fs.mkdir(projectsDir, { recursive: true });
+  // 读取已有项目避免 ID 冲突
+  const metaPath = path.join(projectsDir, '.projects.json');
+  let metas = [];
+  try { metas = JSON.parse(await fs.readFile(metaPath, 'utf-8')).projects || []; } catch {}
+  const existingIds = new Set(metas.map(m => m.id.toLowerCase()));
+  const id = generateId(name, existingIds);
+  const projectRoot = path.join(projectsDir, id);
+  await fs.mkdir(projectRoot, { recursive: true });
+  await init(projectRoot);
+  // 注册到项目列表
+  const now = new Date().toISOString();
+  metas.push({ id, name, createdAt: now, lastModified: now });
+  await fs.writeFile(metaPath, JSON.stringify({ projects: metas }, null, 2) + '\n');
+  console.log(id);
+})().catch(e => { console.error(e.message); process.exit(1); });
+EOF
 ```
 
-返回示例：`{"code":0,"data":{"id":"a1b2c3d4","name":"我的项目"}}`
+执行后会输出新项目的 8 位 hash，记下这个 hash。
 
-### 3. 进入新项目目录
+### 进入新项目目录
 
 ```bash
-cd $WORKSPACE/projects/<项目hash>
+cd projects/<上一步输出的hash>
 ```
 
-### 4. 验证
+### 验证
 
 确认当前目录下存在 `prototype/`、`AGENTS.md` 等文件，且 `prototype/pages/` 下仅有空目录（无 hash 子目录）。
 
