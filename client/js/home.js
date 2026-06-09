@@ -968,11 +968,28 @@
           '<label for="import-html-name">项目名称</label>' +
           '<input type="text" id="import-html-name" placeholder="请输入项目名称" autocomplete="off">' +
           '<label for="import-html-path" style="margin-top:8px;">HTML 目录路径</label>' +
-          '<input type="text" id="import-html-path" placeholder="请输入或拖拽 HTML 包所在的本地目录路径，如 /Users/xxx/downloads/my-package" autocomplete="off">' +
-          '<div id="html-import-hint" style="font-size:12px;color:var(--text-muted);margin-top:-4px;margin-bottom:8px;">' +
-            '输入包含 HTML/CSS/JS 文件的本地目录绝对路径' +
+          '<div style="display:flex;gap:8px;">' +
+            '<input type="text" id="import-html-path" placeholder="输入路径或点击「选择」浏览目录" autocomplete="off" style="flex:1;margin-bottom:0;">' +
+            '<button type="button" id="btn-select-html-dir" class="axhost-modal-btn" style="flex-shrink:0;">选择</button>' +
           '</div>';
         setTimeout(function() { container.querySelector('#import-html-name').focus(); }, 50);
+        // 选择目录按钮：调用服务端原生目录选择器
+        container.querySelector('#btn-select-html-dir').addEventListener('click', async function() {
+          var btn = this;
+          btn.disabled = true;
+          btn.textContent = '...';
+          try {
+            var res = await fetch('/api/select-directory');
+            var data = await res.json();
+            if (data.code === 0 && data.data.path) {
+              container.querySelector('#import-html-path').value = data.data.path;
+            }
+          } catch (e) {
+            showToast('打开目录选择器失败', 'error');
+          }
+          btn.disabled = false;
+          btn.textContent = '选择';
+        });
       },
       footer: function(footerEl) {
         footerEl.innerHTML =

@@ -33,6 +33,7 @@ const modules = [
   require('./api/cover.js'),
   require('./api/import-project.js'),
   require('./api/git-status.js'),
+  require('./api/select-directory.js'),
 ];
 
 const workspaceRoutes = {};      // key → handler (req, res, workspaceRoot?) — scope: workspace|none
