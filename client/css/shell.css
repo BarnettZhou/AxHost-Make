@@ -153,8 +153,7 @@ html, body {
   border: none;
 }
 #iframe-wrapper.hidden,
-#prompt-box.hidden,
-#prompt-resizer.hidden,
+#floating-prompt-box.hidden,
 #rules-resizer.hidden,
 #docs-resizer.hidden,
 #right-bar-resizer.hidden {
@@ -406,95 +405,6 @@ body.dark .tree-item > .tree-label.active {
   zoom: var(--preview-zoom, 1);
 }
 
-/* Prompt Box */
-#prompt-box {
-  height: 120px;
-  min-height: 80px;
-  max-height: 600px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background: #f5f5f5;
-}
-body.dark #prompt-box {
-  background: #262626;
-}
-#prompt-box:focus-within {
-  background: #ffffff;
-}
-body.dark #prompt-box:focus-within {
-  background: #252526;
-}
-.preview-mode #prompt-box {
-  display: none;
-}
-#prompt-box.collapsed {
-  height: auto !important;
-  min-height: 0;
-  flex: 0 0 auto;
-}
-#prompt-box.collapsed #prompt-input {
-  display: none;
-}
-#prompt-box textarea {
-  flex: 1;
-  width: 100%;
-  background: transparent;
-  color: var(--text-main);
-  border: none;
-  padding: 8px 12px;
-  resize: none;
-  outline: none;
-  font-family: inherit;
-  font-size: 13px;
-}
-.prompt-actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 8px 12px;
-  border-top: 1px solid var(--border);
-}
-.text-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-}
-.text-btn:hover {
-  color: var(--text-main);
-  background: var(--bg-hover);
-}
-#prompt-status {
-  color: var(--text-muted);
-  font-size: 12px;
-}
-.prompt-context {
-  color: var(--text-muted);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-right: auto;
-}
-#btn-prompt-copy {
-  background: #1677ff;
-  color: #fff;
-  border: 1px solid #1677ff;
-  padding: 5px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-#btn-prompt-copy:hover {
-  opacity: 0.9;
-}
-
 /* Right Bar */
 #panel-right-bar {
   width: 260px;
@@ -518,37 +428,6 @@ body.dark #prompt-box:focus-within {
   border: none;
 }
 
-#panel-right-bar .right-bar-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-#panel-right-bar .right-bar-header #btn-inspect {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-main);
-  padding: 4px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#panel-right-bar .right-bar-header #btn-inspect:hover {
-  background: var(--bg-hover);
-}
-#panel-right-bar .right-bar-header #btn-inspect.active {
-  background: #1677ff;
-  color: #fff;
-  border-color: #1677ff;
-}
-#panel-right-bar .right-bar-header #btn-inspect.active:hover {
-  background: #0958d9;
-  border-color: #0958d9;
-}
 #btn-toggle-right-bar.active {
   background: #1677ff;
   color: #fff;
@@ -576,54 +455,126 @@ body.dark #prompt-box:focus-within {
   background: #0958d9;
   border-color: #0958d9;
 }
-#panel-right-bar .right-bar-header .prompt-context {
+
+/* Floating Prompt Box */
+#floating-prompt-box {
+  position: absolute;
+  width: 320px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  overflow: hidden;
+}
+#floating-prompt-box.hidden {
+  display: none;
+}
+.preview-mode #floating-prompt-box {
+  display: none;
+}
+
+/* Floating Prompt Box — Header */
+.floating-prompt-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  cursor: grab;
+  user-select: none;
+  background: var(--bg-panel);
+}
+.floating-prompt-header:active {
+  cursor: grabbing;
+}
+.floating-prompt-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.floating-prompt-header .prompt-context {
   color: var(--text-muted);
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
   flex: 1;
 }
-#panel-right-bar .right-bar-body {
+
+/* Floating Prompt Box — Body */
+.floating-prompt-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
 }
-#panel-right-bar .right-bar-body textarea {
+.floating-prompt-body textarea {
   flex: 1;
   width: 100%;
   background: transparent;
   color: var(--text-main);
   border: none;
-  padding: 12px;
+  padding: 8px 10px;
   resize: none;
   outline: none;
   font-family: inherit;
   font-size: 13px;
 }
-#panel-right-bar .right-bar-body .inspect-form {
+.floating-prompt-body textarea::placeholder {
+  color: var(--text-muted);
+}
+.floating-prompt-body .inspect-form {
   flex: 1;
   overflow: auto;
-  padding: 12px;
+  padding: 10px;
 }
-#panel-right-bar .right-bar-body .inspect-form.hidden {
+.floating-prompt-body .inspect-form.hidden {
   display: none;
 }
-#panel-right-bar .right-bar-footer {
+
+/* Floating Prompt Box — Attach popup */
+.floating-prompt-body #attach-popup {
+  background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+  padding: 8px 10px;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* Floating Prompt Box — Footer */
+.floating-prompt-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 6px 10px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
+}
+.floating-prompt-footer #btn-prompt-copy {
+  background: #1677ff;
+  color: #fff;
+  border: 1px solid #1677ff;
+  padding: 5px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  width: 96px;
+  flex-shrink: 0;
+  margin-left: auto;
   position: relative;
 }
-#panel-right-bar .right-bar-footer #btn-prompt-copy {
-  position: relative;
+.floating-prompt-footer #btn-prompt-copy:hover {
+  opacity: 0.9;
 }
-#panel-right-bar .right-bar-footer .prompt-status-tooltip {
+.floating-prompt-footer .prompt-status-tooltip {
   position: absolute;
   bottom: calc(100% + 4px);
   right: 0;
@@ -639,36 +590,40 @@ body.dark #prompt-box:focus-within {
   z-index: 10;
   pointer-events: none;
 }
-#panel-right-bar .right-bar-footer .prompt-status-tooltip.hidden {
+.floating-prompt-footer .prompt-status-tooltip.hidden {
   display: none;
-}
-#panel-right-bar .right-bar-footer #btn-prompt-copy {
-  background: #1677ff;
-  color: #fff;
-  border: 1px solid #1677ff;
-  padding: 5px 14px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  width: 96px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-#panel-right-bar .right-bar-footer #btn-prompt-copy:hover {
-  opacity: 0.9;
 }
 
-/* Attach popup */
-#panel-right-bar .attach-popup {
-  background: var(--bg-panel);
-  border-top: 1px solid var(--border);
-  padding: 10px 12px;
-  flex-shrink: 0;
-  overflow: visible;
+/* Floating Prompt Box — Text buttons */
+#floating-prompt-box .text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
 }
-#panel-right-bar .attach-popup.hidden {
-  display: none;
+#floating-prompt-box .text-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
 }
+
+/* Floating Prompt Box — Dark mode */
+body.dark #floating-prompt-box {
+  background: #252526;
+  border-color: var(--border);
+}
+body.dark #floating-prompt-box:focus-within {
+  background: #252526;
+}
+body.dark .floating-prompt-header {
+  background: #252526;
+}
+
+/* Attach popup (shared) */
 .attach-popup-header {
   display: flex;
   justify-content: space-between;
@@ -699,7 +654,7 @@ body.dark #prompt-box:focus-within {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  max-height: 200px;
+  height: 80px;
   overflow-y: auto;
 }
 .attach-thumb {
@@ -757,26 +712,6 @@ body.dark #prompt-box:focus-within {
 .attach-thumb-footer:hover {
   color: var(--accent);
   background: var(--bg-active);
-}
-#btn-attach-toggle {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  padding: 4px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
-#btn-attach-toggle:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-#btn-attach-toggle.active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(22,119,255,0.08);
 }
 
 /* Right Docs */

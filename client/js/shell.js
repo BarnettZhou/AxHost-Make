@@ -19,6 +19,7 @@
   const btnToggleDocs = document.getElementById('btn-toggle-docs');
   const btnTouchEmulation = document.getElementById('btn-touch-emulation');
   const btnToggleRightBar = document.getElementById('btn-toggle-right-bar');
+  const floatingPromptBox = document.getElementById('floating-prompt-box');
   const btnPreview = document.getElementById('btn-preview');
   const btnRefreshPreview = document.getElementById('btn-refresh-preview');
   const btnOpenOnline = document.getElementById('btn-open-online');
@@ -220,21 +221,170 @@
   }
 
   const rightBarResizer = document.getElementById('right-bar-resizer');
-  if (rightBarResizer && !window.__axhostState.rightBarVisible) {
-    rightBarResizer.classList.add('hidden');
-  }
+  // Right bar is now hidden by default; floating prompt box replaces it
+  if (panelRightBar) panelRightBar.classList.add('hidden');
+  if (rightBarResizer) rightBarResizer.classList.add('hidden');
   if (btnToggleRightBar) {
     btnToggleRightBar.classList.toggle('active', window.__axhostState.rightBarVisible);
     btnToggleRightBar.addEventListener('click', () => {
       window.__axhostState.rightBarVisible = !window.__axhostState.rightBarVisible;
       var hide = !window.__axhostState.rightBarVisible;
-      if (panelRightBar) {
-        if (hide) freezePanelChildren(panelRightBar);
-        panelRightBar.classList.toggle('hidden', hide);
+      if (floatingPromptBox) {
+        floatingPromptBox.classList.toggle('hidden', hide);
       }
-      if (rightBarResizer) rightBarResizer.classList.toggle('hidden', hide);
       btnToggleRightBar.classList.toggle('active', window.__axhostState.rightBarVisible);
     });
+  }
+
+  // --- Floating prompt box: drag-to-snap, collapse, and position memory ---
+  if (floatingPromptBox) {
+    const SNAP_PADDING = 12; // px from edges
+
+    // Restore last position
+    var savedCorner = localStorage.getItem('axhost-prompt-corner') || 'top-left';
+    applyCorner(savedCorner, false);
+
+    function applyCorner(corner, animate) {
+      floatingPromptBox.style.transition = animate ? 'left 0.2s ease, top 0.2s ease' : 'none';
+      // Always use left/top so transitions animate smoothly in all directions
+      floatingPromptBox.style.right = 'auto';
+      floatingPromptBox.style.bottom = 'auto';
+      var parentW = floatingPromptBox.parentElement.clientWidth;
+      var parentH = floatingPromptBox.parentElement.clientHeight;
+      var boxW = floatingPromptBox.offsetWidth;
+      var boxH = floatingPromptBox.offsetHeight;
+      switch (corner) {
+        case 'top-left':
+          floatingPromptBox.style.left = SNAP_PADDING + 'px';
+          floatingPromptBox.style.top = SNAP_PADDING + 'px';
+          break;
+        case 'top-right':
+          floatingPromptBox.style.left = (parentW - boxW - SNAP_PADDING) + 'px';
+          floatingPromptBox.style.top = SNAP_PADDING + 'px';
+          break;
+        case 'bottom-left':
+          floatingPromptBox.style.left = SNAP_PADDING + 'px';
+          floatingPromptBox.style.top = (parentH - boxH - SNAP_PADDING) + 'px';
+          break;
+        case 'bottom-right':
+        default:
+          floatingPromptBox.style.left = (parentW - boxW - SNAP_PADDING) + 'px';
+          floatingPromptBox.style.top = (parentH - boxH - SNAP_PADDING) + 'px';
+          break;
+      }
+      if (animate) {
+        setTimeout(function () {
+          floatingPromptBox.style.transition = 'none';
+        }, 200);
+      }
+    }
+
+    function getClosestCorner() {
+      var rect = floatingPromptBox.getBoundingClientRect();
+      var parentRect = floatingPromptBox.parentElement.getBoundingClientRect();
+      // Current top-left relative to parent
+      var curLeft = rect.left - parentRect.left;
+      var curTop = rect.top - parentRect.top;
+      var curRight = parentRect.width - (rect.right - parentRect.left);
+      var curBottom = parentRect.height - (rect.bottom - parentRect.top);
+
+      var corners = [
+        { name: 'top-left',     dist: Math.abs(curLeft - SNAP_PADDING) + Math.abs(curTop - SNAP_PADDING) },
+        { name: 'top-right',    dist: Math.abs(curRight - SNAP_PADDING) + Math.abs(curTop - SNAP_PADDING) },
+        { name: 'bottom-left',  dist: Math.abs(curLeft - SNAP_PADDING) + Math.abs(curBottom - SNAP_PADDING) },
+        { name: 'bottom-right', dist: Math.abs(curRight - SNAP_PADDING) + Math.abs(curBottom - SNAP_PADDING) }
+      ];
+      corners.sort(function (a, b) { return a.dist - b.dist; });
+      return corners[0].name;
+    }
+
+    // Drag to reposition
+    var dragState = null;
+    var dragOverlay = null;
+    var floatingHeader = floatingPromptBox.querySelector('.floating-prompt-header');
+
+    function onDragStart(e) {
+      if (e.target.closest('button')) return; // don't drag when clicking buttons
+      e.preventDefault();
+      var rect = floatingPromptBox.getBoundingClientRect();
+      dragState = {
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top
+      };
+      // Transparent overlay to capture events over iframe
+      dragOverlay = document.createElement('div');
+      dragOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;cursor:grabbing;';
+      document.body.appendChild(dragOverlay);
+      floatingPromptBox.style.transition = 'none';
+      floatingPromptBox.style.right = 'auto';
+      floatingPromptBox.style.bottom = 'auto';
+      floatingPromptBox.style.left = (rect.left - floatingPromptBox.parentElement.getBoundingClientRect().left) + 'px';
+      floatingPromptBox.style.top = (rect.top - floatingPromptBox.parentElement.getBoundingClientRect().top) + 'px';
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('mouseup', onDragEnd);
+    }
+
+    function onDragMove(e) {
+      if (!dragState) return;
+      var parentRect = floatingPromptBox.parentElement.getBoundingClientRect();
+      var newLeft = e.clientX - parentRect.left - dragState.offsetX;
+      var newTop = e.clientY - parentRect.top - dragState.offsetY;
+      // Clamp to parent bounds
+      var boxW = floatingPromptBox.offsetWidth;
+      var boxH = floatingPromptBox.offsetHeight;
+      newLeft = Math.max(0, Math.min(newLeft, parentRect.width - boxW));
+      newTop = Math.max(0, Math.min(newTop, parentRect.height - boxH));
+      floatingPromptBox.style.left = newLeft + 'px';
+      floatingPromptBox.style.top = newTop + 'px';
+    }
+
+    function onDragEnd(e) {
+      document.removeEventListener('mousemove', onDragMove);
+      document.removeEventListener('mouseup', onDragEnd);
+      if (dragOverlay) { dragOverlay.remove(); dragOverlay = null; }
+      if (!dragState) return;
+      var corner = getClosestCorner();
+      applyCorner(corner, true);
+      localStorage.setItem('axhost-prompt-corner', corner);
+      dragState = null;
+      // Re-apply corner with transition in case snap moved it
+    }
+
+    if (floatingHeader) {
+      floatingHeader.addEventListener('mousedown', onDragStart);
+    }
+
+    // Resize button: cycle 320px → 540px → fill container
+    var sizeLevels = [320, 540, 'fill'];
+    var sizeLevel = localStorage.getItem('axhost-prompt-size') !== null ? parseInt(localStorage.getItem('axhost-prompt-size'), 10) : 2;
+    var btnFloatResize = document.getElementById('btn-float-resize');
+
+    function applySizeLevel(level) {
+      floatingPromptBox.style.maxHeight = '';
+      if (level === 2) {
+        var parentH = floatingPromptBox.parentElement.clientHeight;
+        floatingPromptBox.style.height = Math.max(320, parentH - 24) + 'px';
+      } else {
+        floatingPromptBox.style.height = sizeLevels[level] + 'px';
+      }
+      if (btnFloatResize) {
+        var nextLevel = (level + 1) % 3;
+        var labels = ['320px', '540px', '撑满'];
+        btnFloatResize.title = labels[level] + ' → ' + labels[nextLevel];
+      }
+    }
+
+    // Initial size
+    applySizeLevel(sizeLevel);
+
+    if (btnFloatResize) {
+      btnFloatResize.addEventListener('click', function (e) {
+        e.stopPropagation();
+        sizeLevel = (sizeLevel + 1) % 3;
+        applySizeLevel(sizeLevel);
+        localStorage.setItem('axhost-prompt-size', sizeLevel);
+      });
+    }
   }
 
   async function loadProjectName() {
