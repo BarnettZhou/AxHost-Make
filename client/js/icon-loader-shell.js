@@ -1,8 +1,8 @@
 // IconPark CDN loader — 供 Shell/Preview 宿主环境使用，原型页面请使用 icon-loader.js
 (function () {
-  var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_75.ce7133430e7a6133e49224f9f8858eef.js';
+  var url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_76.91650781639ae7c3d0d70426d3c5e91c.js';
   if (window.__axhostIconParkES5) {
-    url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_75.ce7133430e7a6133e49224f9f8858eef.es5.js';
+    url = 'https://lf1-cdn-tos.bytegoofy.com/obj/iconpark/icons_43205_76.91650781639ae7c3d0d70426d3c5e91c.es5.js';
   }
   if (!document.querySelector('script[data-iconpark]')) {
     var script = document.createElement('script');
