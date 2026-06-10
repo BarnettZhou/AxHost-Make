@@ -430,7 +430,7 @@
       '</div>' +
       // Panel: git
       '<div class="settings-tab-panel" id="tab-git" style="display:none;">' +
-        '<div id="git-status-content" style="font-size:13px;color:var(--text-muted);text-align:center;padding:20px 0;">加载中...</div>' +
+        '<div id="git-status-content" style="font-size:13px;color:var(--text-muted);text-align:center;">加载中...</div>' +
       '</div>';
 
     // === Tab switching ===
@@ -481,7 +481,7 @@
         var html = '';
         // Remotes
         html += '<div style="margin-bottom:16px;">';
-        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;">远程列表</div>';
+        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-align:left;">远程列表</div>';
         if (!data.remotes || data.remotes.length === 0) {
           html += '<div style="color:var(--text-muted);font-size:12px;">暂无远程仓库</div>';
         } else {
@@ -508,7 +508,7 @@
 
         // Local status
         html += '<div>';
-        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;">本地状态</div>';
+        html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;font-weight:600;text-align:left;">本地状态</div>';
         var localLabel = '';
         var localColor = '';
         if (data.localStatus === 'clean') {
@@ -521,10 +521,39 @@
           localLabel = '未知';
           localColor = 'var(--text-muted)';
         }
-        html += '<div style="display:flex;align-items:center;gap:6px;">' +
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">' +
           '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + localColor + ';"></span>' +
-          '<span style="color:' + localColor + ';font-size:12px;">[' + localLabel + ']</span>' +
+          '<span style="color:' + localColor + ';font-size:12px;">' + localLabel + '</span>' +
           '</div>';
+
+        // Uncommitted items list
+        if (data.localStatus === 'uncommitted' && data.uncommittedItems) {
+          var items = data.uncommittedItems;
+          var statusTag = { modified: ['修改', '#fa8c16'], deleted: ['删除', '#ff4d4f'], added: ['新增', '#52c41a'] };
+          function renderGroup(label, list) {
+            var h = '';
+            h += '<div style="font-size:11px;color:var(--text-muted);margin-top:10px;margin-bottom:3px;font-weight:500;text-align:left;">' + label + '</div>';
+            for (var i = 0; i < list.length; i++) {
+              var it = list[i];
+              var display = it.breadcrumb || it.name;
+              var tag = statusTag[it.status] || ['修改', '#fa8c16'];
+              h += '<div style="font-size:12px;color:var(--text-main);line-height:1.7;display:flex;align-items:baseline;gap:6px;">' +
+                '<span style="display:inline-block;font-size:10px;padding:0 4px;border-radius:2px;color:#fff;background:' + tag[1] + ';line-height:1.6;white-space:nowrap;">' + tag[0] + '</span>' +
+                '<span>' + display.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</span>' +
+                '</div>';
+            }
+            return h;
+          }
+          if (items.pages && items.pages.length > 0) {
+            html += renderGroup('页面', items.pages);
+          }
+          if (items.components && items.components.length > 0) {
+            html += renderGroup('组件', items.components);
+          }
+          if (items.rules && items.rules.length > 0) {
+            html += renderGroup('规则', items.rules);
+          }
+        }
         html += '</div>';
 
         content.innerHTML = html;

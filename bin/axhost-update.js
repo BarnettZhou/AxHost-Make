@@ -161,6 +161,14 @@ async function updateSingleProject(projectRoot) {
     console.log('  - Created COMPONENTS.md');
   }
 
+  // Copy .gitignore if not exists (user-maintained, don't overwrite)
+  const gitignoreSrc = path.join(projectTplRoot, '.gitignore');
+  const gitignoreDest = path.join(projectRoot, '.gitignore');
+  if (await exists(gitignoreSrc) && !await exists(gitignoreDest)) {
+    await fs.copyFile(gitignoreSrc, gitignoreDest);
+    console.log('  - Created .gitignore');
+  }
+
   // Ensure missing page resources
   await ensurePageResources(projectRoot);
 

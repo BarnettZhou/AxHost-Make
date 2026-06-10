@@ -92,6 +92,15 @@ async function init(projectRoot) {
     }
   }
 
+  // Copy .gitignore template
+  const gitignorePath = path.join(projectRoot, '.gitignore');
+  if (!await exists(gitignorePath)) {
+    const gitignoreTpl = path.join(projectTplRoot, '.gitignore');
+    if (await exists(gitignoreTpl)) {
+      await fs.copyFile(gitignoreTpl, gitignorePath);
+    }
+  }
+
   // Create shared resource files (icon-loader.js / navigate.js) if not exists
   const resJsDir = path.join(projectRoot, 'prototype', 'resources', 'js');
   await fs.mkdir(resJsDir, { recursive: true });
