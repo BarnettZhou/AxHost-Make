@@ -241,7 +241,7 @@
     const SNAP_PADDING = 12; // px from edges
 
     // Restore last position
-    var savedCorner = localStorage.getItem('axhost-prompt-corner') || 'top-left';
+    var savedCorner = localStorage.getItem('axhost-prompt-corner') || 'top-right';
     applyCorner(savedCorner, false);
 
     function applyCorner(corner, animate) {
@@ -1248,7 +1248,7 @@
         const startPos = isVertical ? e.clientX : e.clientY;
         const startSize = isVertical ? target.offsetWidth : target.offsetHeight;
         const minSize = isVertical ? 180 : 80;
-        let maxSize = isVertical ? (targetId === 'panel-docs' ? 1200 : 400) : 300;
+        let maxSize = isVertical ? (targetId === 'panel-docs' ? 1200 : targetId === 'panel-annotations' ? 360 : 400) : 300;
         if (targetId === 'panel-nav-top') {
           const panelNav = document.getElementById('panel-nav');
           maxSize = panelNav ? panelNav.offsetHeight - 80 - 5 : 300;

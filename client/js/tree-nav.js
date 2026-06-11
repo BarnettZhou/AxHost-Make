@@ -295,7 +295,7 @@
       icon = createTreeIcon(expandedPaths.has(node.path) ? 'folder-open' : 'folder-close');
     } else if (node.type === 'page') {
       var pageType = node.page_type || 'default';
-      icon = createTreeIcon(pageType === 'mobile' ? 'phone' : pageType === 'mini-program' ? 'wechat' : 'page');
+      icon = createTreeIcon(pageType === 'mobile' ? 'iphone' : pageType === 'mini-program' ? 'wechat' : 'page');
     } else if (node.type === 'component') {
       icon = createTreeIcon('figma-component');
     } else if (node.type === 'flowchart') {

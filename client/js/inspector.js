@@ -10,6 +10,10 @@
   let hoverOverlayEl = null;
   let injectedStyle = null;
   let locked = false;
+  let currentTab = 'selector';        // 'selector' | 'annotation'
+  let annotationDirty = false;
+  let savedAnnotationContent = '';
+  let currentSelector = '';
 
   function onKeyDown(e) {
     if (e.key === 'Escape') {
@@ -86,8 +90,7 @@
         border: 1px solid ${c.border};
         border-radius: 6px;
         box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        min-width: 220px;
-        max-width: 320px;
+        width: 240px;
         font-size: 13px;
         color: ${c.textMain};
         user-select: text;
@@ -96,11 +99,34 @@
       }
       .inspector-popup-header {
         display: flex;
-        align-items: flex-start;
+        align-items: center;
         justify-content: space-between;
-        padding: 10px 12px;
+        padding: 0;
         border-bottom: 1px solid ${c.border};
-        gap: 8px;
+        gap: 0;
+      }
+      .inspector-popup-tabs {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 0 12px;
+      }
+      .inspector-popup-tabs button {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: ${c.textMuted};
+        cursor: pointer;
+        padding: 10px 12px;
+        font-size: 13px;
+        transition: color 0.15s, border-color 0.15s;
+      }
+      .inspector-popup-tabs button:hover {
+        color: ${c.textMain};
+      }
+      .inspector-popup-tabs button.active {
+        color: ${c.accent};
+        border-bottom-color: ${c.accent};
       }
       .inspector-header-left {
         display: flex;
@@ -128,7 +154,8 @@
         font-size: 18px;
         cursor: pointer;
         line-height: 1;
-        padding: 0 2px;
+        padding: 10px 12px;
+        margin: 0;
       }
       .inspector-popup-close:hover {
         color: ${c.textMain};
@@ -138,6 +165,76 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+      }
+
+      /* Annotation tab */
+      .inspector-annotation-body {
+        display: none;
+        padding: 0;
+      }
+      .inspector-annotation-body.active {
+        display: flex;
+        flex-direction: column;
+      }
+      .inspector-annotation-body textarea {
+        width: 100%;
+        min-height: 120px;
+        background: transparent;
+        color: ${c.textMain};
+        border: none;
+        padding: 0;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .inspector-annotation-body textarea::placeholder {
+        color: ${c.textMuted};
+        opacity: 0.6;
+      }
+      .inspector-selector-body { display: block; }
+      .inspector-selector-body.hidden { display: none; }
+      .inspector-selector-footer { display: flex; }
+      .inspector-selector-footer.hidden { display: none; }
+      .inspector-annotation-footer {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-top: 1px solid ${c.border};
+      }
+      .inspector-annotation-footer.active {
+        display: flex;
+      }
+      .annotation-dirty-hint {
+        color: #e67e22;
+        font-size: 12px;
+        display: none;
+      }
+      .annotation-dirty-hint.visible {
+        display: inline;
+      }
+      .annotation-saved-hint {
+        color: #27ae60;
+        font-size: 12px;
+        display: none;
+      }
+      .annotation-saved-hint.visible {
+        display: inline;
+      }
+      .annotation-save-btn {
+        margin-left: auto;
+        background: #1677ff;
+        color: #fff;
+        border: none;
+        padding: 5px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .annotation-save-btn:hover {
+        opacity: 0.9;
       }
       .inspector-row {
         display: flex;
@@ -159,14 +256,14 @@
         color: ${c.textMain};
         min-height: 16px;
       }
-      .inspector-popup-footer {
+      .inspector-selector-footer {
         padding: 8px 12px;
         border-top: 1px solid ${c.border};
         display: flex;
         align-items: center;
         gap: 8px;
       }
-      .inspector-popup-footer .inspector-copy-selector {
+      .inspector-copy-selector {
         margin-left: auto;
         background: #1677ff;
         color: #fff;
@@ -176,7 +273,7 @@
         cursor: pointer;
         font-size: 12px;
       }
-      .inspector-popup-footer .inspector-copy-selector:hover {
+      .inspector-copy-selector:hover {
         opacity: 0.9;
       }
 
@@ -261,6 +358,19 @@
     doc.addEventListener('click', onClick, true);
     doc.addEventListener('mousedown', onMouseDown, true);
     doc.addEventListener('keydown', onKeyDown);
+
+    // Intercept iframe navigation when annotation is dirty
+    var iframeWindow = doc.defaultView;
+    if (iframeWindow) {
+      iframeWindow.addEventListener('beforeunload', onBeforeUnload);
+    }
+  }
+
+  function onBeforeUnload(e) {
+    if (annotationDirty) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
   }
 
   function detachListeners() {
@@ -271,6 +381,10 @@
       doc.removeEventListener('click', onClick, true);
       doc.removeEventListener('mousedown', onMouseDown, true);
       doc.removeEventListener('keydown', onKeyDown);
+      var iframeWindow = doc.defaultView;
+      if (iframeWindow) {
+        iframeWindow.removeEventListener('beforeunload', onBeforeUnload);
+      }
     }
     clearInspectState();
     removeOverlay();
@@ -316,9 +430,13 @@
     e.stopPropagation();
   }
 
-  function onClick(e) {
+  async function onClick(e) {
     if (!active) return;
     if (isInspectorElement(e.target)) return;
+    if (annotationDirty) {
+      var ok = await AxhostModal.confirm({ title: '提示', message: '当前有标注未保存，确认离开？' });
+      if (!ok) return;
+    }
     e.preventDefault();
     e.stopPropagation();
     locked = true;
@@ -378,28 +496,46 @@
     const dims = `${Math.round(rect.width)} × ${Math.round(rect.height)}`;
     const hasParent = !!targetEl.parentElement && targetEl.parentElement !== doc.body;
 
+    currentSelector = generateSelector(targetEl);
+    currentTab = 'selector';
+    annotationDirty = false;
+    savedAnnotationContent = '';
+
     popup.innerHTML = `
       <div class="inspector-popup-header">
-        <div class="inspector-header-left">
-          <span class="inspector-tag">&lt;${tagName}&gt;</span>
-          <span class="inspector-text">${escapeHtml(displayText) || '(无文本内容)'}</span>
+        <div class="inspector-popup-tabs">
+          <button data-tab="selector" class="active">选择器</button>
+          <button data-tab="annotation">元素标注</button>
         </div>
         <button class="inspector-popup-close">&times;</button>
       </div>
       <div class="inspector-popup-body">
-        <div class="inspector-row"><label>ID</label><span>${escapeHtml(elId)}</span></div>
-        <div class="inspector-row"><label>Class</label><span>${escapeHtml(elClass)}</span></div>
-        <div class="inspector-row"><label>尺寸</label><span>${escapeHtml(dims)}</span></div>
-        <div class="inspector-row"><label>字号</label><span>${escapeHtml(fontSize)}</span></div>
+        <div class="inspector-selector-body">
+          <div class="inspector-row"><label>标签</label><span>&lt;${tagName}&gt;</span></div>
+          <div class="inspector-row"><label>ID</label><span>${escapeHtml(elId)}</span></div>
+          <div class="inspector-row"><label>Class</label><span>${escapeHtml(elClass)}</span></div>
+          <div class="inspector-row"><label>尺寸</label><span>${escapeHtml(dims)}</span></div>
+          <div class="inspector-row"><label>字号</label><span>${escapeHtml(fontSize)}</span></div>
+        </div>
+        <div class="inspector-annotation-body">
+          <textarea placeholder="输入 Markdown 标注..."></textarea>
+        </div>
       </div>
       <div class="inspector-popup-footer">
-        <button class="inspector-popup-parent text-btn" title="选中父元素" ${hasParent ? '' : 'disabled'}>
-          <iconpark-icon icon-id="up" size="14" color="currentColor"></iconpark-icon>
-        </button>
-        <button class="inspector-copy-image text-btn" title="复制为图片">
-          <iconpark-icon icon-id="down-picture" size="14" color="currentColor"></iconpark-icon>
-        </button>
-        <button class="inspector-copy-selector">复制选择器</button>
+        <div class="inspector-selector-footer">
+          <button class="inspector-popup-parent text-btn" title="选中父元素" ${hasParent ? '' : 'disabled'}>
+            <iconpark-icon icon-id="up" size="14" color="currentColor"></iconpark-icon>
+          </button>
+          <button class="inspector-copy-image text-btn" title="复制为图片">
+            <iconpark-icon icon-id="down-picture" size="14" color="currentColor"></iconpark-icon>
+          </button>
+          <button class="inspector-copy-selector">复制选择器</button>
+        </div>
+        <div class="inspector-annotation-footer">
+          <span class="annotation-dirty-hint">内容未保存</span>
+          <span class="annotation-saved-hint">已保存</span>
+          <button class="annotation-save-btn">保存</button>
+        </div>
       </div>
     `;
 
@@ -434,10 +570,136 @@
       popup.style.top = top + 'px';
     }
 
+    // Tab switching
+    var tabButtons = popup.querySelectorAll('.inspector-popup-tabs button');
+    var selectorBody = popup.querySelector('.inspector-selector-body');
+    var annotationBody = popup.querySelector('.inspector-annotation-body');
+    var selectorFooter = popup.querySelector('.inspector-selector-footer');
+    var annotationFooter = popup.querySelector('.inspector-annotation-footer');
+    var annotationTextarea = popup.querySelector('.inspector-annotation-body textarea');
+    var dirtyHint = popup.querySelector('.annotation-dirty-hint');
+    var savedHint = popup.querySelector('.annotation-saved-hint');
+    var saveBtn = popup.querySelector('.annotation-save-btn');
+    var savedTimer = null;
+
+    function switchTab(tab) {
+      if (tab === currentTab) return;
+      currentTab = tab;
+      tabButtons.forEach(function (btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tab);
+      });
+      var isSelector = tab === 'selector';
+      selectorBody.classList.toggle('hidden', !isSelector);
+      annotationBody.classList.toggle('active', !isSelector);
+      selectorFooter.classList.toggle('hidden', !isSelector);
+      annotationFooter.classList.toggle('active', !isSelector);
+
+      if (tab === 'annotation') {
+        loadAnnotation();
+      }
+    }
+
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener('click', async function (e) {
+        e.stopPropagation();
+        var tab = btn.getAttribute('data-tab');
+        if (tab === currentTab) return;
+        if (annotationDirty) {
+          var ok = await AxhostModal.confirm({ title: '提示', message: '当前有标注未保存，确认离开？' });
+          if (!ok) return;
+        }
+        switchTab(tab);
+      });
+    });
+
+    // Annotation: load existing content
+    function getCommentsPath() {
+      var state = window.__axhostState;
+      if (!state || !state.currentPage || !state.currentPage.pageRelativePath) return null;
+      return state.currentPage.pageRelativePath + '/annotations.json';
+    }
+
+    async function loadAnnotation() {
+      var path = getCommentsPath();
+      if (!path) return;
+      try {
+        var url = `/api/file?path=${encodeURIComponent(path)}&project=${encodeURIComponent(window.__axhostProjectId || '')}`;
+        var res = await fetch(url);
+        if (!res.ok) {
+          if (res.status === 404) {
+            try { await window.apiClient.postFile(path, '[]'); } catch (e) {}
+            throw { code: 404 };
+          }
+          throw new Error('Failed to load');
+        }
+        var text = await res.text();
+        var data = JSON.parse(text);
+        var item = data.find(function (d) { return d.selector === currentSelector; });
+        var content = item ? item.content : '';
+        annotationTextarea.value = content;
+        savedAnnotationContent = content;
+        annotationDirty = false;
+        dirtyHint.classList.remove('visible');
+      } catch (e) {
+        // File doesn't exist or is invalid — start fresh
+        annotationTextarea.value = '';
+        savedAnnotationContent = '';
+        annotationDirty = false;
+        dirtyHint.classList.remove('visible');
+      }
+    }
+
+    // Track dirty state
+    annotationTextarea.addEventListener('input', function () {
+      var dirty = annotationTextarea.value !== savedAnnotationContent;
+      annotationDirty = dirty;
+      dirtyHint.classList.toggle('visible', dirty);
+    });
+
+    // Save annotation
+    saveBtn.addEventListener('click', async function (e) {
+      e.stopPropagation();
+      var path = getCommentsPath();
+      if (!path) return;
+      try {
+        // Load existing comments
+        var existing = [];
+        try {
+          var url = `/api/file?path=${encodeURIComponent(path)}&project=${encodeURIComponent(window.__axhostProjectId || '')}`;
+          var res = await fetch(url);
+          if (res.ok) {
+            var text = await res.text();
+            existing = JSON.parse(text);
+          }
+        } catch (e) {}
+        // Upsert
+        var idx = existing.findIndex(function (d) { return d.selector === currentSelector; });
+        var item = { selector: currentSelector, content: annotationTextarea.value };
+        if (idx >= 0) {
+          existing[idx] = item;
+        } else {
+          existing.push(item);
+        }
+        // Save
+        await window.apiClient.postFile(path, JSON.stringify(existing, null, 2));
+        savedAnnotationContent = annotationTextarea.value;
+        annotationDirty = false;
+        dirtyHint.classList.remove('visible');
+        // Show saved confirmation
+        savedHint.classList.add('visible');
+        if (savedTimer) clearTimeout(savedTimer);
+        savedTimer = setTimeout(function () {
+          savedHint.classList.remove('visible');
+        }, 3000);
+      } catch (err) {
+        alert('保存失败: ' + (err.message || err));
+      }
+    });
+
     // Events
     popup.querySelector('.inspector-popup-close').addEventListener('click', (e) => {
       e.stopPropagation();
-      clearInspectState();
+      tryClosePopup();
     });
     popup.querySelector('.inspector-copy-selector').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -453,8 +715,12 @@
     }
     const btnParent = popup.querySelector('.inspector-popup-parent');
     if (btnParent && hasParent) {
-      btnParent.addEventListener('click', (e) => {
+      btnParent.addEventListener('click', async (e) => {
         e.stopPropagation();
+        if (annotationDirty) {
+          var ok = await AxhostModal.confirm({ title: '提示', message: '当前有标注未保存，确认离开？' });
+          if (!ok) return;
+        }
         const parent = targetEl.parentElement;
         if (parent) {
           const savedLeft = popup.style.left;
@@ -465,6 +731,15 @@
         }
       });
     }
+  }
+
+  async function tryClosePopup() {
+    if (annotationDirty) {
+      var ok = await AxhostModal.confirm({ title: '提示', message: '当前有标注未保存，确认离开？' });
+      if (!ok) return false;
+    }
+    clearInspectState();
+    return true;
   }
 
   function hidePopup() {

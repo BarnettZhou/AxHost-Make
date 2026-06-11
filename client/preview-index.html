@@ -25,6 +25,7 @@
           <button id="btn-zoom-in"><iconpark-icon icon-id="plus" size="12" color="currentColor"></iconpark-icon></button>
         </div>
         <button id="btn-touch-emulation" title="触控模拟"><iconpark-icon icon-id="click-tap" size="14" color="currentColor"></iconpark-icon></button>
+        <button id="btn-toggle-annotations" title="查看标注"><iconpark-icon icon-id="comment" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-toggle-docs" title="Toggle Docs"><iconpark-icon icon-id="document-folder" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-shortcuts" title="快捷键"><iconpark-icon icon-id="keyboard-one" size="14" color="currentColor"></iconpark-icon></button>
         <button id="btn-theme" title="Toggle Theme"><iconpark-icon icon-id="moon" size="14" color="currentColor"></iconpark-icon></button>
@@ -49,6 +50,17 @@
         </div>
         <div id="prompt-box" style="display:none;"></div>
       </section>
+
+      <div class="resizer resizer-v" data-target="panel-annotations" data-dir="v" data-invert="true" id="annotations-resizer"></div>
+      <aside id="panel-annotations" class="hidden">
+        <div class="annotations-header">
+          <span>标注列表</span>
+          <button id="btn-annotations-close" title="关闭">
+            <iconpark-icon icon-id="close-small" size="14" color="currentColor"></iconpark-icon>
+          </button>
+        </div>
+        <div class="annotations-body" id="annotations-list"></div>
+      </aside>
 
       <div class="resizer resizer-v" data-target="panel-docs" data-dir="v" data-invert="true"></div>
       <aside id="panel-docs" class="hidden">
@@ -124,6 +136,7 @@
       });
     })();
   </script>
+  <script src="/client/js/annotation-viewer.js"></script>
   <script src="/client/js/preview-app.js"></script>
 </body>
 </html>
