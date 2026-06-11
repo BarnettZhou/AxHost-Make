@@ -29,10 +29,18 @@
     active = !active;
     btnInspect.classList.toggle('active', active);
     if (active) {
+      var d = getDoc();
+      if (d) {
+        if (d.activeElement) d.activeElement.blur();
+      }
       attachListeners();
       setInspectCursor(true);
       document.addEventListener('keydown', onKeyDown);
     } else {
+      var d2 = getDoc();
+      if (d2) {
+        if (d2.activeElement) d2.activeElement.blur();
+      }
       detachListeners();
       setInspectCursor(false);
       document.removeEventListener('keydown', onKeyDown);
@@ -46,6 +54,9 @@
       overlayEl = null;
       hoverOverlayEl = null;
       attachListeners();
+      // Blur on new document load
+      var d3 = getDoc();
+      if (d3 && d3.activeElement) d3.activeElement.blur();
       setInspectCursor(true);
     }
   });
@@ -357,7 +368,6 @@
     doc.addEventListener('mouseout', onMouseOut, true);
     doc.addEventListener('click', onClick, true);
     doc.addEventListener('mousedown', onMouseDown, true);
-    doc.addEventListener('focusin', onFocusIn, true);
     doc.addEventListener('keydown', onKeyDown);
 
     // Intercept iframe navigation when annotation is dirty
@@ -381,7 +391,6 @@
       doc.removeEventListener('mouseout', onMouseOut, true);
       doc.removeEventListener('click', onClick, true);
       doc.removeEventListener('mousedown', onMouseDown, true);
-      doc.removeEventListener('focusin', onFocusIn, true);
       doc.removeEventListener('keydown', onKeyDown);
       var iframeWindow = doc.defaultView;
       if (iframeWindow) {
@@ -400,20 +409,9 @@
     doc.documentElement.style.cursor = enable ? 'crosshair' : '';
   }
 
-  function onFocusIn(e) {
-    if (!active) return;
-    if (isInspectorElement(e.target)) return;
-    e.preventDefault();
-    e.stopPropagation();
-  }
-
-  function isInspectorElement(el) {
-    return el.closest && el.closest('.inspector-popup');
-  }
-
   function onMouseOver(e) {
     if (!active) return;
-    if (isInspectorElement(e.target)) return;
+    if (e.target.closest && e.target.closest('.inspector-popup')) return;
     e.stopPropagation();
     if (locked) {
       highlightElement(e.target, true);
@@ -424,7 +422,7 @@
 
   function onMouseOut(e) {
     if (!active) return;
-    if (isInspectorElement(e.target)) return;
+    if (e.target.closest && e.target.closest('.inspector-popup')) return;
     e.stopPropagation();
     if (locked && highlightEl) {
       highlightElement(highlightEl);
@@ -435,13 +433,14 @@
 
   function onMouseDown(e) {
     if (!active) return;
-    if (isInspectorElement(e.target)) return;
+    if (e.target.closest && e.target.closest('.inspector-popup')) return;
+    e.preventDefault();
     e.stopPropagation();
   }
 
   async function onClick(e) {
     if (!active) return;
-    if (isInspectorElement(e.target)) return;
+    if (e.target.closest && e.target.closest('.inspector-popup')) return;
     if (annotationDirty) {
       var ok = await AxhostModal.confirm({ title: '提示', message: '当前有标注未保存，确认离开？' });
       if (!ok) return;

@@ -20,6 +20,7 @@
   var highlights = [];    // [{ el, overlay }]
   var activeIdx = -1;     // index of currently selected annotation
   var popupEl = null;
+  var freezeStyle = null; // reference to injected freeze style
 
   // ---- Helpers ----
 
@@ -37,12 +38,6 @@
     activeIdx = -1;
     updateActiveHighlight();
     updateCardActive();
-  }
-  function blockIframeFocus(e) {
-    if (level === 0) return;
-    if (e.target.closest('.annotation-highlight') || e.target.closest('.annotation-popup')) return;
-    e.preventDefault();
-    e.stopPropagation();
   }
 
   function getAnnotationsPath() {
@@ -329,7 +324,13 @@
       var doc = getDoc();
       if (doc) {
         doc.addEventListener('click', blockIframeClick, true);
-        doc.addEventListener('focusin', blockIframeFocus, true);
+        // Disable all page interactions via CSS
+        if (!freezeStyle || freezeStyle.ownerDocument !== doc) {
+          freezeStyle = doc.createElement('style');
+          freezeStyle.id = 'annotation-freeze-style';
+          freezeStyle.textContent = 'body * { pointer-events: none !important; } body { pointer-events: auto !important; } .annotation-highlight, .annotation-highlight *, .annotation-popup, .annotation-popup * { pointer-events: auto !important; }';
+          doc.head.appendChild(freezeStyle);
+        }
       }
       loadAnnotations().then(function () {
         // Ensure iframe is ready before building highlights
@@ -357,7 +358,7 @@
       var doc = getDoc();
       if (doc) {
         doc.removeEventListener('click', blockIframeClick, true);
-        doc.removeEventListener('focusin', blockIframeFocus, true);
+        if (freezeStyle && freezeStyle.parentNode) { freezeStyle.parentNode.removeChild(freezeStyle); freezeStyle = null; }
       }
       clearHighlights();
       panel.classList.add('hidden');
@@ -470,7 +471,13 @@
       doc.addEventListener('scroll', onIframeChange, true);
       if (level > 0) {
         doc.addEventListener('click', blockIframeClick, true);
-        doc.addEventListener('focusin', blockIframeFocus, true);
+        if (!freezeStyle || freezeStyle.ownerDocument !== doc) {
+          if (freezeStyle && freezeStyle.parentNode) freezeStyle.parentNode.removeChild(freezeStyle);
+          freezeStyle = doc.createElement('style');
+          freezeStyle.id = 'annotation-freeze-style';
+          freezeStyle.textContent = 'body * { pointer-events: none !important; } body { pointer-events: auto !important; } .annotation-highlight, .annotation-highlight *, .annotation-popup, .annotation-popup * { pointer-events: auto !important; }';
+          doc.head.appendChild(freezeStyle);
+        }
       }
     }
     window.addEventListener('resize', onIframeChange);
