@@ -1337,7 +1337,7 @@
       btnToggleDocs.click();
     } else if (key === 'n' && btnToggleNav) {
       btnToggleNav.click();
-    } else if (key === ']' && btnToggleRightBar) {
+    } else if (key === 'p' && btnToggleRightBar) {
       btnToggleRightBar.click();
     }
   }
@@ -1378,7 +1378,7 @@
         <div class="shortcuts-row"><kbd>T</kbd><span>触控模拟</span></div>
         <div class="shortcuts-row"><kbd>D</kbd><span>文档面板</span></div>
         <div class="shortcuts-row"><kbd>N</kbd><span>导航栏</span></div>
-        <div class="shortcuts-row"><kbd>]</kbd><span>右侧面板</span></div>
+        <div class="shortcuts-row"><kbd>P</kbd><span>提示词面板</span></div>
       </div>
       <div class="shortcuts-section shell-only">
         <h4>开发模式专属</h4>
