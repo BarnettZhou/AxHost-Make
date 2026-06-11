@@ -357,6 +357,7 @@
     doc.addEventListener('mouseout', onMouseOut, true);
     doc.addEventListener('click', onClick, true);
     doc.addEventListener('mousedown', onMouseDown, true);
+    doc.addEventListener('focusin', onFocusIn, true);
     doc.addEventListener('keydown', onKeyDown);
 
     // Intercept iframe navigation when annotation is dirty
@@ -380,6 +381,7 @@
       doc.removeEventListener('mouseout', onMouseOut, true);
       doc.removeEventListener('click', onClick, true);
       doc.removeEventListener('mousedown', onMouseDown, true);
+      doc.removeEventListener('focusin', onFocusIn, true);
       doc.removeEventListener('keydown', onKeyDown);
       var iframeWindow = doc.defaultView;
       if (iframeWindow) {
@@ -396,6 +398,13 @@
     const doc = getDoc();
     if (!doc || !doc.documentElement) return;
     doc.documentElement.style.cursor = enable ? 'crosshair' : '';
+  }
+
+  function onFocusIn(e) {
+    if (!active) return;
+    if (isInspectorElement(e.target)) return;
+    e.preventDefault();
+    e.stopPropagation();
   }
 
   function isInspectorElement(el) {

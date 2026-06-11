@@ -27,6 +27,24 @@
     try { return iframe.contentDocument; } catch (e) { return null; }
   }
 
+  // Block page interactions in annotation mode
+  function blockIframeClick(e) {
+    if (level === 0) return;
+    if (e.target.closest('.annotation-highlight') || e.target.closest('.annotation-popup')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    hidePopup();
+    activeIdx = -1;
+    updateActiveHighlight();
+    updateCardActive();
+  }
+  function blockIframeFocus(e) {
+    if (level === 0) return;
+    if (e.target.closest('.annotation-highlight') || e.target.closest('.annotation-popup')) return;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   function getAnnotationsPath() {
     var state = window.__axhostState;
     if (state && state.currentPage && state.currentPage.pageRelativePath) {
@@ -111,7 +129,15 @@
       overlay.addEventListener('click', function (e) {
         e.stopPropagation();
         e.preventDefault();
-        selectAnnotation(idx);
+        if (idx === activeIdx) {
+          // Toggle off: close popup, clear selection
+          hidePopup();
+          activeIdx = -1;
+          updateActiveHighlight();
+          updateCardActive();
+        } else {
+          selectAnnotation(idx);
+        }
       });
 
       doc.body.appendChild(overlay);
@@ -300,6 +326,11 @@
     btnToggle.classList.toggle('active', level > 0);
 
     if (level >= 1) {
+      var doc = getDoc();
+      if (doc) {
+        doc.addEventListener('click', blockIframeClick, true);
+        doc.addEventListener('focusin', blockIframeFocus, true);
+      }
       loadAnnotations().then(function () {
         // Ensure iframe is ready before building highlights
         function build() {
@@ -308,6 +339,8 @@
             panel.classList.remove('hidden');
             if (panelResizer) panelResizer.classList.remove('hidden');
             renderPanel();
+            // Panel open animation shifts iframe — reposition highlights after layout settles
+            setTimeout(function () { repositionHighlights(); }, 300);
           }
         }
         if (getDoc() && getDoc().readyState === 'complete') {
@@ -321,6 +354,11 @@
         }
       });
     } else {
+      var doc = getDoc();
+      if (doc) {
+        doc.removeEventListener('click', blockIframeClick, true);
+        doc.removeEventListener('focusin', blockIframeFocus, true);
+      }
       clearHighlights();
       panel.classList.add('hidden');
       if (panelResizer) panelResizer.classList.add('hidden');
@@ -352,7 +390,7 @@
     var rect = btnToggle.getBoundingClientRect();
     dropdownEl = document.createElement('div');
     dropdownEl.className = 'editor-dropdown open';
-    dropdownEl.style.cssText = 'position:fixed;z-index:100;top:' + (rect.bottom + 4) + 'px;left:' + (rect.left - 20) + 'px;min-width:110px;display:block;';
+    dropdownEl.style.cssText = 'position:fixed;z-index:100;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;min-width:100px;display:block;padding:4px 0;';
     var items = [
       { label: '元素', level: 1 },
       { label: '元素+列表', level: 2 },
@@ -361,11 +399,9 @@
     items.forEach(function (item) {
       var row = document.createElement('div');
       row.style.cssText = 'padding:6px 12px;cursor:pointer;font-size:13px;';
-      if (item.level === level) row.style.background = 'var(--bg-hover)';
+      if (item.level === level) row.className = 'editor-dropdown-item';
       row.textContent = item.label;
       row.addEventListener('click', function () { setLevel(item.level); removeDropdown(); });
-      row.addEventListener('mouseenter', function () { row.style.background = 'var(--bg-hover)'; });
-      row.addEventListener('mouseleave', function () { if (item.level !== level) row.style.background = ''; });
       dropdownEl.appendChild(row);
     });
     document.body.appendChild(dropdownEl);
@@ -422,7 +458,7 @@
       loadAnnotations().then(function () {
         setTimeout(function () {
           buildHighlights();
-          if (level >= 2) renderPanel();
+          if (level >= 2) { renderPanel(); setTimeout(function () { repositionHighlights(); }, 300); }
         }, 200);
       });
     }
@@ -432,6 +468,10 @@
     var doc = getDoc();
     if (doc) {
       doc.addEventListener('scroll', onIframeChange, true);
+      if (level > 0) {
+        doc.addEventListener('click', blockIframeClick, true);
+        doc.addEventListener('focusin', blockIframeFocus, true);
+      }
     }
     window.addEventListener('resize', onIframeChange);
 
@@ -441,7 +481,7 @@
         // Small delay to ensure iframe DOM is settled
         setTimeout(function () {
           buildHighlights();
-          if (level >= 2) renderPanel();
+          if (level >= 2) { renderPanel(); setTimeout(function () { repositionHighlights(); }, 300); }
         }, 100);
       });
     }
@@ -456,7 +496,7 @@
       if (level > 0) {
         loadAnnotations().then(function () {
           buildHighlights();
-          if (level >= 2) renderPanel();
+          if (level >= 2) { renderPanel(); setTimeout(function () { repositionHighlights(); }, 300); }
         });
       }
     }
