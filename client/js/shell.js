@@ -303,6 +303,16 @@
     var dragOverlay = null;
     var floatingHeader = floatingPromptBox.querySelector('.floating-prompt-header');
 
+    // Close button
+    var btnFloatClose = document.getElementById('btn-float-close');
+    if (btnFloatClose) {
+      btnFloatClose.addEventListener('click', function () {
+        floatingPromptBox.classList.add('hidden');
+        window.__axhostState.rightBarVisible = false;
+        if (btnToggleRightBar) btnToggleRightBar.classList.remove('active');
+      });
+    }
+
     function onDragStart(e) {
       if (e.target.closest('button')) return; // don't drag when clicking buttons
       e.preventDefault();
