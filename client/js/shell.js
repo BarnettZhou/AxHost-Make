@@ -935,7 +935,7 @@
     }
   }
 
-  function loadPage(type, pagePath) {
+  function loadPage(type, pagePath, pageName) {
     exitRuleMode();
     const tab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
     const url = `${prototypeBase}/${tab}/${pagePath}/index.html`;
@@ -945,13 +945,22 @@
     const pageAbsolutePath = info.projectAbsolutePath
       ? `${info.projectAbsolutePath}/prototype/${tab}/${pagePath}`
       : '';
-    window.__axhostState.currentPage = { type, path: pagePath, pageRelativePath, pageAbsolutePath };
+    window.__axhostState.currentPage = { type, path: pagePath, pageRelativePath, pageAbsolutePath, name: pageName };
     if (window.docPanel && window.docPanel.load) {
       window.docPanel.load(type, pagePath);
     }
     const promptContext = document.getElementById('prompt-context');
     if (promptContext) {
-      promptContext.textContent = `${type}s/${pagePath}`;
+      var displayName = pageName || pagePath;
+      promptContext.innerHTML = '';
+      var nameEl = document.createElement('span');
+      nameEl.className = 'prompt-page-name';
+      nameEl.textContent = displayName;
+      var tagEl = document.createElement('span');
+      tagEl.className = 'prompt-page-tag';
+      tagEl.textContent = type + '/' + pagePath;
+      promptContext.appendChild(nameEl);
+      promptContext.appendChild(tagEl);
     }
   }
 
@@ -1148,17 +1157,11 @@
     // Delete
     const deleteItem = document.createElement('div');
     deleteItem.className = 'context-menu-item';
-    if (fileName === 'dev-spec.md') {
-      deleteItem.classList.add('disabled');
-      deleteItem.textContent = '删除';
-      deleteItem.title = 'dev-spec.md 不允许删除';
-    } else {
-      deleteItem.textContent = '删除';
-      deleteItem.onclick = () => {
-        removeRulesContextMenu();
-        showDeleteRuleModal(fileName);
-      };
-    }
+    deleteItem.textContent = '删除';
+    deleteItem.onclick = () => {
+      removeRulesContextMenu();
+      showDeleteRuleModal(fileName);
+    };
     menu.appendChild(deleteItem);
 
     document.body.appendChild(menu);
@@ -1325,7 +1328,7 @@
   // Keyboard shortcuts
   function onShortcutKeyDown(e) {
     const key = e.key.toLowerCase();
-    if (!['i', 't', 'd', 'n', ']'].includes(key)) return;
+    if (!['i', 't', 'd', 'n', 'p'].includes(key)) return;
     const tag = e.target && e.target.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
     e.preventDefault();

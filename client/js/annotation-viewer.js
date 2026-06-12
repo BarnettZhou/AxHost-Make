@@ -58,8 +58,12 @@
     if (window.apiClient) {
       return '/api/file?path=' + encodeURIComponent(path) + '&project=' + encodeURIComponent(window.__axhostProjectId || '');
     }
-    // Preview mode: direct file URL
-    return '/' + path;
+    // Preview/published mode: absolute if base is server-rooted, relative if self-hosted
+    var base = window.__axhostBasePath || '/prototype/';
+    if (base.startsWith('/')) {
+      return '/' + path; // e.g. /prototype/pages/<hash>/annotations.json
+    }
+    return path; // e.g. ./pages/<hash>/annotations.json (relative, works in subdirs)
   }
 
   // ---- Load annotations ----

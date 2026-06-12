@@ -513,13 +513,28 @@ body.dark .tree-item > .tree-label.active {
   flex-shrink: 0;
 }
 .floating-prompt-header .prompt-context {
-  color: var(--text-muted);
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+.prompt-page-name {
+  font-size: 13px;
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
-  flex: 1;
+}
+.prompt-page-tag {
+  font-size: 11px;
+  color: var(--text-muted);
+  background: var(--bg-hover);
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* Floating Prompt Box — Body */

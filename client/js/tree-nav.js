@@ -242,7 +242,7 @@
           }
           selectedPath = target.path;
           if (window.shell && window.shell.loadPage) {
-            window.shell.loadPage(getNodeTypeForTab(target), target.path);
+            window.shell.loadPage(getNodeTypeForTab(target), target.path, target.name);
           }
         }
       }
@@ -381,7 +381,7 @@
         if (node.id) location.hash = '#' + node.id;
         loadTree(currentTab);
         if (window.shell && window.shell.loadPage) {
-          window.shell.loadPage(type === 'components' ? 'component' : type === 'flowcharts' ? 'flowchart' : 'page', node.path);
+          window.shell.loadPage(type === 'components' ? 'component' : type === 'flowcharts' ? 'flowchart' : 'page', node.path, node.name);
         }
         // clear active rule item highlight
         document.querySelectorAll('.rules-item.active').forEach(el => el.classList.remove('active'));

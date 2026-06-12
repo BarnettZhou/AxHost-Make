@@ -169,6 +169,7 @@ async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selec
     ['js/md-renderer.js', 'js/md-renderer.js'],
     ['js/zoom-control.js', 'js/zoom-control.js'],
     ['js/touch-emulation.js', 'js/touch-emulation.js'],
+    ['js/annotation-viewer.js', 'js/annotation-viewer.js'],
     ['js/mermaid.min.js', 'js/mermaid.min.js'],
     ['js/flowchart.js', 'js/flowchart.js'],
     ['assets/marked.min.js', 'js/marked.min.js'],
