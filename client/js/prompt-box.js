@@ -388,6 +388,23 @@
   promptInput.addEventListener('compositionend', function () { isComposing = false; updateDropdown(); });
 
   promptInput.addEventListener('keydown', function (e) {
+    // Home/End: move cursor to start/end of current line (macOS browsers scroll by default)
+    if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      var val = promptInput.value;
+      var cur = promptInput.selectionStart;
+      var lineStart = val.lastIndexOf('\n', cur - 1) + 1;
+      var lineEnd = val.indexOf('\n', cur);
+      if (lineEnd === -1) lineEnd = val.length;
+      var pos = e.key === 'Home' ? lineStart : lineEnd;
+      if (e.shiftKey) {
+        var anchor = promptInput.selectionDirection === 'forward' ? promptInput.selectionStart : promptInput.selectionEnd;
+        promptInput.setSelectionRange(Math.min(anchor, pos), Math.max(anchor, pos));
+      } else {
+        promptInput.setSelectionRange(pos, pos);
+      }
+      return;
+    }
     if (!acState) return;
     window.acCore.handleKeyNav(e, acState, acDropdown, function (item) {
       selectItem(item);

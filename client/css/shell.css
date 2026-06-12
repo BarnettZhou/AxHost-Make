@@ -627,6 +627,23 @@ body.dark .tree-item > .tree-label.active {
   display: none;
 }
 
+/* Text buttons — global reset */
+.text-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+.text-btn:hover {
+  color: var(--text-main);
+  background: var(--bg-hover);
+}
+
 /* Floating Prompt Box — Text buttons */
 #floating-prompt-box .text-btn {
   background: transparent;
@@ -1291,7 +1308,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   background: var(--bg-body);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 0 12px; height: 40px;
+  padding: 0 10px; height: 32px;
   font-size: 14px;
   color: var(--text-main);
 }
