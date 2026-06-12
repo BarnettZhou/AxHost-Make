@@ -355,9 +355,9 @@
       if (!dragState) return;
       var corner = getClosestCorner();
       applyCorner(corner, true);
+      savedCorner = corner;
       localStorage.setItem('axhost-prompt-corner', corner);
       dragState = null;
-      // Re-apply corner with transition in case snap moved it
     }
 
     if (floatingHeader) {
@@ -370,6 +370,8 @@
     var btnFloatResize = document.getElementById('btn-float-resize');
 
     function applySizeLevel(level) {
+      // Capture corner before height change so detection isn't skewed
+      var corner = getClosestCorner();
       floatingPromptBox.style.maxHeight = '';
       if (level === 2) {
         var parentH = floatingPromptBox.parentElement.clientHeight;
@@ -377,6 +379,10 @@
       } else {
         floatingPromptBox.style.height = sizeLevels[level] + 'px';
       }
+      // Re-apply captured corner so bottom-aligned positions adjust to new height
+      applyCorner(corner, false);
+      savedCorner = corner;
+      localStorage.setItem('axhost-prompt-corner', corner);
       if (btnFloatResize) {
         var nextLevel = (level + 1) % 3;
         var labels = ['320px', '540px', '撑满'];
