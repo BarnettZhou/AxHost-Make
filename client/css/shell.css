@@ -157,7 +157,6 @@ html, body {
   border: none;
 }
 #iframe-wrapper.hidden,
-#floating-prompt-box.hidden,
 #rules-resizer.hidden,
 #docs-resizer.hidden,
 #right-bar-resizer.hidden,
@@ -482,9 +481,14 @@ body.dark .tree-item > .tree-label.active {
   flex-direction: column;
   z-index: 10;
   overflow: hidden;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
 }
 #floating-prompt-box.hidden {
-  display: none;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 .preview-mode #floating-prompt-box {
   display: none;

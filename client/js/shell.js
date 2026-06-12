@@ -245,7 +245,7 @@
     applyCorner(savedCorner, false);
 
     function applyCorner(corner, animate) {
-      floatingPromptBox.style.transition = animate ? 'left 0.2s ease, top 0.2s ease' : 'none';
+      floatingPromptBox.style.transition = animate ? 'left 0.2s ease, top 0.2s ease, opacity 0.25s ease, visibility 0.25s ease' : 'opacity 0.25s ease, visibility 0.25s ease';
       // Always use left/top so transitions animate smoothly in all directions
       floatingPromptBox.style.right = 'auto';
       floatingPromptBox.style.bottom = 'auto';
@@ -274,7 +274,7 @@
       }
       if (animate) {
         setTimeout(function () {
-          floatingPromptBox.style.transition = 'none';
+          floatingPromptBox.style.transition = 'opacity 0.25s ease, visibility 0.25s ease';
         }, 200);
       }
     }
@@ -325,7 +325,7 @@
       dragOverlay = document.createElement('div');
       dragOverlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:transparent;cursor:grabbing;';
       document.body.appendChild(dragOverlay);
-      floatingPromptBox.style.transition = 'none';
+      floatingPromptBox.style.transition = 'opacity 0.25s ease, visibility 0.25s ease';
       floatingPromptBox.style.right = 'auto';
       floatingPromptBox.style.bottom = 'auto';
       floatingPromptBox.style.left = (rect.left - floatingPromptBox.parentElement.getBoundingClientRect().left) + 'px';
