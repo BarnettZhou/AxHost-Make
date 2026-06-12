@@ -62,6 +62,15 @@ async function copyDir(src, dest) {
   }
 }
 
+async function rewriteHtmlPaths(content) {
+  // Rewrite /client/ absolute paths to relative shell-resources/ paths
+  // Flowchart HTML files are at flowcharts/{id}/index.html, so need ../../shell-resources/
+  return content
+    .replace(/\/client\/css\//g, '../../shell-resources/css/')
+    .replace(/\/client\/js\//g, '../../shell-resources/js/')
+    .replace(/\/client\/assets\//g, '../../shell-resources/js/');
+}
+
 async function copyPageOrComponent(srcDir, destDir, relativePath) {
   const src = path.join(srcDir, relativePath);
   const dest = path.join(destDir, relativePath);
@@ -75,7 +84,14 @@ async function copyPageOrComponent(srcDir, destDir, relativePath) {
         await copyDir(s, d);
       } else {
         if (await exists(s)) {
-          await fs.copyFile(s, d);
+          // Rewrite paths in HTML files for exported flowcharts
+          if (entry.name.endsWith('.html')) {
+            const content = await fs.readFile(s, 'utf-8');
+            const rewritten = await rewriteHtmlPaths(content);
+            await fs.writeFile(d, rewritten, 'utf-8');
+          } else {
+            await fs.copyFile(s, d);
+          }
         }
       }
     }
@@ -85,7 +101,7 @@ async function copyPageOrComponent(srcDir, destDir, relativePath) {
 function filterTree(nodes, selectedPaths) {
   const result = [];
   for (const node of nodes) {
-    if (node.type === 'page' || node.type === 'component' || node.type === 'spec') {
+    if (node.type === 'page' || node.type === 'component' || node.type === 'flowchart' || node.type === 'spec') {
       if (selectedPaths.includes(node.path)) {
         result.push(node);
       }
