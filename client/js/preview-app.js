@@ -93,7 +93,8 @@
     const docs = [];
     for (const docName of docNames) {
       try {
-        const res = await fetch(base + docName);
+        const encodedName = encodeURIComponent(docName);
+        const res = await fetch(base + encodedName);
         if (res.ok) {
           const text = await res.text();
           docs.push({ name: docName, path: base + docName, content: text });
