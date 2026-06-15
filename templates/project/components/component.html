@@ -54,11 +54,31 @@
       border-top: 1px solid var(--demo-border);
       flex-shrink: 0;
       min-height: 60px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .demo-btn {
+      padding: 6px 16px;
+      font-size: 13px;
+      border-radius: 4px;
+      cursor: pointer;
+      background: #fff;
+      border: 1px solid #d9d9d9;
+      color: #333;
+      transition: all 0.2s;
+    }
+    .demo-btn:hover {
+      border-color: #4096ff;
+      color: #4096ff;
     }
     body.dark .demo-header,
     body.dark .demo-footer { background: #161b22; border-color: #30363d; }
     body.dark .demo-body { background: #161b22; }
     body.dark .demo-header h2 { color: var(--text-primary, #e3e3e3); }
+    body.dark .demo-btn { background: #21262d; border-color: #30363d; color: #e3e3e3; }
+    body.dark .demo-btn:hover { border-color: #4096ff; color: #4096ff; }
   </style>
 </head>
 <body class="{{PAGE_THEME}}">
@@ -75,6 +95,7 @@
     </div>
     <div class="demo-footer demo-controls">
       <!-- 触发组件效果的按钮放置区域 -->
+      <button class="demo-btn" onclick="handleAction('action1')">示例操作</button>
     </div>
   </div>
   <script src="resources/js/main.js"></script>
