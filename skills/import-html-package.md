@@ -246,6 +246,82 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 - 放在 `prototype/resources/fonts/`（如目录不存在则创建）
 - 更新 CSS 中的 `@font-face` `url()` 路径
 
+### 第5.3步：外部 CDN 资源本地化
+
+**目的**：避免项目依赖外部网络（如 jsdelivr、cdnjs），确保离线可用且加载快速。
+
+#### 识别外部资源
+
+扫描所有 HTML 文件，查找以下 CDN 域名的引用：
+
+| CDN 域名 | 说明 |
+|----------|------|
+| `cdn.jsdelivr.net` | jsDelivr |
+| `cdnjs.cloudflare.com` | cdnjs |
+| `unpkg.com` | unpkg |
+| `ajax.googleapis.com` | Google CDN |
+| `cdn.bootcdn.net` | BootCDN |
+| `cdn.staticfile.org` | Staticfile |
+| `lib.baomitu.com` | 360 CDN |
+
+匹配模式：
+```regex
+(?:href|src)=["'](https?://(?:cdn\.jsdelivr\.net|cdnjs\.cloudflare\.com|unpkg\.com|ajax\.googleapis\.com|cdn\.bootcdn\.net|cdn\.staticfile\.org|lib\.baomitu\.com)/[^"']+)["']
+```
+
+#### 下载策略
+
+1. **提取资源列表**：从所有 HTML 中提取外部 CDN URL
+2. **按类型分类**：
+   - `.css` 文件 → `prototype/resources/css/`
+   - `.js` 文件 → `prototype/resources/js/`
+   - 字体/图片 → `prototype/resources/fonts/` 或 `prototype/resources/images/`
+3. **下载命令**：
+   ```bash
+   # 从 URL 提取文件名
+   FILENAME=$(basename "$URL" | sed 's/\?.*//')
+   # 下载到对应目录
+   curl -sL "$URL" -o "prototype/resources/js/$FILENAME"
+   ```
+4. **文件命名**：保持原文件名，如 `vue.global.js`、`element-plus.css`、`element-plus.min.css`
+5. **版本管理**：文件名通常包含版本信息，无需额外处理
+
+#### 更新引用
+
+将 HTML 中的 CDN URL 替换为本地相对路径：
+
+| 原始引用 | 替换为 |
+|---------|--------|
+| `https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js` | `../../resources/js/vue.global.js` |
+| `https://unpkg.com/element-plus/dist/index.css` | `../../resources/css/index.css` |
+| `https://cdnjs.cloudflare.com/ajax/libs/axios/1.6.2/axios.min.js` | `../../resources/js/axios.min.js` |
+
+**注意**：
+- 如果资源仅被单个页面使用，可放在 `pages/{hash}/resources/js/` 下
+- 如果资源被多个页面共享，放在 `prototype/resources/` 下
+- CSS 中引用的外部字体/图片 URL 也需要一并下载和替换
+
+#### 记录到 RESOURCES.md
+
+下载完成后，在 `RESOURCES.md` 中记录：
+
+```markdown
+## 外部资源本地化
+
+以下资源已从 CDN 下载到本地，原始来源记录如下：
+
+| 文件 | 原始 URL | 本地路径 |
+|------|---------|---------|
+| vue.global.js | https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js | resources/js/vue.global.js |
+| element-plus.css | https://unpkg.com/element-plus/dist/index.css | resources/css/element-plus.css |
+```
+
+#### 下载失败处理
+
+- 如果某个资源下载失败，**不要阻塞流程**
+- 在控制台输出警告：`⚠️ 无法下载 xxx，请手动处理`
+- 保留原始 CDN 引用，让用户决定后续处理方式
+
 ### 第6步：组装页面 HTML
 
 通过 API 读取页面当前的 `index.html`，将 `<body>` 内容替换为原 HTML 包中对应页面的 body 内容，然后通过 API 写回。每个页面最终结构：
@@ -373,6 +449,7 @@ curl -s -X POST "$API_BASE/api/file?project=$PROJECT" \
 
 - [ ] 所有 HTML 页面已创建，`index.html` 内容正确
 - [ ] 所有资源路径使用相对路径（无 `/prototype/` 绝对路径）
+- [ ] 外部 CDN 资源已下载到本地（无 jsdelivr/unpkg/cdnjs 等外部引用）
 - [ ] 每个页面引入了 `icon-loader.js` 和 `navigate.js`
 - [ ] 页面间的链接/跳转已改为 `postMessage` 方式
 - [ ] 公共资源已提取到 `prototype/resources/` 并更新 `RESOURCES.md`
