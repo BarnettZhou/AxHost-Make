@@ -33,6 +33,18 @@ async function handleRename(req, res, projectRoot) {
         return;
       }
 
+      // Validate doc name (only English, numbers, spaces and English punctuation)
+      const baseName = path.basename(absPath);
+      const parentDir = path.dirname(absPath);
+      if (path.basename(parentDir) === 'docs' && baseName.endsWith('.md')) {
+        const docNameWithoutExt = newName.replace(/\.md$/, '');
+        if (!/^[a-zA-Z0-9\s\-_!@#$%^&()+=\[\]{}|;:'",.<>?\/`~]+$/.test(docNameWithoutExt)) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ code: 400, message: '文档名称只能包含英文、数字、空格和英文标点' }));
+          return;
+        }
+      }
+
       // Update .axhost-meta.json if physical dir exists (page/component)
       const metaPath = path.join(absPath, '.axhost-meta.json');
       try {

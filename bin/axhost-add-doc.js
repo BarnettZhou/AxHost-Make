@@ -33,6 +33,10 @@ async function main() {
     console.error('Error: 文档名称不能为空');
     process.exit(1);
   }
+  if (!/^[a-zA-Z0-9\s\-_!@#$%^&()+=\[\]{}|;:'",.<>?\/`~]+$/.test(rawName)) {
+    console.error('Error: 文档名称只能包含英文、数字、空格和英文标点');
+    process.exit(1);
+  }
 
   const projectRoot = process.cwd();
   const resolved = await resolvePageOrComponent(projectRoot, to);

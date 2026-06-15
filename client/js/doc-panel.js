@@ -275,7 +275,7 @@
   }
 
   function checkDocName(value) {
-    if (!/^[a-zA-Z0-9_\-一-龥]+$/.test(value)) return '名称包含非法字符';
+    if (!/^[a-zA-Z0-9\s\-_!@#$%^&()+=\[\]{}|;:'",.<>?\/`~]+$/.test(value)) return '名称只能包含英文、数字、空格和英文标点';
     return null;
   }
 
