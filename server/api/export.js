@@ -206,7 +206,8 @@ async function prepareExportDir(srcPrototypeDir, exportDir, selectedPages, selec
     .replace(/\/client\/js\//g, './shell-resources/js/')
     .replace(/\/client\/assets\//g, './shell-resources/js/')
     .replace(/\/client\/preview-icon\.svg/g, './icon.svg')
-    .replace(/\/prototype\/sitemap\.js/g, './sitemap.js');
+    .replace(/\/prototype\/sitemap\.js/g, './sitemap.js')
+    .replace(/<span class="preview-badge">.*?<\/span>/, ''); // 移除本地预览标识
   await fs.writeFile(path.join(exportDir, 'index.html'), standaloneHtml, 'utf-8');
 
   // Generate start.html redirect
