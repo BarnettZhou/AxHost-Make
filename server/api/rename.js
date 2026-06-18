@@ -80,7 +80,6 @@ async function handleRename(req, res, projectRoot) {
 
       // Sync docs order and rename file if renaming a .md file inside docs/
       const oldName = path.basename(absPath);
-      const parentDir = path.dirname(absPath);
       if (path.basename(parentDir) === 'docs' && oldName.endsWith('.md')) {
         // Actually rename the file on disk
         const newAbsPath = path.join(parentDir, newName);
