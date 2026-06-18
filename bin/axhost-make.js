@@ -13,6 +13,7 @@ Axhost-Make CLI
 Usage:
   axhost-make init [--non-interactive]
   axhost-make update [--all]
+  axhost-make upgrade
   axhost-make build
   axhost-make serve [--port <number>]
   axhost-make preview [--port <number>]
@@ -34,6 +35,7 @@ Usage:
 Commands:
   init           Initialize project directories and entry files
   update         Update prototype entry files and styles (use --all to update all projects in workspace)
+  upgrade        Upgrade framework to latest version from GitHub
   build          Build standalone prototype-index.html from client/preview-index.html
   serve          Start local dev server (with API and shell)
   preview        Start a simple static server for the prototype/ directory
@@ -87,6 +89,12 @@ async function main() {
     }
 
     update(projectRoot, { all: isAll, id });
+    return;
+  }
+
+  if (command === 'upgrade') {
+    const { upgrade } = require('./axhost-upgrade.js');
+    await upgrade();
     return;
   }
 
