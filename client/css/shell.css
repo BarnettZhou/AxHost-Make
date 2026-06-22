@@ -278,6 +278,7 @@ body.dark .rules-item.active {
   overflow: auto;
   padding: 8px 0;
   background: #fafafa;
+  position: relative;
 }
 body.dark .tree-container {
   background: transparent;
@@ -328,18 +329,31 @@ body.dark .tree-item > .tree-label.active {
 .tree-item.dragging > .tree-label {
   opacity: 0.4;
 }
-.tree-item.drop-before > .tree-label {
-  border-top: 2px solid var(--accent);
-}
-.tree-item.drop-after > .tree-label {
-  border-bottom: 2px solid var(--accent);
-}
-.tree-item.drop-into > .tree-label {
+/* 拖拽插入线：左缩进体现移动后的层级（全宽=顶级，每内缩一级=深一层） */
+.tree-drop-line {
+  position: absolute;
+  display: none;
+  right: 8px;
+  height: 2px;
+  margin-top: -1px;
   background: var(--accent);
-  color: #fff;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 5;
 }
-.tree-item.drop-into > .tree-label * {
-  color: #fff;
+.tree-drop-line::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -2px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.tree-item.drop-parent > .tree-label {
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 
 /* Center */

@@ -8,6 +8,119 @@
   let draggedItem = null;
   let draggedParentUl = null;
 
+  // 拖拽插入指示
+  const INDENT = 16;   // 每级缩进像素，与 buildNode 的 level*16 对应
+  const BASE_PAD = 8;  // tree-label 的基础 padding-left
+  let dropIndicator = null;
+  let currentDrop = null;
+
+  // 收集当前可见的节点行（前序排列），排除被拖拽节点及其子树
+  function collectVisibleRows() {
+    const rows = [];
+    const items = treeRoot.querySelectorAll('.tree-item');
+    items.forEach(li => {
+      if (draggedItem && (li === draggedItem || draggedItem.contains(li))) return;
+      const label = li.querySelector(':scope > .tree-label');
+      if (!label) return;
+      const rect = label.getBoundingClientRect();
+      rows.push({
+        li,
+        id: li.dataset.id,
+        parentId: li.dataset.parentId || '',
+        depth: parseInt(li.dataset.level, 10) || 0,
+        top: rect.top,
+        bottom: rect.bottom,
+        mid: rect.top + rect.height / 2
+      });
+    });
+    return rows;
+  }
+
+  // 根据鼠标位置计算落点：{ parentId, anchorId, depth, top }
+  function computeDrop(clientX, clientY) {
+    const rows = collectVisibleRows();
+    if (rows.length === 0) return null;
+    const rowById = {};
+    rows.forEach(r => { rowById[r.id] = r; });
+
+    // 插入索引 i：落在 rows[i-1] 与 rows[i] 之间
+    let i = 0;
+    for (const r of rows) {
+      if (clientY > r.mid) i++; else break;
+    }
+    const prev = rows[i - 1] || null;
+    const next = rows[i] || null;
+
+    // 该间隙允许的层级范围
+    const maxDepth = prev ? prev.depth + 1 : 0;
+    const minDepth = next ? next.depth : 0;
+
+    // 由鼠标横向位置选择目标层级（向右更深、向左更浅）
+    const rootRect = treeRoot.getBoundingClientRect();
+    let desired = Math.round((clientX - rootRect.left - BASE_PAD) / INDENT);
+    const depth = Math.max(minDepth, Math.min(maxDepth, desired));
+
+    function ancestorAtDepth(row, d) {
+      let cur = row;
+      while (cur && cur.depth > d) cur = rowById[cur.parentId];
+      return cur || null;
+    }
+
+    let parentId = '';
+    let anchorId = '';
+    if (depth > 0) {
+      const parentRow = prev ? ancestorAtDepth(prev, depth - 1) : null;
+      parentId = parentRow ? parentRow.id : '';
+      // 锚点：插入到该层级已有分支之后；若 prev 正是父级则作为首个子级
+      if (prev && prev.depth >= depth) {
+        const anchorRow = ancestorAtDepth(prev, depth);
+        anchorId = anchorRow ? anchorRow.id : '';
+      } else {
+        anchorId = '';
+      }
+    } else {
+      // 顶级
+      parentId = '';
+      anchorId = prev ? (ancestorAtDepth(prev, 0) || {}).id || '' : '';
+    }
+
+    // 指示线纵向位置
+    const lineY = prev ? prev.bottom : (next ? next.top : rootRect.top);
+
+    return { parentId, anchorId, depth, top: lineY };
+  }
+
+  function ensureDropIndicator() {
+    if (dropIndicator && dropIndicator.isConnected) return dropIndicator;
+    dropIndicator = document.createElement('div');
+    dropIndicator.className = 'tree-drop-line';
+    treeRoot.appendChild(dropIndicator);
+    return dropIndicator;
+  }
+
+  function renderDropIndicator(drop) {
+    const line = ensureDropIndicator();
+    const rootRect = treeRoot.getBoundingClientRect();
+    const top = drop.top - rootRect.top + treeRoot.scrollTop;
+    line.style.top = top + 'px';
+    line.style.left = (BASE_PAD + drop.depth * INDENT) + 'px';
+    line.style.display = 'block';
+
+    // 高亮目标父级行
+    treeRoot.querySelectorAll('.tree-item.drop-parent').forEach(el => el.classList.remove('drop-parent'));
+    if (drop.parentId) {
+      const parentLi = treeRoot.querySelector('.tree-item[data-id="' + drop.parentId + '"]');
+      if (parentLi) parentLi.classList.add('drop-parent');
+    }
+  }
+
+  function clearDropIndicator() {
+    currentDrop = null;
+    if (dropIndicator) dropIndicator.style.display = 'none';
+    treeRoot.querySelectorAll('.tree-item.drop-parent').forEach(el => el.classList.remove('drop-parent'));
+  }
+
+
   function isAncestor(ancestorLi, descendantLi) {
     let el = descendantLi.parentElement;
     while (el) {
@@ -93,74 +206,48 @@
       }
     });
 
-    // 拖拽排序 / 移动
+    // 拖拽排序 / 移动 —— 采用「缩进插入线」模型：
+    // 插入线的左缩进表示移动后的层级（全宽=顶级，每内缩一个 tab=深一级）。
     treeRoot.addEventListener('dragover', (e) => {
-      e.preventDefault();
       if (!draggedItem) return;
-
-      // If cursor is in the gap below the last item in a list, target that last item
-      let targetLi = e.target.closest('.tree-item');
-      if (!targetLi) {
-        const treeList = e.target.closest('.tree-list');
-        if (treeList) {
-          const items = treeList.querySelectorAll(':scope > .tree-item');
-          if (items.length > 0) {
-            const lastItem = items[items.length - 1];
-            if (e.clientY > lastItem.getBoundingClientRect().bottom) {
-              targetLi = lastItem;
-            }
-          }
-        }
+      e.preventDefault();
+      const drop = computeDrop(e.clientX, e.clientY);
+      if (!drop) {
+        clearDropIndicator();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = 'none';
+        return;
       }
-      if (!targetLi || targetLi === draggedItem) return;
-
-      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
-
-      const targetType = targetLi.dataset.type;
-      const isContainer = targetType === 'dir' || targetType === 'page' || targetType === 'component' || targetType === 'flowchart';
-      const canMoveInto = isContainer && !isAncestor(draggedItem, targetLi);
-
-      const rect = targetLi.getBoundingClientRect();
-      const midTop = rect.top + rect.height * 0.3;
-      const midBottom = rect.bottom - rect.height * 0.3;
-
-      if (canMoveInto && e.clientY > midTop && e.clientY < midBottom) {
-        targetLi.classList.add('drop-into');
-      } else {
-        targetLi.classList.add(e.clientY > rect.top + rect.height / 2 ? 'drop-after' : 'drop-before');
-      }
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      currentDrop = drop;
+      renderDropIndicator(drop);
     });
 
-    treeRoot.addEventListener('dragleave', () => {
-      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+    treeRoot.addEventListener('dragleave', (e) => {
+      // 只有真正离开 treeRoot 时才清除，避免在子元素间移动时闪烁
+      if (e.relatedTarget && treeRoot.contains(e.relatedTarget)) return;
+      clearDropIndicator();
     });
 
     treeRoot.addEventListener('drop', async (e) => {
       e.preventDefault();
-      if (!draggedItem || !draggedParentUl) return;
+      const drop = currentDrop;
+      clearDropIndicator();
+      if (!draggedItem || !drop) return;
 
-      // Use the same target that dragover indicated, not re-derived from e.target
-      const targetLi = treeRoot.querySelector('.tree-item.drop-before, .tree-item.drop-after, .tree-item.drop-into');
-      if (!targetLi || targetLi === draggedItem) return;
-
+      const sourcePath = draggedItem.dataset.path;
       try {
-        const sourcePath = draggedItem.dataset.path;
-        const targetPath = targetLi.dataset.path;
-        if (targetLi.classList.contains('drop-into')) {
-          await window.apiClient.postMove({ type: currentTab, sourcePath, targetPath });
-          expandedPaths.add(targetPath);
-          window.showToast('移动成功', 'success');
-        } else {
-          const position = targetLi.classList.contains('drop-after') ? 'after' : 'before';
-          await window.apiClient.postMove({ type: currentTab, sourcePath, targetPath, position });
-          window.showToast('排序已保存', 'success');
-        }
+        await window.apiClient.postMove({
+          type: currentTab,
+          sourcePath,
+          parentPath: drop.parentId,
+          anchorPath: drop.anchorId
+        });
+        if (drop.parentId) expandedPaths.add(drop.parentId);
+        window.showToast('移动成功', 'success');
         await loadTree(currentTab);
       } catch (err) {
         console.error('Tree drag/drop error:', err);
         window.showToast((err && err.message) || '操作失败', 'error');
-      } finally {
-        document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
       }
     });
   }
@@ -257,6 +344,9 @@
     li.className = 'tree-item';
     li.dataset.path = node.path;
     li.dataset.type = node.type;
+    li.dataset.id = node.id;
+    li.dataset.parentId = node.parentId || '';
+    li.dataset.level = level;
 
     const label = document.createElement('div');
     label.className = 'tree-label';
@@ -324,7 +414,7 @@
       li.classList.remove('dragging');
       draggedItem = null;
       draggedParentUl = null;
-      document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
+      clearDropIndicator();
     });
 
     if (isExpandable) {

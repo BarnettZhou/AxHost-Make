@@ -2,10 +2,6 @@ const fs = require('fs/promises');
 const path = require('path');
 const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
 
-async function exists(p) {
-  try { await fs.access(p); return true; } catch { return false; }
-}
-
 async function readMeta(absPath) {
   try {
     const content = await fs.readFile(path.join(absPath, '.axhost-meta.json'), 'utf-8');
@@ -23,25 +19,34 @@ async function writeMeta(absPath, meta) {
   );
 }
 
-function findParentArray(nodes, id, parentRef) {
-  for (let i = 0; i < nodes.length; i++) {
-    if (nodes[i].id === id) {
-      parentRef.arr = nodes;
-      parentRef.idx = i;
-      return true;
+// Find a node by id anywhere in the tree.
+function findNode(nodes, id) {
+  for (const n of nodes) {
+    if (n.id === id) return n;
+    if (n.children) {
+      const found = findNode(n.children, id);
+      if (found) return found;
     }
-    if (nodes[i].children) {
-      if (findParentArray(nodes[i].children, id, parentRef)) return true;
+  }
+  return null;
+}
+
+// Whether `id` exists within `node`'s subtree (including node itself).
+function isInSubtree(node, id) {
+  if (node.id === id) return true;
+  if (node.children) {
+    for (const c of node.children) {
+      if (isInSubtree(c, id)) return true;
     }
   }
   return false;
 }
 
+// Remove a node by id from the tree, returning the detached node (or null).
 function removeNode(nodes, id) {
   for (let i = 0; i < nodes.length; i++) {
     if (nodes[i].id === id) {
-      const removed = nodes.splice(i, 1)[0];
-      return removed;
+      return nodes.splice(i, 1)[0];
     }
     if (nodes[i].children) {
       const removed = removeNode(nodes[i].children, id);
@@ -51,137 +56,120 @@ function removeNode(nodes, id) {
   return null;
 }
 
+// Rebuild the flat _map so it always matches the tree structure.
+function rebuildFlatMap(sitemap) {
+  const map = {};
+  function walk(nodes, tab) {
+    for (const n of nodes) {
+      if (n.id) {
+        map[n.id] = { name: n.name, type: n.type, path: `${tab}/${n.path}` };
+      }
+      if (n.children) walk(n.children, tab);
+    }
+  }
+  walk(sitemap.pages || [], 'pages');
+  walk(sitemap.components || [], 'components');
+  walk(sitemap.flowcharts || [], 'flowcharts');
+  sitemap._map = map;
+}
+
+function getTab(p) {
+  return p.includes('flowcharts') ? 'flowcharts' : p.includes('components') ? 'components' : 'pages';
+}
+
+function badRequest(res, message) {
+  res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({ code: 400, message }));
+}
+
 async function handleMove(req, res, projectRoot) {
   let body = '';
   req.on('data', chunk => body += chunk);
   req.on('end', async () => {
     try {
-      const { sourcePath, targetPath, type, position } = JSON.parse(body || '{}');
-      if (!sourcePath || !targetPath || sourcePath.includes('..') || targetPath.includes('..')) {
-        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 400, message: 'Invalid parameters' }));
-        return;
+      const payload = JSON.parse(body || '{}');
+      const { sourcePath, type } = payload;
+      // parentPath: destination parent id ('' = top level)
+      // anchorPath: sibling id to insert AFTER ('' = insert at index 0 of the parent)
+      const parentPath = payload.parentPath || '';
+      const anchorPath = payload.anchorPath || '';
+
+      if (!sourcePath || sourcePath.includes('..') || parentPath.includes('..') || anchorPath.includes('..')) {
+        return badRequest(res, 'Invalid parameters');
       }
-      const prefix = type ? `prototype/${type}/` : '';
+
+      const tab = type || getTab(sourcePath);
+      const prefix = `prototype/${tab}/`;
       const resolvedSource = sourcePath.startsWith('prototype/') ? sourcePath : prefix + sourcePath;
-      const resolvedTarget = targetPath.startsWith('prototype/') ? targetPath : prefix + targetPath;
       const sourceAbs = path.resolve(projectRoot, resolvedSource);
-      const targetAbs = path.resolve(projectRoot, resolvedTarget);
-      if (!sourceAbs.startsWith(path.resolve(projectRoot)) || !targetAbs.startsWith(path.resolve(projectRoot))) {
+      if (!sourceAbs.startsWith(path.resolve(projectRoot))) {
         res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 403, message: 'Forbidden path' }));
         return;
       }
 
-      const sourceName = path.basename(sourceAbs);
-      const targetName = path.basename(targetAbs);
-      function getTab(p) { return p.includes('flowcharts') ? 'flowcharts' : p.includes('components') ? 'components' : 'pages'; }
-      const tab = type || getTab(resolvedSource);
+      const sourceId = path.basename(resolvedSource);
+      const parentId = parentPath ? path.basename(parentPath) : '';
+      let anchorId = anchorPath ? path.basename(anchorPath) : '';
+      if (anchorId === sourceId) anchorId = '';
+
       const sitemap = await readSitemap(projectRoot);
       const tree = sitemap[tab] || [];
 
-      // before / after: reorder within the same parent array, or move across parents
-      if (position === 'before' || position === 'after') {
-        const sourceRef = {};
-        const targetRef = {};
-        findParentArray(tree, sourceName, sourceRef);
-        findParentArray(tree, targetName, targetRef);
+      // Locate source node.
+      const sourceNode = findNode(tree, sourceId);
+      if (!sourceNode) return badRequest(res, 'Source not found');
 
-        if (!sourceRef.arr || !targetRef.arr) {
-          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-          res.end(JSON.stringify({ code: 400, message: 'Source or target not found' }));
-          return;
+      // Validate destination parent (must exist and must NOT be inside the source subtree).
+      if (parentId) {
+        if (parentId === sourceId || isInSubtree(sourceNode, parentId)) {
+          return badRequest(res, '不能移动到自身或其子级下');
         }
-
-        if (sourceRef.arr === targetRef.arr) {
-          // Same parent: just reorder
-          const arr = sourceRef.arr;
-          const oldIdx = sourceRef.idx;
-          let newIdx = targetRef.idx;
-          const node = arr.splice(oldIdx, 1)[0];
-          if (position === 'after') {
-            if (newIdx > oldIdx) newIdx -= 1;
-            newIdx += 1;
-          }
-          arr.splice(newIdx, 0, node);
-        } else {
-          // Different parents: move source into target's parent at the specified position
-          const movedNode = sourceRef.arr.splice(sourceRef.idx, 1)[0];
-
-          // Find target's parent id
-          function findParentId(nodes, childId, parentId) {
-            for (const n of nodes) {
-              if (n.id === childId) return parentId;
-              if (n.children) {
-                const found = findParentId(n.children, childId, n.id);
-                if (found !== undefined) return found;
-              }
-            }
-            return undefined;
-          }
-          const targetParentId = findParentId(tree, targetName, null);
-          movedNode.parentId = targetParentId;
-
-          let newIdx = targetRef.idx;
-          if (position === 'after') {
-            newIdx += 1;
-          }
-          targetRef.arr.splice(newIdx, 0, movedNode);
-
-          // Update meta
-          try {
-            await fs.access(path.join(sourceAbs, '.axhost-meta.json'));
-            const sourceMeta = await readMeta(sourceAbs);
-            sourceMeta.parentId = targetParentId;
-            await writeMeta(sourceAbs, sourceMeta);
-          } catch {}
+        if (!findNode(tree, parentId)) {
+          return badRequest(res, 'Target parent not found');
         }
-
-        await writeSitemap(projectRoot, sitemap);
-        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
-        return;
       }
 
-      // drop-into: change parentId in meta and move in sitemap tree
-      const targetMeta = await readMeta(targetAbs);
-      const targetHasIndex = await exists(path.join(targetAbs, 'index.html'));
-      const targetKind = targetMeta.kind || (targetHasIndex ? 'page' : 'dir');
-      if (targetKind !== 'dir' && targetKind !== 'page' && targetKind !== 'component' && targetKind !== 'flowchart') {
-        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        res.end(JSON.stringify({ code: 400, message: 'Target is not a directory' }));
-        return;
+      // Detach the source from its current location.
+      removeNode(tree, sourceId);
+
+      // Resolve the destination array (root list or a parent's children).
+      let destArray;
+      if (!parentId) {
+        destArray = tree;
+      } else {
+        const parentNode = findNode(tree, parentId);
+        if (!parentNode) {
+          // Should not happen (validated above), restore and abort.
+          return badRequest(res, 'Target parent not found');
+        }
+        if (!parentNode.children) parentNode.children = [];
+        destArray = parentNode.children;
       }
 
-      // Update meta if physical dir exists
+      // Compute insertion index from the anchor sibling.
+      let insertIdx = 0;
+      if (anchorId) {
+        const idx = destArray.findIndex(n => n.id === anchorId);
+        insertIdx = idx === -1 ? destArray.length : idx + 1;
+      }
+      sourceNode.parentId = parentId || null;
+      destArray.splice(insertIdx, 0, sourceNode);
+
+      // Keep the physical meta's parentId in sync (dirs are flat; hierarchy is logical).
       try {
         await fs.access(path.join(sourceAbs, '.axhost-meta.json'));
         const sourceMeta = await readMeta(sourceAbs);
-        sourceMeta.parentId = targetName;
+        sourceMeta.parentId = parentId || '';
         await writeMeta(sourceAbs, sourceMeta);
       } catch {}
 
-      // Update sitemap: remove from current position, insert under target
-      const movedNode = removeNode(tree, sourceName);
-      if (movedNode) {
-        movedNode.parentId = targetName;
-        function insertUnderTarget(nodes) {
-          for (const n of nodes) {
-            if (n.id === targetName) {
-              if (!n.children) n.children = [];
-              n.children.push(movedNode);
-              return true;
-            }
-            if (n.children && insertUnderTarget(n.children)) return true;
-          }
-          return false;
-        }
-        insertUnderTarget(tree);
-      }
+      // Rebuild _map so it never drifts from the tree.
+      rebuildFlatMap(sitemap);
 
       await writeSitemap(projectRoot, sitemap);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
+      res.end(JSON.stringify({ code: 0, data: { id: sourceId, parentId: parentId || null } }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({ code: 500, message: err.message }));
