@@ -70,15 +70,22 @@
 
   async function loadAnnotations() {
     var path = getAnnotationsPath();
-    if (!path) { annotations = []; return; }
+    if (!path) { annotations = []; updateButtonHasAnnotations(); return; }
     try {
       var url = getAnnotationsUrl(path);
       var res = await fetch(url);
-      if (!res.ok) { annotations = []; return; }
+      if (!res.ok) { annotations = []; updateButtonHasAnnotations(); return; }
       var text = await res.text();
       annotations = JSON.parse(text);
     } catch (e) {
       annotations = [];
+    }
+    updateButtonHasAnnotations();
+  }
+
+  function updateButtonHasAnnotations() {
+    if (btnToggle) {
+      btnToggle.classList.toggle('has-annotations', annotations.length > 0);
     }
   }
 
@@ -422,15 +429,15 @@
 
   // Preview mode: refresh on hash change
   window.addEventListener('hashchange', function () {
-    if (level > 0) {
-      clearHighlights();
-      loadAnnotations().then(function () {
+    loadAnnotations().then(function () {
+      if (level > 0) {
+        clearHighlights();
         setTimeout(function () {
           buildHighlights();
           if (level >= 2) { renderPanel(); setTimeout(function () { repositionHighlights(); }, 300); }
         }, 200);
-      });
-    }
+      }
+    });
   });
 
   iframe.addEventListener('load', function () {
@@ -450,16 +457,16 @@
     }
     window.addEventListener('resize', onIframeChange);
 
-    if (level > 0) {
-      clearHighlights();
-      loadAnnotations().then(function () {
+    loadAnnotations().then(function () {
+      if (level > 0) {
+        clearHighlights();
         // Small delay to ensure iframe DOM is settled
         setTimeout(function () {
           buildHighlights();
           if (level >= 2) { renderPanel(); setTimeout(function () { repositionHighlights(); }, 300); }
         }, 100);
-      });
-    }
+      }
+    });
   });
 
   // ---- Expose ----
@@ -468,12 +475,17 @@
     setLevel: setLevel,
     getLevel: function () { return level; },
     refresh: function () {
-      if (level > 0) {
-        loadAnnotations().then(function () {
+      loadAnnotations().then(function () {
+        if (level > 0) {
           buildHighlights();
           if (level >= 2) { renderPanel(); setTimeout(function () { repositionHighlights(); }, 300); }
-        });
-      }
+        }
+      });
     }
   };
+
+  // Initial detection if iframe is already loaded
+  if (getDoc() && getDoc().readyState === 'complete') {
+    loadAnnotations();
+  }
 })();

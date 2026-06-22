@@ -482,6 +482,14 @@ body.dark .tree-item > .tree-label.active {
   background: #0958d9;
   border-color: #0958d9;
 }
+#btn-toggle-annotations.has-annotations {
+  color: #1677ff;
+  border-color: #1677ff;
+  background: transparent;
+}
+#btn-toggle-annotations.has-annotations:hover {
+  background: rgba(22, 119, 255, 0.08);
+}
 #btn-toggle-annotations.active {
   background: #1677ff;
   color: #fff;
