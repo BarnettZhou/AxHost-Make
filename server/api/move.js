@@ -2,6 +2,39 @@ const fs = require('fs/promises');
 const path = require('path');
 const { readSitemap, writeSitemap } = require('../lib/sitemap-io.js');
 
+// 重建 _map，确保与树结构一致
+function rebuildFlatMap(sitemap) {
+  const map = {};
+  function walk(nodes, tab) {
+    for (const n of nodes) {
+      if (n.id) {
+        const pathPrefix = tab === 'flowcharts' ? 'flowcharts' : tab.slice(0, -1);
+        map[n.id] = { name: n.name, type: n.type, path: `${pathPrefix}/${n.path}` };
+      }
+      if (n.children) walk(n.children, tab);
+    }
+  }
+  walk(sitemap.pages || [], 'pages');
+  walk(sitemap.components || [], 'components');
+  walk(sitemap.flowcharts || [], 'flowcharts');
+  sitemap._map = map;
+}
+
+// 检测循环引用
+function hasCycle(nodes, visited = new Set()) {
+  for (const n of nodes) {
+    if (visited.has(n.id)) return true;
+    visited.add(n.id);
+    if (n.children && hasCycle(n.children, new Set(visited))) return true;
+  }
+  return false;
+}
+
+// 深拷贝树结构
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
 }
@@ -80,6 +113,10 @@ async function handleMove(req, res, projectRoot) {
       const sitemap = await readSitemap(projectRoot);
       const tree = sitemap[tab] || [];
 
+      // 深拷贝树结构，用于回滚
+      const originalTree = deepClone(tree);
+      const originalMap = deepClone(sitemap._map || {});
+
       // before / after: reorder within the same parent array, or move across parents
       if (position === 'before' || position === 'after') {
         const sourceRef = {};
@@ -137,6 +174,19 @@ async function handleMove(req, res, projectRoot) {
           } catch {}
         }
 
+        // 校验：检测循环引用
+        if (hasCycle(tree)) {
+          // 回滚
+          sitemap[tab] = originalTree;
+          sitemap._map = originalMap;
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ code: 400, message: '移动会导致循环引用，操作已取消' }));
+          return;
+        }
+
+        // 重建 _map
+        rebuildFlatMap(sitemap);
+
         await writeSitemap(projectRoot, sitemap);
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ code: 0, data: { newPath: sourceName } }));
@@ -178,6 +228,19 @@ async function handleMove(req, res, projectRoot) {
         }
         insertUnderTarget(tree);
       }
+
+      // 校验：检测循环引用和节点是否成功挂载
+      if (hasCycle(tree)) {
+        // 回滚
+        sitemap[tab] = originalTree;
+        sitemap._map = originalMap;
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ code: 400, message: '移动会导致循环引用，操作已取消' }));
+        return;
+      }
+
+      // 重建 _map
+      rebuildFlatMap(sitemap);
 
       await writeSitemap(projectRoot, sitemap);
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
