@@ -15,7 +15,7 @@
   const btnClose = document.getElementById('btn-annotations-close');
   if (!iframe || !btnToggle) return;
 
-  var level = 0;          // 0=off, 1=highlights, 2=highlights+panel
+  var level = 0;          // 0=off, 2=highlights+panel
   var annotations = [];   // [{ selector, content }]
   var highlights = [];    // [{ el, overlay }]
   var activeIdx = -1;     // index of currently selected annotation
@@ -92,6 +92,8 @@
     style.textContent =
       '.annotation-highlight{position:absolute;z-index:999990;pointer-events:auto;background:rgba(22,119,255,0.15);border:1px solid rgba(22,119,255,0.8);border-radius:2px;cursor:pointer;transition:background 0.1s,border-color 0.1s}' +
       '.annotation-highlight.active{background:rgba(230,126,34,0.25);border:2px solid #e67e22;z-index:999991}' +
+      '.annotation-marker{position:absolute;top:0;left:0;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#1677ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:999993;pointer-events:auto;cursor:pointer}' +
+      '.annotation-highlight.active .annotation-marker{background:#e67e22}' +
       '.annotation-popup{position:absolute;z-index:999992;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.2);width:240px;min-height:180px;max-height:360px;overflow-y:auto;font-size:13px;color:#333;padding:10px 12px;line-height:1.5}';
     doc.head.appendChild(style);
   }
@@ -124,6 +126,12 @@
       overlay.className = 'annotation-highlight';
       overlay.setAttribute('data-annotation-idx', idx);
       positionOverlay(overlay, el);
+
+      var marker = doc.createElement('div');
+      marker.className = 'annotation-marker';
+      marker.setAttribute('data-annotation-idx', idx);
+      marker.textContent = (idx + 1).toString();
+      overlay.appendChild(marker);
 
       overlay.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -273,6 +281,7 @@
       var needsExpand = bodyText.split('\n').length > 3 || bodyText.length > 200;
 
       card.innerHTML =
+        '<span class="annotation-card-index">#' + (idx + 1) + '</span>' +
         '<div class="annotation-card-title">' + escapeHtml(ann.selector) + '</div>' +
         '<div class="annotation-card-body">' + escapeHtml(bodyText) + '</div>' +
         (needsExpand ? '<button class="annotation-card-expand visible">展开</button>' : '');
@@ -385,59 +394,14 @@
   // ---- Button events ----
 
   btnToggle.addEventListener('click', function () {
-    setLevel((level + 1) % 3);
-  });
-
-  // Hover dropdown
-  var dropdownEl = null;
-  btnToggle.addEventListener('mouseenter', function () {
-    if (dropdownEl) return;
-    var rect = btnToggle.getBoundingClientRect();
-    dropdownEl = document.createElement('div');
-    dropdownEl.className = 'editor-dropdown open';
-    dropdownEl.style.cssText = 'position:fixed;z-index:100;top:' + (rect.bottom + 4) + 'px;left:' + rect.left + 'px;min-width:100px;display:block;padding:4px 0;';
-    var items = [
-      { label: '元素', level: 1 },
-      { label: '元素+列表', level: 2 },
-      { label: '关闭', level: 0 }
-    ];
-    items.forEach(function (item) {
-      var row = document.createElement('div');
-      row.style.cssText = 'padding:6px 12px;cursor:pointer;font-size:13px;';
-      if (item.level === level) row.className = 'editor-dropdown-item';
-      row.textContent = item.label;
-      row.addEventListener('click', function () { setLevel(item.level); removeDropdown(); });
-      dropdownEl.appendChild(row);
-    });
-    document.body.appendChild(dropdownEl);
-    dropdownEl.addEventListener('mouseleave', function () { removeDropdown(); });
-  });
-
-  btnToggle.addEventListener('mouseleave', function (e) {
-    if (dropdownEl && dropdownEl.contains(e.relatedTarget)) return;
-    setTimeout(function () {
-      if (dropdownEl && !dropdownEl.matches(':hover')) removeDropdown();
-    }, 200);
-  });
-
-  function removeDropdown() {
-    if (dropdownEl && dropdownEl.parentNode) {
-      dropdownEl.parentNode.removeChild(dropdownEl);
-    }
-    dropdownEl = null;
-  }
-
-  document.addEventListener('click', function (e) {
-    if (dropdownEl && !dropdownEl.contains(e.target) && e.target !== btnToggle) {
-      removeDropdown();
-    }
+    setLevel(level === 0 ? 2 : 0);
   });
 
   // ---- Panel close button ----
 
   if (btnClose) {
     btnClose.addEventListener('click', function () {
-      setLevel(level === 2 ? 1 : 0);
+      setLevel(0);
     });
   }
 
