@@ -280,9 +280,8 @@
 
     annotations.forEach(function (ann, idx) {
       var card = document.createElement('div');
-      card.className = 'annotation-card';
+      card.className = 'annotation-card' + (idx === activeIdx ? ' active' : '');
       card.setAttribute('data-idx', idx);
-      if (idx === activeIdx) card.style.borderColor = '#e67e22';
 
       var bodyText = ann.content || '';
       var needsExpand = bodyText.split('\n').length > 3 || bodyText.length > 200;
@@ -326,7 +325,7 @@
     var cards = annotationsList.querySelectorAll('.annotation-card');
     cards.forEach(function (card) {
       var idx = parseInt(card.getAttribute('data-idx'), 10);
-      card.style.borderColor = idx === activeIdx ? '#e67e22' : '';
+      card.classList.toggle('active', idx === activeIdx);
     });
   }
 

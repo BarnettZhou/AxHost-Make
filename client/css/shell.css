@@ -855,6 +855,12 @@ body.dark .floating-prompt-header {
 .annotation-card:hover {
   border-color: var(--accent);
 }
+.annotation-card.active {
+  border-color: #e67e22;
+}
+.annotation-card.active .annotation-card-index {
+  background: #e67e22;
+}
 .annotation-card-index {
   position: absolute;
   top: 6px;
