@@ -113,14 +113,18 @@ async function copyItem(projectRoot, sourcePath, type, customName) {
   const sourceNode = container.arr[container.index];
   const parentId = sourceNode.parentId || null;
 
-  insertNodeAfterSitemap(sitemap, tab, sourcePath, {
+  const newNode = {
     id: newHash,
     name: newName,
     path: newHash,
     type: sourceNode.type,
     parentId,
     docs: sourceNode.docs || []
-  });
+  };
+  if (sourceNode.page_type) {
+    newNode.page_type = sourceNode.page_type;
+  }
+  insertNodeAfterSitemap(sitemap, tab, sourcePath, newNode);
 
   await writeSitemap(projectRoot, sitemap);
   return { id: newHash, name: newName, path: newHash, type: tab };
