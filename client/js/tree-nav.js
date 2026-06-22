@@ -116,13 +116,9 @@
 
       document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('drop-before', 'drop-after', 'drop-into'));
 
-      // 祖先关系校验：禁止把祖先拖到后代附近，也禁止把后代拖到祖先附近
-      const isAncestorRelation = isAncestor(draggedItem, targetLi) || isAncestor(targetLi, draggedItem);
-      if (isAncestorRelation) return;
-
       const targetType = targetLi.dataset.type;
       const isContainer = targetType === 'dir' || targetType === 'page' || targetType === 'component' || targetType === 'flowchart';
-      const canMoveInto = isContainer;
+      const canMoveInto = isContainer && !isAncestor(draggedItem, targetLi);
 
       const rect = targetLi.getBoundingClientRect();
       const midTop = rect.top + rect.height * 0.3;
@@ -131,12 +127,7 @@
       if (canMoveInto && e.clientY > midTop && e.clientY < midBottom) {
         targetLi.classList.add('drop-into');
       } else {
-        // before/after 模式限制为同父级重排
-        const sourceParent = draggedItem.parentElement;
-        const targetParent = targetLi.parentElement;
-        if (sourceParent === targetParent) {
-          targetLi.classList.add(e.clientY > rect.top + rect.height / 2 ? 'drop-after' : 'drop-before');
-        }
+        targetLi.classList.add(e.clientY > rect.top + rect.height / 2 ? 'drop-after' : 'drop-before');
       }
     });
 

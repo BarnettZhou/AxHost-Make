@@ -14,7 +14,6 @@ Usage:
   axhost-make init [--non-interactive]
   axhost-make update [--all]
   axhost-make upgrade
-  axhost-make repair-sitemap
   axhost-make build
   axhost-make serve [--port <number>]
   axhost-make preview [--port <number>]
@@ -38,7 +37,6 @@ Commands:
   update         Update prototype entry files and styles (use --all to update all projects in workspace)
   upgrade        Upgrade framework to latest version from GitHub
   build          Build standalone prototype-index.html from client/preview-index.html
-  repair-sitemap Repair orphaned pages/components in sitemap
   serve          Start local dev server (with API and shell)
   preview        Start a simple static server for the prototype/ directory
   migrate        Migrate existing prototype data to hash-directory format
@@ -97,13 +95,6 @@ async function main() {
   if (command === 'upgrade') {
     const { upgrade } = require('./axhost-upgrade.js');
     await upgrade();
-    return;
-  }
-
-  if (command === 'repair-sitemap') {
-    const { repairSitemap } = require('./axhost-repair-sitemap.js');
-    const projectRoot = args[1] || process.cwd();
-    await repairSitemap(projectRoot);
     return;
   }
 
