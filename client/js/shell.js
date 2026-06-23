@@ -189,7 +189,13 @@
     var hide = !window.__axhostState.navVisible;
     if (hide) freezePanelChildren(panelNav);
     panelNav.classList.toggle('hidden', hide);
+    if (window.__annotationViewer && window.__annotationViewer.setHighlightsVisible) {
+      window.__annotationViewer.setHighlightsVisible(false);
+    }
     setTimeout(function () {
+      if (window.__annotationViewer && window.__annotationViewer.setHighlightsVisible) {
+        window.__annotationViewer.setHighlightsVisible(true);
+      }
       if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
         window.__annotationViewer.repositionHighlights();
       }
@@ -207,7 +213,13 @@
     panelDocs.classList.toggle('hidden', hide);
     if (docsResizer) docsResizer.classList.toggle('hidden', hide);
     btnToggleDocs.classList.toggle('active', window.__axhostState.docsVisible);
+    if (window.__annotationViewer && window.__annotationViewer.setHighlightsVisible) {
+      window.__annotationViewer.setHighlightsVisible(false);
+    }
     setTimeout(function () {
+      if (window.__annotationViewer && window.__annotationViewer.setHighlightsVisible) {
+        window.__annotationViewer.setHighlightsVisible(true);
+      }
       if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
         window.__annotationViewer.repositionHighlights();
       }
@@ -1287,6 +1299,9 @@
           let delta = invert ? startPos - currentPos : currentPos - startPos;
           let newSize = Math.max(minSize, Math.min(maxSize, startSize + delta));
           target.style[isVertical ? 'width' : 'height'] = newSize + 'px';
+          if (window.__annotationViewer && window.__annotationViewer.setHighlightsVisible) {
+            window.__annotationViewer.setHighlightsVisible(false);
+          }
         }
         function onUp() {
           document.body.style.userSelect = '';
@@ -1294,6 +1309,9 @@
           if (overlay) { overlay.remove(); overlay = null; }
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          if (window.__annotationViewer && window.__annotationViewer.setHighlightsVisible) {
+            window.__annotationViewer.setHighlightsVisible(true);
+          }
           if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
             window.__annotationViewer.repositionHighlights();
           }

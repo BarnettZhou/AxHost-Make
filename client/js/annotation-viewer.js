@@ -142,6 +142,7 @@
       var overlay = doc.createElement('div');
       overlay.className = 'annotation-highlight';
       overlay.setAttribute('data-annotation-idx', idx);
+      overlay.style.opacity = '1';
       positionOverlay(overlay, el);
 
       var marker = doc.createElement('div');
@@ -181,6 +182,13 @@
     highlights.forEach(function (h) {
       positionOverlay(h.overlay, h.el);
       h.overlay.classList.toggle('active', h.idx === activeIdx);
+    });
+  }
+
+  function setHighlightsVisible(visible) {
+    highlights.forEach(function (h) {
+      h.overlay.style.transition = 'opacity 0.1s ease';
+      h.overlay.style.opacity = visible ? '1' : '0';
     });
   }
 
@@ -527,14 +535,16 @@
   var scrollRepositionTimer;
   function onIframeChange() {
     if (level === 0) return;
+    setHighlightsVisible(false);
     clearTimeout(scrollRepositionTimer);
     scrollRepositionTimer = setTimeout(function () {
       repositionHighlights();
+      setHighlightsVisible(true);
       if (activeIdx >= 0 && popupEl) {
         var h = highlights.find(function (h) { return h.idx === activeIdx; });
         if (h) positionPopup(popupEl, h.el);
       }
-    }, 50);
+    }, 100);
   }
 
   // Preview mode: refresh on hash change
@@ -578,6 +588,7 @@
     setLevel: setLevel,
     getLevel: function () { return level; },
     repositionHighlights: repositionHighlights,
+    setHighlightsVisible: setHighlightsVisible,
     refresh: function () {
       loadAnnotations().then(function () {
         if (level > 0) {
