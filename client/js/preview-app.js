@@ -52,12 +52,22 @@
     docsPanel.classList.toggle('hidden');
     if (docsResizer) docsResizer.classList.toggle('hidden');
     btnDocs.classList.toggle('active', !docsPanel.classList.contains('hidden'));
+    setTimeout(function () {
+      if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
+        window.__annotationViewer.repositionHighlights();
+      }
+    }, 300);
   });
   if (btnToggleNav) {
     btnToggleNav.addEventListener('click', () => {
       var hide = sidebar.classList.contains('hidden') ? false : true;
       if (hide) freezePanelChildren(sidebar);
       sidebar.classList.toggle('hidden');
+      setTimeout(function () {
+        if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
+          window.__annotationViewer.repositionHighlights();
+        }
+      }, 300);
     });
   }
   if (btnRefreshPreview) {
@@ -394,6 +404,9 @@
           if (overlay) { overlay.remove(); overlay = null; }
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
+            window.__annotationViewer.repositionHighlights();
+          }
         }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);
@@ -472,6 +485,9 @@
     activePath = target.path;
     if (hashNode) {
       activeType = getNodeTypeForTab(target) === 'component' ? 'components' : getNodeTypeForTab(target) === 'flowchart' ? 'flowcharts' : 'pages';
+    } else {
+      activeType = getNodeTypeForTab(target) === 'component' ? 'components' : getNodeTypeForTab(target) === 'flowchart' ? 'flowcharts' : 'pages';
+      history.replaceState(null, '', '#' + target.id);
     }
     renderTabs();
     expandAncestors(target.path);

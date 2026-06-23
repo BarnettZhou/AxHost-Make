@@ -856,10 +856,93 @@ body.dark .floating-prompt-header {
   border-color: var(--accent);
 }
 .annotation-card.active {
-  border-color: #e67e22;
+  border-color: #1677ff;
+  background: #1677ff1a;
 }
 .annotation-card.active .annotation-card-index {
-  background: #e67e22;
+  background: #1677ff;
+}
+.annotation-card-delete {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  z-index: 1;
+}
+.annotation-card:hover .annotation-card-delete {
+  opacity: 1;
+}
+.annotation-card-delete:hover,
+.annotation-card-delete:active {
+  color: #ff4d4f;
+}
+.annotation-card-edit,
+.annotation-card-save {
+  position: absolute;
+  top: 4px;
+  right: 28px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  z-index: 1;
+}
+.annotation-card-save {
+  display: none;
+}
+.annotation-card:hover .annotation-card-edit,
+.annotation-card:hover .annotation-card-delete {
+  opacity: 1;
+}
+.annotation-card-edit:hover,
+.annotation-card-edit:active,
+.annotation-card-save:hover,
+.annotation-card-save:active {
+  color: #1677ff;
+}
+.annotation-card.editing .annotation-card-edit,
+.annotation-card.editing .annotation-card-delete,
+.annotation-card.editing .annotation-card-expand {
+  display: none;
+}
+.annotation-card.editing .annotation-card-save {
+  display: flex;
+  opacity: 1;
+}
+.annotation-card-edit-area {
+  display: none;
+  width: 100%;
+  min-height: 80px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text-main);
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+  font-family: inherit;
+}
+.annotation-card.editing .annotation-card-body {
+  display: none;
+}
+.annotation-card.editing .annotation-card-edit-area {
+  display: block;
 }
 .annotation-card-index {
   position: absolute;
@@ -891,6 +974,36 @@ body.dark .floating-prompt-header {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.annotation-card-body > * {
+  margin: 0 0 8px;
+}
+.annotation-card-body > *:last-child {
+  margin-bottom: 0;
+}
+.annotation-card-body a {
+  pointer-events: none;
+  color: var(--accent);
+}
+.annotation-card-body blockquote {
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: rgba(22, 119, 255, 0.08);
+  border-radius: 0 4px 4px 0;
+}
+.annotation-card-body ol,
+.annotation-card-body ul {
+  padding-left: 18px;
+  margin: 6px 0;
+}
+.annotation-card-body li {
+  margin: 3px 0;
+}
+.annotation-card-body img {
+  max-width: 100%;
+  height: auto;
 }
 .annotation-card-body.expanded {
   display: block;
@@ -967,6 +1080,25 @@ body.dark .floating-prompt-header {
   color: var(--text-main);
   padding: 10px 12px;
   line-height: 1.5;
+}
+.annotation-popup ol,
+.annotation-popup ul {
+  list-style-position: inside;
+  padding-left: 0;
+  margin: 8px 0;
+}
+.annotation-popup li {
+  margin: 4px 0;
+}
+.annotation-popup blockquote {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--accent);
+  background: rgba(22, 119, 255, 0.08);
+  border-radius: 0 4px 4px 0;
+}
+.annotation-popup blockquote p {
+  margin: 0;
 }
 
 /* Right Docs */

@@ -189,6 +189,11 @@
     var hide = !window.__axhostState.navVisible;
     if (hide) freezePanelChildren(panelNav);
     panelNav.classList.toggle('hidden', hide);
+    setTimeout(function () {
+      if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
+        window.__annotationViewer.repositionHighlights();
+      }
+    }, 300);
   });
 
   const docsResizer = document.getElementById('docs-resizer');
@@ -202,6 +207,11 @@
     panelDocs.classList.toggle('hidden', hide);
     if (docsResizer) docsResizer.classList.toggle('hidden', hide);
     btnToggleDocs.classList.toggle('active', window.__axhostState.docsVisible);
+    setTimeout(function () {
+      if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
+        window.__annotationViewer.repositionHighlights();
+      }
+    }, 300);
   });
 
   // Touch emulation — drag to scroll like mobile finger touch
@@ -1284,6 +1294,9 @@
           if (overlay) { overlay.remove(); overlay = null; }
           document.removeEventListener('mousemove', onMove);
           document.removeEventListener('mouseup', onUp);
+          if (window.__annotationViewer && window.__annotationViewer.repositionHighlights) {
+            window.__annotationViewer.repositionHighlights();
+          }
         }
         document.addEventListener('mousemove', onMove);
         document.addEventListener('mouseup', onUp);

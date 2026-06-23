@@ -20,7 +20,6 @@
   var highlights = [];    // [{ el, overlay }]
   var activeIdx = -1;     // index of currently selected annotation
   var popupEl = null;
-  var freezeStyle = null; // reference to injected freeze style
 
   // ---- Helpers ----
 
@@ -28,9 +27,11 @@
     try { return iframe.contentDocument; } catch (e) { return null; }
   }
 
-  // Block page interactions in annotation mode
+  // Block page click interactions in annotation mode (scrolling remains allowed)
   function blockIframeClick(e) {
     if (level === 0) return;
+    // Let inspector take over when it is active
+    if (isInspectorActive()) return;
     if (e.target.closest('.annotation-highlight') || e.target.closest('.annotation-popup')) return;
     e.preventDefault();
     e.stopPropagation();
@@ -64,6 +65,11 @@
       return '/' + path; // e.g. /prototype/pages/<hash>/annotations.json
     }
     return path; // e.g. ./pages/<hash>/annotations.json (relative, works in subdirs)
+  }
+
+  function isInspectorActive() {
+    var btnInspect = document.getElementById('btn-inspect');
+    return btnInspect && btnInspect.classList.contains('active');
   }
 
   // ---- Load annotations ----
@@ -101,7 +107,11 @@
       '.annotation-highlight.active{background:rgba(230,126,34,0.25);border:2px solid #e67e22;z-index:999991}' +
       '.annotation-marker{position:absolute;top:0;left:0;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#1677ff;color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;line-height:1;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,0.2);z-index:999993;pointer-events:auto;cursor:pointer}' +
       '.annotation-highlight.active .annotation-marker{background:#e67e22}' +
-      '.annotation-popup{position:absolute;z-index:999992;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.2);width:240px;min-height:180px;max-height:360px;overflow-y:auto;font-size:13px;color:#333;padding:10px 12px;line-height:1.5}';
+      '.annotation-popup{position:absolute;z-index:999992;background:#fff;border:1px solid #e0e0e0;border-radius:6px;box-shadow:0 4px 16px rgba(0,0,0,0.2);width:240px;min-height:180px;max-height:360px;overflow-y:auto;font-size:13px;color:#333;padding:10px 12px;line-height:1.5}' +
+      '.annotation-popup ol,.annotation-popup ul{list-style-position:inside;padding-left:0;margin:8px 0}' +
+      '.annotation-popup li{margin:4px 0}' +
+      '.annotation-popup blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid #1677ff;background:rgba(22,119,255,0.08);border-radius:0 4px 4px 0}' +
+      '.annotation-popup blockquote p{margin:0}';
     doc.head.appendChild(style);
   }
 
@@ -285,11 +295,26 @@
 
       var bodyText = ann.content || '';
       var needsExpand = bodyText.split('\n').length > 3 || bodyText.length > 200;
+      var canEdit = !!window.apiClient;
+      var canDelete = !!window.apiClient && typeof AxhostModal !== 'undefined';
+      var actionButtons = canEdit
+        ? '<button class="annotation-card-edit" title="编辑标注"><iconpark-icon icon-id="editor" size="14"></iconpark-icon></button>' +
+          '<button class="annotation-card-save" title="保存标注"><iconpark-icon icon-id="save" size="14"></iconpark-icon></button>'
+        : '';
+      var deleteButton = canDelete
+        ? '<button class="annotation-card-delete" title="删除标注"><iconpark-icon icon-id="delete" size="14"></iconpark-icon></button>'
+        : '';
+      var editArea = canEdit
+        ? '<textarea class="annotation-card-edit-area">' + escapeHtml(bodyText) + '</textarea>'
+        : '';
 
       card.innerHTML =
         '<span class="annotation-card-index">#' + (idx + 1) + '</span>' +
+        actionButtons +
+        deleteButton +
         '<div class="annotation-card-title">' + escapeHtml(ann.selector) + '</div>' +
-        '<div class="annotation-card-body">' + escapeHtml(bodyText) + '</div>' +
+        '<div class="annotation-card-body">' + renderMarkdown(bodyText) + '</div>' +
+        editArea +
         (needsExpand ? '<button class="annotation-card-expand visible">展开</button>' : '');
 
       annotationsList.appendChild(card);
@@ -304,6 +329,27 @@
       var idx = parseInt(card.getAttribute('data-idx'), 10);
       if (isNaN(idx)) return;
 
+      // Edit button
+      if (e.target.closest('.annotation-card-edit')) {
+        e.stopPropagation();
+        editAnnotation(card, idx);
+        return;
+      }
+
+      // Save button
+      if (e.target.closest('.annotation-card-save')) {
+        e.stopPropagation();
+        saveAnnotation(card, idx);
+        return;
+      }
+
+      // Delete button
+      if (e.target.closest('.annotation-card-delete')) {
+        e.stopPropagation();
+        deleteAnnotation(idx);
+        return;
+      }
+
       // Expand button
       if (e.target.closest('.annotation-card-expand')) {
         var bodyEl = card.querySelector('.annotation-card-body');
@@ -315,8 +361,18 @@
         return;
       }
 
-      // Card title click → select annotation (includes highlight, popup, scroll)
-      selectAnnotation(idx);
+      // Ignore card click while editing
+      if (card.classList.contains('editing')) return;
+
+      // Card click → select annotation (includes highlight, popup, scroll)
+      if (idx === activeIdx) {
+        hidePopup();
+        activeIdx = -1;
+        updateActiveHighlight();
+        updateCardActive();
+      } else {
+        selectAnnotation(idx);
+      }
     });
   }
 
@@ -327,6 +383,81 @@
       var idx = parseInt(card.getAttribute('data-idx'), 10);
       card.classList.toggle('active', idx === activeIdx);
     });
+  }
+
+  function editAnnotation(card, idx) {
+    if (!window.apiClient) return;
+    var editArea = card.querySelector('.annotation-card-edit-area');
+    if (!editArea) return;
+    editArea.value = annotations[idx].content || '';
+    card.classList.add('editing');
+    editArea.focus();
+  }
+
+  async function saveAnnotation(card, idx) {
+    if (!window.apiClient) return;
+    var editArea = card.querySelector('.annotation-card-edit-area');
+    var bodyEl = card.querySelector('.annotation-card-body');
+    if (!editArea || !bodyEl) return;
+    var newContent = editArea.value;
+    var path = getAnnotationsPath();
+    if (!path) return;
+    var newAnnotations = annotations.slice();
+    newAnnotations[idx] = { selector: newAnnotations[idx].selector, content: newContent };
+    try {
+      await window.apiClient.postFile(path, JSON.stringify(newAnnotations, null, 2));
+      annotations = newAnnotations;
+      bodyEl.textContent = newContent;
+      card.classList.remove('editing');
+      var needsExpand = newContent.split('\n').length > 3 || newContent.length > 200;
+      var expandBtn = card.querySelector('.annotation-card-expand');
+      if (needsExpand) {
+        if (!expandBtn) {
+          expandBtn = document.createElement('button');
+          expandBtn.className = 'annotation-card-expand visible';
+          expandBtn.textContent = '展开';
+          card.appendChild(expandBtn);
+        } else {
+          expandBtn.classList.add('visible');
+          expandBtn.textContent = '展开';
+        }
+        bodyEl.classList.remove('expanded');
+      } else if (expandBtn) {
+        expandBtn.classList.remove('visible');
+        bodyEl.classList.remove('expanded');
+      }
+      if (idx === activeIdx && popupEl) {
+        showPopup(idx);
+      }
+    } catch (err) {
+      alert('保存失败: ' + (err.message || err));
+    }
+  }
+
+  async function deleteAnnotation(idx) {
+    if (typeof AxhostModal === 'undefined') return;
+    var ok = await AxhostModal.confirm({ title: '确认删除', message: '确认删除该标注吗？' });
+    if (!ok) return;
+    var path = getAnnotationsPath();
+    if (!path) return;
+    var newAnnotations = annotations.slice();
+    newAnnotations.splice(idx, 1);
+    try {
+      if (window.apiClient) {
+        await window.apiClient.postFile(path, JSON.stringify(newAnnotations, null, 2));
+      }
+      annotations = newAnnotations;
+      activeIdx = -1;
+      hidePopup();
+      updateButtonHasAnnotations();
+      if (level > 0) {
+        clearHighlights();
+        buildHighlights();
+        if (level >= 2) renderPanel();
+      }
+    } catch (err) {
+      alert('删除失败: ' + (err.message || err));
+    }
   }
 
   function escapeHtml(s) {
@@ -343,13 +474,6 @@
       var doc = getDoc();
       if (doc) {
         doc.addEventListener('click', blockIframeClick, true);
-        // Disable all page interactions via CSS
-        if (!freezeStyle || freezeStyle.ownerDocument !== doc) {
-          freezeStyle = doc.createElement('style');
-          freezeStyle.id = 'annotation-freeze-style';
-          freezeStyle.textContent = 'body * { pointer-events: none !important; } body { pointer-events: auto !important; } .annotation-highlight, .annotation-highlight *, .annotation-popup, .annotation-popup * { pointer-events: auto !important; }';
-          doc.head.appendChild(freezeStyle);
-        }
       }
       loadAnnotations().then(function () {
         // Ensure iframe is ready before building highlights
@@ -377,23 +501,10 @@
       var doc = getDoc();
       if (doc) {
         doc.removeEventListener('click', blockIframeClick, true);
-        if (freezeStyle && freezeStyle.parentNode) { freezeStyle.parentNode.removeChild(freezeStyle); freezeStyle = null; }
       }
       clearHighlights();
       panel.classList.add('hidden');
       if (panelResizer) panelResizer.classList.add('hidden');
-    }
-
-    // Disable inspector in annotation mode
-    var btnInspect = document.getElementById('btn-inspect');
-    if (btnInspect) {
-      if (level > 0) {
-        // Deactivate inspector if currently active
-        if (btnInspect.classList.contains('active')) btnInspect.click();
-        btnInspect.disabled = true;
-      } else {
-        btnInspect.disabled = false;
-      }
     }
   }
 
@@ -445,13 +556,6 @@
       doc.addEventListener('scroll', onIframeChange, true);
       if (level > 0) {
         doc.addEventListener('click', blockIframeClick, true);
-        if (!freezeStyle || freezeStyle.ownerDocument !== doc) {
-          if (freezeStyle && freezeStyle.parentNode) freezeStyle.parentNode.removeChild(freezeStyle);
-          freezeStyle = doc.createElement('style');
-          freezeStyle.id = 'annotation-freeze-style';
-          freezeStyle.textContent = 'body * { pointer-events: none !important; } body { pointer-events: auto !important; } .annotation-highlight, .annotation-highlight *, .annotation-popup, .annotation-popup * { pointer-events: auto !important; }';
-          doc.head.appendChild(freezeStyle);
-        }
       }
     }
     window.addEventListener('resize', onIframeChange);
@@ -473,6 +577,7 @@
   window.__annotationViewer = {
     setLevel: setLevel,
     getLevel: function () { return level; },
+    repositionHighlights: repositionHighlights,
     refresh: function () {
       loadAnnotations().then(function () {
         if (level > 0) {

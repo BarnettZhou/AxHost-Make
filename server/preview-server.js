@@ -42,6 +42,11 @@ async function staticHandler(req, res, root) {
     res.writeHead(200, { 'Content-Type': contentType });
     res.end(data);
   } catch (err) {
+    if (path.basename(filePath).toLowerCase() === 'annotations.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end('[]');
+      return;
+    }
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Not Found');
   }

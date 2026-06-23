@@ -25,6 +25,11 @@ async function handleFileGet(req, res, projectRoot) {
     res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end(content);
   } catch (err) {
+    if (path.basename(filePathInput).toLowerCase() === 'annotations.json') {
+      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end('[]');
+      return;
+    }
     res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ code: 404, message: 'File not found' }));
   }

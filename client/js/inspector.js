@@ -699,6 +699,10 @@
         savedTimer = setTimeout(function () {
           savedHint.classList.remove('visible');
         }, 3000);
+        // Refresh annotation viewer button state / panel
+        if (window.__annotationViewer && typeof window.__annotationViewer.refresh === 'function') {
+          window.__annotationViewer.refresh();
+        }
       } catch (err) {
         alert('保存失败: ' + (err.message || err));
       }

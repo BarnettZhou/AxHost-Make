@@ -24,7 +24,7 @@
 
 **每次修改以下文件后，必须执行**对应的同步命令：
 
-- 修改了 `axhost-make/client/preview-index.html`、`shell.css`、`icons.js`、`preview-app.js` 中的任意一个：
+- 修改了 `axhost-make/client/preview-index.html`、`shell.css`、`icon-loader-shell.js`、`preview-app.js` 中的任意一个：
   ```bash
   node axhost-make/bin/axhost-make.js build
   ```
@@ -53,9 +53,10 @@
 ### 4. 图标规范
 
 框架统一使用 `<iconpark-icon>` 图标组件：
-- `client/js/icons.js` 是 IconPark CDN 的 loader。开发模式引用 `/client/js/icons.js`，独立入口引用 `resources/js/icons.js`。
+- `client/js/icon-loader-shell.js` 是 Shell / Preview 宿主环境使用的 IconPark CDN loader。开发模式由 `client/shell.html`、`client/preview-index.html`、`client/home.html` 等引用 `/client/js/icon-loader-shell.js`。
+- 原型页面（`prototype/pages/`、`prototype/components/`）使用 `prototype/resources/js/icon-loader.js`，由 `init` / `update --all` 自动创建空文件，按需填入加载逻辑。
 - HTML/JS 中全部使用 `<iconpark-icon icon-id="xxx" size="14"></iconpark-icon>`。
-- 升级 CDN 时，只需修改 `client/js/icons.js` 中的 URL，再执行 `update --all` 即可。
+- 升级 Shell / Preview 的 CDN 时，修改 `client/js/icon-loader-shell.js` 中的 URL；修改后刷新浏览器即可生效（无需 `build`），再执行 `update --all` 同步项目模板。
 
 ---
 
@@ -88,7 +89,7 @@ workspace/
 │   │   │   ├── shell.css     # 开发模式主题与布局
 │   │   │   └── home.css      # 项目管理首页样式
 │   │   ├── js/
-│   │   │   ├── icons.js      # IconPark CDN loader
+│   │   │   ├── icon-loader-shell.js # IconPark CDN loader（Shell/Preview 宿主）
 │   │   │   ├── api-client.js # 前端 API 封装
 │   │   │   ├── tree-nav.js   # 左侧目录树
 │   │   │   ├── inspector.js  # iframe 元素检查器
@@ -175,7 +176,7 @@ workspace/
 ### 修改框架 Client / Templates
 
 1. 修改 `axhost-make/client/` 或 `axhost-make/templates/` 中的源文件。
-2. 如果修改了 `preview-index.html`、`shell.css`、`icons.js` 或 `preview-app.js`，**先执行 build**：
+2. 如果修改了 `preview-index.html`、`shell.css`、`icon-loader-shell.js` 或 `preview-app.js`，**先执行 build**（当前 `build` 命令已简化为提示，实际资源由 `/client/` 统一提供，导出时自动处理路径）：
    ```bash
    node axhost-make/bin/axhost-make.js build
    ```
