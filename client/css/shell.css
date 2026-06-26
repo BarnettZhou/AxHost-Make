@@ -971,11 +971,37 @@ body.dark .floating-prompt-header {
   color: var(--text-main);
   line-height: 1.5;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  white-space: normal;
+  display: block;
+  max-height: 4.5em;
+  position: relative;
   overflow-wrap: anywhere;
+}
+.annotation-card-body::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 1.2em;
+  background: linear-gradient(transparent, var(--bg-panel));
+  pointer-events: none;
+}
+.annotation-card.active .annotation-card-body {
+  max-height: none;
+  overflow: visible;
+}
+.annotation-card.active .annotation-card-body::after {
+  display: none;
+}
+.annotation-card-body.expanded {
+  max-height: none;
+  overflow: visible;
+}
+.annotation-card-body.expanded::after {
+  display: none;
+}
+.annotation-card.active .annotation-card-expand {
+  display: none;
 }
 .annotation-card-body > * {
   margin: 0 0 8px;
@@ -1004,10 +1030,6 @@ body.dark .floating-prompt-header {
 .annotation-card-body img {
   max-width: 100%;
   height: auto;
-}
-.annotation-card-body.expanded {
-  display: block;
-  -webkit-line-clamp: unset;
 }
 .annotation-card-expand {
   display: none;
@@ -1458,6 +1480,7 @@ body.dark .rule-viewer-content tr:nth-child(even) {
 .host-project-select-wrap {
   position: relative;
   flex: 1;
+  min-width: 0;
 }
 .host-project-select-wrap input[type="text"] {
   width: 100%; box-sizing: border-box;
@@ -1519,6 +1542,14 @@ body.dark .rule-viewer-content tr:nth-child(even) {
   padding: 0 10px; height: 32px;
   font-size: 14px;
   color: var(--text-main);
+  min-width: 0;
+}
+.host-project-linked > span {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .host-project-hint {
   font-size: 12px;

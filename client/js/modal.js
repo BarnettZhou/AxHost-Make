@@ -10,7 +10,7 @@
  *   const name = await AxhostModal.prompt({ title: '新建', placeholder: '名称' });
  */
 
-let _modalZIndex = 1000;
+let _modalZIndex = 1100;
 
 class AxhostModal {
   constructor(options = {}) {

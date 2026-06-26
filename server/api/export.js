@@ -95,6 +95,11 @@ async function copyPageOrComponent(srcDir, destDir, relativePath) {
         }
       }
     }
+    // Ensure annotations.json exists so production static servers don't 404
+    const annotationsPath = path.join(dest, 'annotations.json');
+    if (!await exists(annotationsPath)) {
+      await fs.writeFile(annotationsPath, '[]', 'utf-8');
+    }
   }
 }
 
