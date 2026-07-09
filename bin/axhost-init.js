@@ -157,6 +157,9 @@ async function syncStartScripts(workspaceRoot) {
     const dest = path.join(workspaceRoot, file);
     if (await exists(src)) {
       await fs.copyFile(src, dest);
+      if (file === 'start.sh') {
+        await fs.chmod(dest, 0o755);
+      }
       copied++;
     }
   }

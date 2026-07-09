@@ -15,7 +15,7 @@ Usage:
   axhost-make update [--all]
   axhost-make upgrade
   axhost-make build
-  axhost-make serve [--port <number>]
+  axhost-make serve [--port <number>] [--access local|lan]
   axhost-make preview [--port <number>]
   axhost-make migrate
 
@@ -54,6 +54,7 @@ Commands:
 
 Options:
   --port         Server port (default: 3820 for serve, 8080 for preview)
+  --access       Network access mode: local (127.0.0.1, default) or lan (0.0.0.0)
   --non-interactive  Skip interactive prompts (for init)
   --parent, -p   Parent path (full path like pages/xxx or hash like 6e3d21e9)
   --to, -t       Target page/component for add-doc (full path or hash)
@@ -118,6 +119,17 @@ async function main() {
       const parsed = parseInt(args[portIndex + 1], 10);
       if (!isNaN(parsed)) port = parsed;
     }
+    let access = 'local';
+    const accessIndex = args.indexOf('--access');
+    if (accessIndex !== -1 && args[accessIndex + 1]) {
+      const value = args[accessIndex + 1].toLowerCase();
+      if (value === 'lan' || value === 'local') {
+        access = value;
+      } else {
+        console.warn(`[Warning] Unknown access mode: ${args[accessIndex + 1]}, defaulting to local`);
+      }
+    }
+    const host = access === 'lan' ? '0.0.0.0' : '127.0.0.1';
     let workspaceRoot = process.cwd();
     // Auto-detect: walk upward to find directory containing axhost-make/
     const fs = require('fs');
@@ -128,7 +140,7 @@ async function main() {
       }
       workspaceRoot = path.dirname(workspaceRoot);
     }
-    startServer({ port, host: '127.0.0.1', projectRoot: workspaceRoot });
+    startServer({ port, host, projectRoot: workspaceRoot });
     return;
   }
 
