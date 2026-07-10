@@ -3,7 +3,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const { regenerateSitemap } = require('../server/api/sitemap.js');
 const { ensureIdsForTree } = require('../server/lib/ids.js');
-const { syncStartScripts } = require('./axhost-init.js');
+const { syncStartScripts, syncPackageJson } = require('./axhost-init.js');
 
 async function exists(p) {
   try { await fs.access(p); return true; } catch { return false; }
@@ -215,6 +215,7 @@ async function update(currentDir, options = {}) {
     }
     console.log(`\nTotal ${updated} project(s) updated.`);
     await syncStartScripts(workspaceRoot);
+    await syncPackageJson(workspaceRoot);
     return;
   }
 

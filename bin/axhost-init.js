@@ -182,8 +182,9 @@ async function initWorkspace(currentDir, options = {}) {
     process.exit(1);
   }
 
-  // 同步启动脚本（幂等）
+  // 同步启动脚本和 package.json（幂等）
   await syncStartScripts(workspaceRoot);
+  await syncPackageJson(workspaceRoot);
 
   const projectsDir = path.join(workspaceRoot, 'projects');
   if (await exists(projectsDir)) {
@@ -208,27 +209,6 @@ async function initWorkspace(currentDir, options = {}) {
     JSON.stringify({ projects: [] }, null, 2) + '\n',
     'utf-8'
   );
-
-  // 2. 在父级目录生成 package.json
-  const pkgPath = path.join(workspaceRoot, 'package.json');
-  if (!await exists(pkgPath)) {
-    const pkg = {
-      name: 'axhost-workspace',
-      version: '1.0.0',
-      description: 'Axhost-Make workspace',
-      scripts: {
-        serve: 'node axhost-make/bin/axhost-serve-daemon.js serve',
-        status: 'node axhost-make/bin/axhost-serve-daemon.js status',
-        stop: 'node axhost-make/bin/axhost-serve-daemon.js stop',
-        build: 'node axhost-make/bin/axhost-make.js build',
-        update: 'node axhost-make/bin/axhost-make.js update --all',
-        upgrade: 'node axhost-make/bin/axhost-make.js upgrade',
-        preview: 'node axhost-make/bin/axhost-make.js preview'
-      }
-    };
-    await fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
-    console.log('  - Created package.json');
-  }
 
   console.log('\nAxhost-Make workspace initialized successfully.');
   console.log('Generated files:');
@@ -261,7 +241,53 @@ async function initWorkspace(currentDir, options = {}) {
   }
 }
 
-module.exports = { init, initWorkspace, syncStartScripts };
+async function syncPackageJson(workspaceRoot) {
+  const pkgPath = path.join(workspaceRoot, 'package.json');
+  const template = {
+    name: 'axhost-workspace',
+    version: '1.0.0',
+    description: 'Axhost-Make workspace',
+    scripts: {
+      serve: 'node axhost-make/bin/axhost-serve-daemon.js serve',
+      status: 'node axhost-make/bin/axhost-serve-daemon.js status',
+      stop: 'node axhost-make/bin/axhost-serve-daemon.js stop',
+      build: 'node axhost-make/bin/axhost-make.js build',
+      update: 'node axhost-make/bin/axhost-make.js update --all',
+      upgrade: 'node axhost-make/bin/axhost-make.js upgrade',
+      preview: 'node axhost-make/bin/axhost-make.js preview'
+    }
+  };
+
+  let pkg;
+  if (await exists(pkgPath)) {
+    pkg = JSON.parse(await fs.readFile(pkgPath, 'utf8'));
+    pkg.name = pkg.name || template.name;
+    pkg.version = pkg.version || template.version;
+    pkg.description = pkg.description || template.description;
+
+    const mergedScripts = {};
+    for (const key of Object.keys(template.scripts)) {
+      mergedScripts[key] = template.scripts[key];
+    }
+    if (pkg.scripts) {
+      for (const key of Object.keys(pkg.scripts)) {
+        if (!(key in mergedScripts)) {
+          mergedScripts[key] = pkg.scripts[key];
+        }
+      }
+    }
+    pkg.scripts = mergedScripts;
+
+    console.log('  - Updated package.json scripts');
+  } else {
+    pkg = template;
+    console.log('  - Created package.json');
+  }
+
+  await fs.writeFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n', 'utf-8');
+}
+
+module.exports = { init, initWorkspace, syncStartScripts, syncPackageJson };
 
 if (require.main === module) {
   const currentDir = process.cwd();
