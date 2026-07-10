@@ -217,7 +217,9 @@ async function initWorkspace(currentDir, options = {}) {
       version: '1.0.0',
       description: 'Axhost-Make workspace',
       scripts: {
-        serve: 'node axhost-make/bin/axhost-make.js serve',
+        serve: 'node axhost-make/bin/axhost-serve-daemon.js serve',
+        status: 'node axhost-make/bin/axhost-serve-daemon.js status',
+        stop: 'node axhost-make/bin/axhost-serve-daemon.js stop',
         build: 'node axhost-make/bin/axhost-make.js build',
         update: 'node axhost-make/bin/axhost-make.js update --all',
         upgrade: 'node axhost-make/bin/axhost-make.js upgrade',
