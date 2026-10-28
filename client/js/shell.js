@@ -973,18 +973,23 @@
     }
   }
 
-  function loadPage(type, pagePath, pageName) {
-    exitRuleMode();
-    const tab = type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
-    const url = `${prototypeBase}/${tab}/${pagePath}/index.html`;
-    previewFrame.src = url;
+  // 页面类型 → 目录名（pages / components / flowcharts）
+  function getPageTab(type) {
+    return type === 'component' ? 'components' : type === 'flowchart' ? 'flowcharts' : 'pages';
+  }
+
+  // 更新壳层当前页面状态；forceDocs 为 true 时强制刷新文档面板
+  function applyPageState(type, pagePath, pageName, forceDocs) {
+    const tab = getPageTab(type);
+    const prev = window.__axhostState.currentPage;
+    const changed = !prev || prev.type !== type || prev.path !== pagePath;
     const info = window.__axhostProjectInfo || {};
     const pageRelativePath = `prototype/${tab}/${pagePath}`;
     const pageAbsolutePath = info.projectAbsolutePath
       ? `${info.projectAbsolutePath}/prototype/${tab}/${pagePath}`
       : '';
     window.__axhostState.currentPage = { type, path: pagePath, pageRelativePath, pageAbsolutePath, name: pageName };
-    if (window.docPanel && window.docPanel.load) {
+    if ((changed || forceDocs) && window.docPanel && window.docPanel.load) {
       window.docPanel.load(type, pagePath);
     }
     const promptContext = document.getElementById('prompt-context');
@@ -1000,6 +1005,18 @@
       promptContext.appendChild(nameEl);
       promptContext.appendChild(tagEl);
     }
+  }
+
+  function loadPage(type, pagePath, pageName) {
+    exitRuleMode();
+    previewFrame.src = `${prototypeBase}/${getPageTab(type)}/${pagePath}/index.html`;
+    applyPageState(type, pagePath, pageName, true);
+  }
+
+  // iframe 内自行跳转（页内页签/链接）后，由目录树调用：同步右侧路径和文档面板，不重载 iframe
+  function syncPageFromUrl(tab, pagePath, pageName) {
+    const type = tab === 'components' ? 'component' : tab === 'flowcharts' ? 'flowchart' : 'page';
+    applyPageState(type, pagePath, pageName, false);
   }
 
   // Rule mode UI toggle
@@ -1349,7 +1366,7 @@
     return AxhostModal.prompt({ title: title, placeholder: placeholder, defaultValue: defaultValue });
   };
 
-  window.shell = { loadPage, exitRuleMode };
+  window.shell = { loadPage, syncPageFromUrl, exitRuleMode };
   window.onHostProjectLinked = function(remoteProjectId, remoteProjectName) {
     currentSettingsLink = { remoteProjectId: remoteProjectId, remoteProjectName: remoteProjectName };
     updateOpenOnlineButton();

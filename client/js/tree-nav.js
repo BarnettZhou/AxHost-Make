@@ -152,6 +152,22 @@
     return null;
   }
 
+  function findNodeByPath(nodes, targetPath) {
+    for (const n of nodes) {
+      if ((n.type === 'page' || n.type === 'component' || n.type === 'flowchart' || n.type === 'spec') && n.path === targetPath) return n;
+      if (n.children) {
+        const f = findNodeByPath(n.children, targetPath);
+        if (f) return f;
+      }
+    }
+    return null;
+  }
+
+  function getNodeNameByPath(targetPath) {
+    const node = findNodeByPath(treeData, targetPath);
+    return node ? node.name : '';
+  }
+
   function expandAncestors(nodePath) {
     const parts = nodePath.split('/');
     let prefix = '';
@@ -170,13 +186,15 @@
     return 'page';
   }
 
-  function syncTreeFromIframe() {
+  let syncToken = 0;
+  async function syncTreeFromIframe() {
     const iframe = document.getElementById('preview-frame');
     if (!iframe) return;
     try {
       const url = iframe.contentWindow.location.href;
       const match = url.match(/\/(pages|components|flowcharts)\/([a-f0-9]{8})(?:\/|$)/);
       if (!match) return;
+      const token = ++syncToken;
       const tab = match[1];
       const nodePath = match[2];
       if (tab !== currentTab) {
@@ -185,7 +203,12 @@
       }
       selectedPath = nodePath;
       expandAncestors(nodePath);
-      loadTree(currentTab);
+      await loadTree(currentTab);
+      if (token !== syncToken) return;
+      // iframe 内自行跳转后同步壳层：右侧路径、文档面板（不重载 iframe）
+      if (window.shell && window.shell.syncPageFromUrl) {
+        window.shell.syncPageFromUrl(tab, nodePath, getNodeNameByPath(nodePath));
+      }
     } catch (e) {}
   }
 
